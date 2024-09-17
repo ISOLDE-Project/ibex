@@ -1,3 +1,48 @@
+# ISOLDE
+## Prerequisites
+in root folder execute
+```
+. ./eth.sh
+```
+## Building Simulation
+in folder **examples/simple_system**  
+
+get a clean slate:
+```
+make clean
+```
+## build simulation
+```
+make
+```
+## build test app
+* gcc
+```
+make clean-test test-app
+```
+* llvm
+```
+make clean-test test-app COMPILER=llvm
+```
+## execute test
+```
+make run-test
+```
+Output should be similar to this
+```
+ibex_simple_system.log
+======================
+Hello simple system
+DEADBEEF
+BAADF00D
+Tick!
+Tock!
+Tick!
+Tock!
+Tick!
+exit()
+======
+```
 # Ibex Simple System
 
 Simple System gives you an Ibex based system simulated by Verilator that can
@@ -24,6 +69,7 @@ run stand-alone binaries. It contains:
 * srecord.
   On Debian/Ubuntu, install it by running `apt-get install srecord`.
   (Optional, needed for generating a vmem file)
+
 
 ## Building Simulation
 

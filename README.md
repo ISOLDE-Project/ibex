@@ -2,7 +2,8 @@
 <a href="https://ibex.reports.lowrisc.org/opentitan/latest/report.html">
   <img src="https://ibex.reports.lowrisc.org/opentitan/latest/summary.svg">
 </a>
-
+# ISOLDE
+see [examples/simple_system/README.md](examples/simple_system/README.md)
 # Ibex RISC-V Core
 
 Ibex is a production-quality open source 32-bit RISC-V CPU core written in

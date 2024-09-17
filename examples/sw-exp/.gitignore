@@ -1,0 +1,8 @@
+*.o
+*.bin
+*.dis
+*.elf
+*.vmem
+*.d
+*.map
+*.headers
