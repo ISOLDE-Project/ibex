@@ -1,5 +1,5 @@
 ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
-IBEX_CONFIG         ?=  maxperf
+IBEX_CONFIG         ?=  small
 FUSESOC_CONFIG_OPTS := $(shell cd $(ROOT_DIR) && $(ROOT_DIR)/util/ibex_config.py $(IBEX_CONFIG) fusesoc_opts)
 TEST                ?= dhrystone
 test-program        ?= $(ROOT_DIR)/examples/sw/simple_system/$(TEST)/$(TEST).elf
