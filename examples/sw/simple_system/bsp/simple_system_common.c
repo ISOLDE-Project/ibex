@@ -3,21 +3,37 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "simple_system_common.h"
+#include "tinyprintf.h"
 
-int putchar(int c) {
-  DEV_WRITE(SIM_CTRL_BASE + SIM_CTRL_OUT, (unsigned char)c);
 
-  return c;
+
+// see tb/core/mm_ram.sv
+void _Exit(int exit_code){
+
+  asm volatile  (
+        "li	a1, 0;"
+        "li	a2, 0;"
+        "li	a3, 0;"
+        "li	a4, 0;"
+        "li	a5, 0;"
+        "li	a7, 93;"
+        "ecall;"	
+        :  /* output: none %0 */
+        : /* input: none */
+        : /* clobbers: none */); 
+  while(1); //ureachable code
+
 }
 
-int puts(const char *str) {
-  while (*str) {
-    putchar(*str++);
-  }
-
-  return 0;
+ void _putcf (void *, char c) {
+  DEV_WRITE(MMADDR_PRINT, (uint32_t)c); 
 }
 
+
+int putchar(char c){
+  _putcf (0,  c);
+  return 1;
+}
 void puthex(uint32_t h) {
   int cur_digit;
   // Iterate through h taking top 4 bits each time and outputting ASCII of hex
@@ -34,7 +50,8 @@ void puthex(uint32_t h) {
   }
 }
 
-void sim_halt() { DEV_WRITE(SIM_CTRL_BASE + SIM_CTRL_CTRL, 1); }
+
+void sim_halt() { DEV_WRITE(MMADDR_EXIT, 1); }
 
 void pcount_reset() {
   asm volatile(
@@ -134,16 +151,16 @@ void simple_exc_handler(void) {
   //https://jborza.com/post/2021-05-11-riscv-linux-syscalls/
   if (result == 93) {
 #endif  
-    puts("exit()\n");
-    puts("======\n");
+    printf("exit()\n");
+    printf("======\n");
   }else{
-    puts("EXCEPTION!!!\n");
-    puts("============\n");
-    puts("MEPC:   0x");
+    printf("EXCEPTION!!!\n");
+    printf("============\n");
+    printf("MEPC:   0x");
     puthex(get_mepc());
-    puts("\nMCAUSE: 0x");
+    printf("\nMCAUSE: 0x");
     puthex(get_mcause());
-    puts("\nMTVAL:  0x");
+    printf("\nMTVAL:  0x");
     puthex(get_mtval());
     putchar('\n');
   }
