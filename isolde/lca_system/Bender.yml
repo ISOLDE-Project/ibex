@@ -1,0 +1,12 @@
+# Copyleft 2024
+# Solderpad Hardware License, Version 0.51, see LICENSE for details.
+# SPDX-License-Identifier: SHL-0.51
+package:
+  name: lca_ibex_system
+  authors:
+    - daro <daro@tsr>
+
+dependencies:
+  redmule: {path: ../../vendor/redmule }
+#   redmule          : { git:  https://github.com/ISOLDE-Project/redmule.git   , rev: 8494936afc41b1508f4d6e0e2606597457abf415 } 
+   
