@@ -83,6 +83,7 @@ testbench_verilator:  $(TBSRC_VERI)
 		--Wno-MODDUP --top-module \
 		$(VLT_TOP_MODULE) $(TBSRC_VERI) \
 		-f $(CV_CORE_MANIFEST) \
+		-f $(PE_MANIFEST) \
 		$(CV_CORE_PKG)/bhv/$(CV_CORE_LC)_core_log.sv \
 		$(TBSRC_CORE)/tb_top_verilator.cpp --Mdir $(VERI_OBJ_DIR) \
 		-CFLAGS "$(VLT_CFLAGS)"  \
