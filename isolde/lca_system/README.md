@@ -12,48 +12,35 @@ For a list of possible configurations, see [ibex_configs.yaml](../../ibex_config
 in folder **isolde/simple_system**:  
 * get a clean slate:
 ```
-make clean
+make veri-clean clean
 ```
 ## build the simulation
 ```
-make
+make verilate
 ``` 
-or
-```sh
-make IBEX_CONFIG=small 
-```
+
 
 ## build test app
 * **gcc** toolchain
 ```
-make clean-test test-app
+make golden
+make sim-inputs
 ```
 * **llvm** toolchain
-```
-make clean-test test-app COMPILER=llvm
-```
+*Not implemented*
 ## execute test
 ```
 make run-test
 ```
 Output should be similar to this
 ```
-Performance Counters
-====================
-Cycles:               375
-Instructions Retired: 223
-
-ibex_simple_system.log
-======================
-Hello test instr
-exit()
-======
-```
-alternatively to run with *small* simulation 
-
-```sh
-make IBEX_CONFIG=small run-test
-```
+[TESTBENCH] @ t=0: loading firmware /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/lca_system/vsim/redmule-m.hex
+Timing for REDMULE: 233 cycles
+Resumed!
+Terminated test with 0 errors. See you!
+[TB] - errors=00000000
+[TB] - Success!
+```  
 
 ---  
 ---

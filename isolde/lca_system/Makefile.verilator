@@ -4,7 +4,11 @@
 # Verilator #
 #############
 
-#include mk/Common.mk
+include $(REDMULE_ROOT_DIR)/bender_common.mk
+include $(REDMULE_ROOT_DIR)/bender_sim.mk
+include $(REDMULE_ROOT_DIR)/bender_synth.mk
+
+include mk/Common.mk
 
 VLT_TOP_MODULE ?= tb_redmule_verilator
 
@@ -13,7 +17,7 @@ VLT_TOP_MODULE ?= tb_redmule_verilator
 # Test-Program directores.
 TEST               ?= redmule
 TEST_FILES         ?= $(TEST).c
-TEST_TEST_DIR       = $(CORE_V_VERIF)/sw
+TEST_TEST_DIR       = $(REDMULE_ROOT_DIR)/sw
 
 #  -Core Firmware and the RISCV GCC Toolchain (SDK)
 
@@ -38,7 +42,8 @@ VERI_FLAGS        +=
 # Clean all build directories and temporary files for Questasim simulation
 veri-clean: 
 	rm -f manifest.flist
-	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/manifest.flist  SIM_RESULTS=$(BIN_DIR) $@
+	rm -fr log/$(VLT_TOP_MODULE) 
+	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/manifest.flist SIM_RESULTS=$(BIN_DIR) VLT_TOP_MODULE=$(VLT_TOP_MODULE) $@
 
 verilate: $(BIN_DIR)/verilator_executable
 
@@ -50,12 +55,6 @@ $(BIN_DIR)/verilator_executable: manifest.flist
 	mkdir -p $(dir $@)
 	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/manifest.flist  SIM_RESULTS=$(BIN_DIR) VLT_TOP_MODULE=$(VLT_TOP_MODULE) verilate
 
-sanity-veri-run: VLT_TOP_MODULE := tb_top_verilator
-sanity-veri-run:
-	mkdir -p $(VERI_LOG_DIR)
-	rm -f $(VERI_LOG_DIR)/verilator_tb.vcd
-	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/manifest.flist  SIM_RESULTS=$(BIN_DIR) VLT_TOP_MODULE=$(VLT_TOP_MODULE) TEST=hello-world run-test
-	mv sim/core/verilator_tb.vcd $(VERI_LOG_DIR)/
 
 .PHONY: run-test
 run-test: $(BIN_DIR)/verilator_executable 
@@ -83,8 +82,10 @@ help:
 	@echo verilate VLT_TOP_MODULE=tb_top_verilator
 	
 
+$(SIM_TEST_INPUTS):
+	mkdir -p $(SIM_TEST_INPUTS)	
 
 $(SIM_TEST_INPUTS)/$(TEST).hex: $(SIM_TEST_INPUTS)/$(TEST).elf
 
-sim-inputs: $(VSIM_DIR) $(SIM_TEST_INPUTS)/$(TEST).hex
+sim-inputs: $(SIM_TEST_INPUTS) $(SIM_TEST_INPUTS)/$(TEST).hex
 

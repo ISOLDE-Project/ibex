@@ -2,3 +2,5 @@
 Bender.lock
 manifest.flist
 bin/
+vsim/
+*.vcd

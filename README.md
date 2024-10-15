@@ -27,19 +27,18 @@ see also [isolde/simple_system/README.md](isolde/simple_system/README.md)
 ├── examples
 ├── formal
 ├── install
-├── isolde
+├── isolde          <-- ISOLDE systems
 ├── lint
 ├── rtl
 ├── shared
 ├── syn
 ├── util
-└── vendor
+└── vendor           <-- external IPs
 ```
 ## External IPs
-external IPs are hosted in vendor volder as git submodules
+external IPs are hosted in vendor folder as git submodules
 
-## [REDMULE](https://github.com/ISOLDE-Project/redmule)
-- it is a git submodule located in vendor directory
+Steps to add a new IP   
 ```
 git submodule add <ip_url> vendor/<ip>
 ```
@@ -51,7 +50,9 @@ git checkout <branch>
 Finally:  
 ```
 git commit -m"NEW git submodule: vendor/<ip>"
+git push
 ```
+
 # Ibex RISC-V Core
 
 Ibex is a production-quality open source 32-bit RISC-V CPU core written in
