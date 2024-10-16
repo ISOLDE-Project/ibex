@@ -1,18 +1,16 @@
 CAPI=2:
-# Copyleft 2024 ISOLDE
 # Copyright lowRISC contributors.
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
-
-
 name: "isolde:ibex:lca_system"
-description: "Loosely coupled accelerator on ibex using verilator"
+description: "Generic simple system for running binaries on ibex using verilator"
 filesets:
-  files_lca_system:
+  files_simple_system:
     depend:
       - isolde:ibex:lca_system_core
-
-
+    files:
+      - tool_verilator ? (tb/core/tb_top_verilator.cpp)
+    file_type: cppSource
 
 parameters:
   RV32E:
@@ -125,8 +123,8 @@ parameters:
 targets:
   default: &default_target
     filesets:
-      - files_lca_system
-    toplevel: ibex_simple_system
+      - files_simple_system
+    toplevel: tb_lca_system
     parameters:
       - RV32E
       - RV32M
@@ -175,7 +173,7 @@ targets:
           - '--trace'
           - '--no-timing'
           - '-Wno-fatal'
-          - '-CFLAGS "-std=c++17 -Wall  -DTOPLEVEL_NAME=ibex_simple_system -g"'
+          - '-CFLAGS "-std=c++17 -Wall  -DTOPLEVEL_NAME=lca_system -g"'
           - '-LDFLAGS "-pthread -lutil -lelf"'
           - "-Wall"
           - "-Wwarn-IMPERFECTSCH"

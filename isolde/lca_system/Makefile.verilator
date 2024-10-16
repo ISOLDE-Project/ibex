@@ -14,14 +14,6 @@ VLT_TOP_MODULE ?= tb_lca_system
 
 
 
-# Test-Program directores.
-TEST               ?= redmule
-TEST_FILES         ?= $(TEST).c
-TEST_TEST_DIR       = $(REDMULE_ROOT_DIR)/sw
-
-#  -Core Firmware and the RISCV GCC Toolchain (SDK)
-
-
 # Common output directories
 RUN_INDEX                ?= 0
 SIM_RESULTS              ?= simulation_results
@@ -41,23 +33,54 @@ VERI_FLAGS        +=
 
 # Clean all build directories and temporary files for Questasim simulation
 veri-clean: 
-	rm -f manifest.flist
+	rm -f *.flist
 	rm -fr log/$(VLT_TOP_MODULE) 
 	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist SIM_RESULTS=$(BIN_DIR) VLT_TOP_MODULE=$(VLT_TOP_MODULE) $@
 
 verilate: $(BIN_DIR)/verilator_executable
 
+##
+
+CORE_FILES := $(filter %.core,$(wildcard $(mkfile_path)/*))
+CORE_FILES += $(filter %.core,$(wildcard $(ROOT_DIR)/*))
+CORE_FILE_NAMES := $(notdir $(CORE_FILES))
+
+fusesoc_ignore: $(ROOT_DIR)/isolde/lca_system/.bender/FUSESOC_IGNORE $(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE
+
+$(ROOT_DIR)/isolde/lca_system/.bender/FUSESOC_IGNORE:
+	@if [ ! -f $@ ]; then touch $@; fi
+
+$(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE:
+	@if [ ! -f $@ ]; then touch $@; fi
+
+
+
+ibex_sim.flist:  $(CORE_FILES)
+	@echo $(CORE_FILE_NAMES)
+	fusesoc --cores-root=$(ROOT_DIR) run --target=sim --setup --no-export $(FUSESOC_PARAMS)  --build-root=$(FUSESOC_BUILD_ROOT) $(FUSESOC_PKG_NAME) $(FUSESOC_CONFIG_OPTS) 
+	python $(ROOT_DIR)/util/transform_paths.py  \
+										       $(FUSESOC_BUILD_ROOT)/sim-verilator  \
+	                                           $(FUSESOC_BUILD_ROOT)/sim-verilator/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc \
+											   $@
+	touch $@
+##
+
 manifest.flist: Bender.yml
-	$(BENDER) script verilator $(common_targs) $(VLT_BENDER)  >$@
+	@echo 'INFO:  bender script verilator $(common_targs) $(VLT_BENDER)'
+	@$(BENDER) script verilator $(common_targs) $(VLT_BENDER)  >$@
 	touch $@
 
-$(BIN_DIR)/verilator_executable: manifest.flist ibex_sim.flist
+$(BIN_DIR)/verilator_executable:  ibex_sim.flist manifest.flist
 	mkdir -p $(dir $@)
-	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist PE_MANIFEST=${CURDIR}/manifest.flist SIM_RESULTS=$(BIN_DIR) VLT_TOP_MODULE=$(VLT_TOP_MODULE) verilate
+	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist     \
+											     PE_MANIFEST=${CURDIR}/manifest.flist    \
+	                                             SIM_RESULTS=$(BIN_DIR)                  \
+											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
+											  verilate      
 
 
-.PHONY: run-test
-run-test: $(BIN_DIR)/verilator_executable 
+.PHONY: veri-run
+veri-run: $(BIN_DIR)/verilator_executable 
 	@echo "$(BANNER)"
 	@echo "* Running with Verilator: $(BIN_DIR)/verilator_executable "
 	@echo "*               log file: $(VERI_LOG_DIR)/$(TEST).log"
@@ -72,20 +95,18 @@ run-test: $(BIN_DIR)/verilator_executable
 	mv verilator_tb.vcd $(VERI_LOG_DIR)/$(TEST).vcd
 
 	
-.PHONY: help
 
+
+.PHONY: clean-flist
+clean-flist:
+	rm -f ibex_sim.flist
+	rm -f manifest.flist
+
+.PHONY: help
 help:
 	@echo "verilator related available targets:"
 	@echo verilate                                 -- builds verilator simulation, available here: $(BIN_DIR)/verilator_executable
-	@echo run-test                                 -- runs the test
+	@echo veri-run                                 -- runs the test
 	@echo veri-clean                               -- gets a clean slate for simulation
 	@echo verilate VLT_TOP_MODULE=tb_top_verilator
 	
-
-$(SIM_TEST_INPUTS):
-	mkdir -p $(SIM_TEST_INPUTS)	
-
-$(SIM_TEST_INPUTS)/$(TEST).hex: $(SIM_TEST_INPUTS)/$(TEST).elf
-
-sim-inputs: $(SIM_TEST_INPUTS) $(SIM_TEST_INPUTS)/$(TEST).hex
-

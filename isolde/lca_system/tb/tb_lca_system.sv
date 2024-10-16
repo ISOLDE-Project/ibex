@@ -15,7 +15,24 @@ module tb_lca_system (
 
 );
   import redmule_pkg::*;
-
+  //ibex parameters
+  parameter bit SecureIbex = 1'b0;
+  parameter bit ICacheScramble = 1'b0;
+  parameter bit PMPEnable = 1'b0;
+  parameter int unsigned PMPGranularity = 0;
+  parameter int unsigned PMPNumRegions = 4;
+  parameter int unsigned MHPMCounterNum = 0;
+  parameter int unsigned MHPMCounterWidth = 40;
+  parameter bit RV32E = 1'b0;
+  parameter ibex_pkg::rv32m_e RV32M = `RV32M;
+  parameter ibex_pkg::rv32b_e RV32B = `RV32B;
+  parameter ibex_pkg::regfile_e RegFile = `RegFile;
+  parameter bit BranchTargetALU = 1'b0;
+  parameter bit WritebackStage = 1'b0;
+  parameter bit ICache = 1'b0;
+  parameter bit DbgTriggerEn = 1'b0;
+  parameter bit ICacheECC = 1'b0;
+  parameter bit BranchPredictor = 1'b0;
   // parameters
   parameter int unsigned PROB_STALL = 0;
   parameter int unsigned NC = 1;
@@ -30,7 +47,7 @@ module tb_lca_system (
   parameter logic [31:0] IMEM_ADDR = 32'h00100000;
   parameter logic [31:0] DMEM_ADDR = 32'h00110000;
   parameter logic [31:0] SMEM_ADDR = 32'h00140000;
-  parameter logic [31:0] BOOT_ADDR = 32'h00100080;
+  parameter logic [31:0] BOOT_ADDR = 32'h00100000;
   parameter logic [31:0] PERI_ADDR = 32'h00001000;
   parameter logic [31:0] MMIO_ADDR = 32'h80000000;
   //
@@ -192,7 +209,7 @@ module tb_lca_system (
   tb_tcdm_verilator #(
       .MP         (MP + 2),
       .MEMORY_SIZE(MEMORY_SIZE),
-      .BASE_ADDR(IMEM_ADDR)
+      .BASE_ADDR  (IMEM_ADDR)
   ) i_dummy_memory (
       .clk_i   (clk_i),
       .rst_ni  (rst_ni),
@@ -211,79 +228,79 @@ module tb_lca_system (
   );
 
 
-  // ibex_top_tracing #(
-  //     .SecureIbex      ( SecureIbex       ),
-  //     .ICacheScramble  ( ICacheScramble   ),
-  //     .PMPEnable       ( PMPEnable        ),
-  //     .PMPGranularity  ( PMPGranularity   ),
-  //     .PMPNumRegions   ( PMPNumRegions    ),
-  //     .MHPMCounterNum  ( MHPMCounterNum   ),
-  //     .MHPMCounterWidth( MHPMCounterWidth ),
-  //     .RV32E           ( RV32E            ),
-  //     .RV32M           ( RV32M            ),
-  //     .RV32B           ( RV32B            ),
-  //     .RegFile         ( RegFile          ),
-  //     .BranchTargetALU ( BranchTargetALU  ),
-  //     .ICache          ( ICache           ),
-  //     .ICacheECC       ( ICacheECC        ),
-  //     .WritebackStage  ( WritebackStage   ),
-  //     .BranchPredictor ( BranchPredictor  ),
-  //     .DbgTriggerEn    ( DbgTriggerEn     ),
-  //     .DmHaltAddr      ( 32'h00100000     ),
-  //     .DmExceptionAddr ( 32'h00100000     )
-  //   ) u_top (
-  //     .clk_i                  (clk_i),
-  //     .rst_ni                 (rst_ni),
+  ibex_top_tracing #(
+      .SecureIbex      (SecureIbex),
+      .ICacheScramble  (ICacheScramble),
+      .PMPEnable       (PMPEnable),
+      .PMPGranularity  (PMPGranularity),
+      .PMPNumRegions   (PMPNumRegions),
+      .MHPMCounterNum  (MHPMCounterNum),
+      .MHPMCounterWidth(MHPMCounterWidth),
+      .RV32E           (RV32E),
+      .RV32M           (RV32M),
+      .RV32B           (RV32B),
+      .RegFile         (RegFile),
+      .BranchTargetALU (BranchTargetALU),
+      .ICache          (ICache),
+      .ICacheECC       (ICacheECC),
+      .WritebackStage  (WritebackStage),
+      .BranchPredictor (BranchPredictor),
+      .DbgTriggerEn    (DbgTriggerEn),
+      .DmHaltAddr      (32'h00100000),
+      .DmExceptionAddr (32'h00100000)
+  ) u_top (
+      .clk_i (clk_i),
+      .rst_ni(rst_ni),
 
-  //     .test_en_i              (1'b0),
-  //     .scan_rst_ni            (1'b1),
-  //     .ram_cfg_i              (prim_ram_1p_pkg::RAM_1P_CFG_DEFAULT),
+      .test_en_i  (1'b0),
+      .scan_rst_ni(1'b1),
+      .ram_cfg_i  (prim_ram_1p_pkg::RAM_1P_CFG_DEFAULT),
 
-  //     .hart_id_i              (32'b0),
-  //     // First instruction executed is at 0x0 + 0x80
-  //     .boot_addr_i            (core_boot_addr),
+      .hart_id_i  (32'b0),
+      // First instruction executed is at 0x0 + 0x80
+      .boot_addr_i(core_boot_addr),
 
-  //     .instr_req_o            (instr_req),
-  //     .instr_gnt_i            (instr_gnt),
-  //     .instr_rvalid_i         (instr_rvalid),
-  //     .instr_addr_o           (instr_addr),
-  //     .instr_rdata_i          (instr_rdata),
-  //     //.instr_rdata_intg_i     (instr_rdata_intg),
-  //     //.instr_err_i            (instr_err),
+      .instr_req_o   (instr_req),
+      .instr_gnt_i   (instr_gnt),
+      .instr_rvalid_i(instr_rvalid),
+      .instr_addr_o  (instr_addr),
+      .instr_rdata_i (instr_rdata),
+      //.instr_rdata_intg_i     (instr_rdata_intg),
+      //.instr_err_i            (instr_err),
 
-  //     .data_req_o             (data_req),
-  //     .data_gnt_i             (data_gnt),
-  //     .data_rvalid_i          (data_rvalid),
-  //     .data_we_o              (data_we),
-  //     .data_be_o              (data_be),
-  //     .data_addr_o            (data_addr),
-  //     .data_wdata_o           (data_wdata),
-  //     .data_wdata_intg_o      (),
-  //     .data_rdata_i           (data_rdata),
-  //     .data_rdata_intg_i      (),
-  //     .data_err_i             (),
+      .data_req_o       (data_req),
+      .data_gnt_i       (data_gnt),
+      .data_rvalid_i    (data_rvalid),
+      .data_we_o        (data_we),
+      .data_be_o        (data_be),
+      .data_addr_o      (data_addr),
+      .data_wdata_o     (data_wdata),
+      .data_wdata_intg_o(),
+      .data_rdata_i     (data_rdata),
+      .data_rdata_intg_i(),
+      .data_err_i       (),
 
-  //     .irq_software_i         (1'b0),
-  //     .irq_timer_i            ({28'd0, evt[0][0], 3'd0}),
-  //     .irq_external_i         (1'b0),
-  //     .irq_fast_i             (15'b0),
-  //     .irq_nm_i               (1'b0),
+      .irq_software_i(1'b0),
+      .irq_timer_i   ({28'd0, evt[0][0], 3'd0}),
+      .irq_external_i(1'b0),
+      .irq_fast_i    (15'b0),
+      .irq_nm_i      (1'b0),
 
-  //     .scramble_key_valid_i   ('0),
-  //     .scramble_key_i         ('0),
-  //     .scramble_nonce_i       ('0),
-  //     .scramble_req_o         (),
+      .scramble_key_valid_i('0),
+      .scramble_key_i      ('0),
+      .scramble_nonce_i    ('0),
+      .scramble_req_o      (),
 
-  //     .debug_req_i            (1'b0),
-  //     .crash_dump_o           (),
-  //     .double_fault_seen_o    (),
+      .debug_req_i        (1'b0),
+      .crash_dump_o       (),
+      .double_fault_seen_o(),
 
-  //     .fetch_enable_i         (fetch_enable_i),
-  //     .alert_minor_o          (),
-  //     .alert_major_internal_o (),
-  //     .alert_major_bus_o      (),
-  //     .core_sleep_o           ()
-  //   );
+      .fetch_enable_i        (fetch_enable_i),
+      .alert_minor_o         (),
+      .alert_major_internal_o(),
+      .alert_major_bus_o     (),
+      .core_sleep_o          ()
+  );
 
   // cv32e40p_core #(
   //     .PULP_XPULP(PULP_XPULP),

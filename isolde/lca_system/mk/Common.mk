@@ -63,7 +63,7 @@ TBSRC_CORE    := $(TBSRC_HOME)/core
 CV_CORE_LC     = $(shell echo $(CV_CORE) | tr A-Z a-z)
 CV_CORE_UC     = $(shell echo $(CV_CORE) | tr a-z A-Z)
 
-CV_CORE_PKG           :=  $(shell $(BENDER) path $(CV_CORE_LC))
+CV_CORE_PKG           :=  
 CV_CORE_MANIFEST    ?= $(CV_CORE_PKG)/cv32e40p_manifest.flist
 export DESIGN_RTL_DIR = $(CV_CORE_PKG)/rtl
 

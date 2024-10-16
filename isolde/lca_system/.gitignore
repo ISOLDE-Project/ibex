@@ -5,3 +5,4 @@ bin/
 vsim/
 *.vcd
 tmp/
+.bender/
