@@ -20,27 +20,6 @@ num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 
 include Makefile.verilator
 
-CORE_FILES := $(filter %.core,$(wildcard $(mkfile_path)/*))
-CORE_FILES += $(filter %.core,$(wildcard $(ROOT_DIR)/*))
-
-fusesoc_ignore: $(ROOT_DIR)/isolde/lca_system/.bender/FUSESOC_IGNORE $(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE
-
-$(ROOT_DIR)/isolde/lca_system/.bender/FUSESOC_IGNORE:
-	@if [ ! -f $@ ]; then touch $@; fi
-
-$(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE:
-	@if [ ! -f $@ ]; then touch $@; fi
-
-
-
-ibex_sim.flist:  $(CORE_FILES)
-	@echo $(CORE_FILES)
-	fusesoc --cores-root=$(ROOT_DIR) run --target=sim --setup --no-export $(FUSESOC_PARAMS)  --build-root=$(FUSESOC_BUILD_ROOT) $(FUSESOC_PKG_NAME) $(FUSESOC_CONFIG_OPTS) 
-	python $(ROOT_DIR)/util/transform_paths.py  \
-										       $(FUSESOC_BUILD_ROOT)/sim-verilator  \
-	                                           $(FUSESOC_BUILD_ROOT)/sim-verilator/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc \
-											   $@
-	touch $@
 
 .PHONY: clean-flist
 clean-flist:

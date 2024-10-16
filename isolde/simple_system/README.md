@@ -8,17 +8,21 @@ in root folder execute
 default value for **IBEX_CONFIG**=*isolde*.  
 For a list of possible configurations, see [ibex_configs.yaml](../../ibex_configs.yaml)  
 in folder **isolde/simple_system**:  
-* get a clean slate:
+```sh
+make test-app verilate veri-run
 ```
+
+* get a clean slate:
+```sh
 make clean
 ```
 ## build the simulation
-```
-make
+```sh
+make verilate
 ``` 
 or
 ```sh
-make IBEX_CONFIG=small 
+make IBEX_CONFIG=small verilate
 ```
 
 ## build test app
@@ -32,20 +36,24 @@ make clean-test test-app COMPILER=llvm
 ```
 ## execute test
 ```
-make run-test
+make veri-run
 ```
 Output should be similar to this
 ```
+
 Performance Counters
 ====================
-Cycles:               375
-Instructions Retired: 223
+Cycles:               3826
+Instructions Retired: 2181
 
 ibex_simple_system.log
 ======================
 Hello test instr
+Timing for loading t3-t6 with immediate values : 10 cycles
+Timing for vle32.q Q0, 1, 2, 3, 4 : 7 cycles
 exit()
 ======
+======================
 ```
 alternatively to run with *small* simulation 
 
