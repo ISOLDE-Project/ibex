@@ -20,6 +20,9 @@ with open(args.input_file, 'r') as file:
 with open(args.output_file, 'w') as file:
     for line in lines:
         line = line.strip()
+        if line.startswith('--top-module'):
+            print(f"INFO: top module {line[len('--top-module'):].strip()}")
+            file.write(line + '\n')  # Write the unmodified line to the output file
         if line.startswith('+incdir+'):
             # Remove +incdir+ from the beginning of the line
             relative_path = line[len('+incdir+'):].strip()  # Get the remaining path

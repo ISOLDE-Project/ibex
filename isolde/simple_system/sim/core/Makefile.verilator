@@ -72,14 +72,14 @@ verilate: testbench_verilator
 
 testbench_verilator:  $(TBSRC_VERI) 
 	@echo "$(BANNER)"
-	@echo "* Compiling CORE TB and CV32E40P with Verilator"
+	@echo "* Compiling  with Verilator"
 	@echo "$(BANNER)"
 	$(VERILATOR) --cc --sv --exe \
 		$(VERI_TRACE) \
 		$(VLT_FLAGS)   \
 		--Wno-lint --Wno-UNOPTFLAT \
-		--Wno-MODDUP --top-module \
-		$(VLT_TOP_MODULE) $(TBSRC_VERI) \
+		--Wno-MODDUP  \
+		 $(TBSRC_VERI) \
 		-f $(CV_CORE_MANIFEST) \
 		--Mdir $(VERI_OBJ_DIR) \
 		-CFLAGS "$(VLT_CFLAGS)"  \
