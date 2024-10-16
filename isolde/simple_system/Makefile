@@ -1,26 +1,50 @@
 ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
+mkfile_path         := $(shell git rev-parse --show-toplevel)/isolde/simple_system
 IBEX_CONFIG         ?=  isolde
 FUSESOC_CONFIG_OPTS := $(shell cd $(ROOT_DIR) && $(ROOT_DIR)/util/ibex_config.py $(IBEX_CONFIG) fusesoc_opts)
+FUSESOC_PARAMS      ?=
 TEST                ?= vlinstr_test
 test-program        ?= $(ROOT_DIR)/isolde/sw/simple_system/$(TEST)/$(TEST).elf
 BUILD_DIR           := build/$(IBEX_CONFIG)
 SYNTH_DIR           := synth/$(IBEX_CONFIG)
 TMP_DIR             := tmp/$(IBEX_CONFIG)
+FUSESOC_BUILD_ROOT  :=$(mkfile_path)/$(TMP_DIR)
+FUSESOC_PROJECT     := isolde
+FUSESOC_CORE        := ibex
+FUSESOC_SYSTEM      := ibex_simple_system
+FUSESOC_PKG_NAME    := $(FUSESOC_PROJECT):$(FUSESOC_CORE):$(FUSESOC_SYSTEM)
 
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 
-build-hw:
-	fusesoc --cores-root=$(ROOT_DIR) run --target=sim --setup --build  --build-root=$(BUILD_DIR) isolde:ibex:ibex_simple_system $(FUSESOC_CONFIG_OPTS)
 
-flist: ibex_manifest.flist
-	mv $(TMP_DIR)/sim-verilator/isolde_ibex_ibex_simple_system_0.vc . 
-	rm -fr $(TMP_DIR)
-	@echo $(CURDIR)/isolde_ibex_ibex_simple_system_0.vc done
+include Makefile.verilator
 
-ibex_manifest.flist:
-#	fusesoc --cores-root=$(ROOT_DIR) run --target=lint  --no-export  --build-root=./flist isolde:ibex:ibex_simple_system $(FUSESOC_CONFIG_OPTS) 
-	fusesoc --cores-root=$(ROOT_DIR) run --target=sim --setup --no-export --build-root=$(TMP_DIR) isolde:ibex:ibex_simple_system $(FUSESOC_CONFIG_OPTS)
+CORE_FILES := $(filter %.core,$(wildcard $(mkfile_path)/*))
+CORE_FILES += $(filter %.core,$(wildcard $(ROOT_DIR)/*))
+
+fusesoc_ignore: $(ROOT_DIR)/isolde/lca_system/.bender/FUSESOC_IGNORE $(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE
+
+$(ROOT_DIR)/isolde/lca_system/.bender/FUSESOC_IGNORE:
+	@if [ ! -f $@ ]; then touch $@; fi
+
+$(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE:
+	@if [ ! -f $@ ]; then touch $@; fi
+
+
+
+ibex_sim.flist:  $(CORE_FILES)
+	@echo $(CORE_FILES)
+	fusesoc --cores-root=$(ROOT_DIR) run --target=sim --setup --no-export $(FUSESOC_PARAMS)  --build-root=$(FUSESOC_BUILD_ROOT) $(FUSESOC_PKG_NAME) $(FUSESOC_CONFIG_OPTS) 
+	python $(ROOT_DIR)/util/transform_paths.py  \
+										       $(FUSESOC_BUILD_ROOT)/sim-verilator  \
+	                                           $(FUSESOC_BUILD_ROOT)/sim-verilator/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc \
+											   $@
+	touch $@
+
+.PHONY: clean-flist
+clean-flist:
+	rm -f ibex_sim.flist
 
 synth-setup:
 	mkdir -p $(SYNTH_DIR)
@@ -35,7 +59,7 @@ synth: synth-setup
 
 	
 
-.PHONY: test-program $(test-program) clean
+.PHONY: test-app $(test-program) clean
 # Rule for test-program
 $(test-program):
 	make -C $(dir $@)
@@ -45,18 +69,9 @@ test-app: $(test-program)
 clean-test:
 	make -C $(dir $(test-program)) clean
 
-run-test:
-	@rm -f ibex_simple_system.log
-	@rm -f trace_core_00000000.log
-	./$(BUILD_DIR)/sim-verilator/Vibex_simple_system -t --meminit=ram,$(test-program)
-	@echo
-	@echo ibex_simple_system.log
-	@echo ======================
-	@cat ibex_simple_system.log
-	@echo ======================
-	@echo isolde_exec_block.log
 
-clean:
+
+clean: clean-flist
 #	rm -f $(test-program)
 	make -C $(dir $(test-program)) clean
 	rm -fr $(BUILD_DIR) logs
@@ -65,31 +80,3 @@ clean:
 clean-hw:
 	rm -fr $(BUILD_DIR) logs
 
-view-log:
-	/home/dan/ext/gtkwave-src/install/bin/gtkwave  $(ROOT_DIR)/isolde/simple_system/logs/ibex.vcd --script=$(ROOT_DIR)/isolde/simple_system/load_waveform.tcl
-
-
-veri-test: 
-	make -C $(dir $(test-program)) clean
-	make -C $(dir $(test-program)) 	
-	@rm -f ibex_simple_system.log
-	@rm -f trace_core_00000000.log
-	./$(BUILD_DIR)/sim-verilator/Vibex_simple_system -t --meminit=ram,$(test-program)
-	@echo
-	@echo ibex_simple_system.log
-	@echo ======================
-	@cat ibex_simple_system.log
-	@echo ======================
-	@echo isolde_exec_block.log
-
-clean-test-programs: 
-	find $(ROOT_DIR)/isolde/sw/simple_system -name "*.o"       -delete
-	find $(ROOT_DIR)/isolde/sw/simple_system -name "*.hex"     -delete
-	find $(ROOT_DIR)/isolde/sw/simple_system -name "*.elf"     -delete
-	find $(ROOT_DIR)/isolde/sw/simple_system -name "*.map"     -delete
-	find $(ROOT_DIR)/isolde/sw/simple_system -name "*.readelf" -delete
-	find $(ROOT_DIR)/isolde/sw/simple_system -name "*.objdump" -delete
-	find $(ROOT_DIR)/isolde/sw/simple_system -name "*.headers" -delete
-	find $(ROOT_DIR)/isolde/sw/simple_system -name "corev_*.S" -delete
-	find $(ROOT_DIR)/isolde/sw/simple_system -name "*.itb" -delete
-	find $(ROOT_DIR)/isolde/sw/simple_system -name "*.d" -delete
