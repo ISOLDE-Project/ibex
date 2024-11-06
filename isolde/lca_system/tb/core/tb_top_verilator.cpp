@@ -79,7 +79,7 @@ uint32_t timeOut{207374};
 #endif
     top->fetch_enable_i = 1;
     top->clk_i          = 0;
-    top->rst_ni         = 0;
+    top->rst_ni         = 1;
 
     top->eval();
 #ifdef DUMP_MEMORY    
@@ -96,6 +96,8 @@ uint32_t timeOut{207374};
 #endif
 
     while (!Verilated::gotFinish() && t < timeOut) {
+        if(t<15)
+            top->rst_ni = 0;
         if (t > 40)
             top->rst_ni = 1;
         top->clk_i = !top->clk_i;

@@ -26,6 +26,12 @@ make IBEX_CONFIG=small verilate
 ```
 
 ## build test app
+test applications are located in ../sw/simple_system
+to execute a fibonacci test:  
+```sh
+cd isolde/simple_system
+make TEST=fibonacci test-app veri-run
+```
 * **gcc** toolchain
 ```
 make clean-test test-app
