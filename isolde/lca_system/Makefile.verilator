@@ -90,7 +90,7 @@ veri-run: $(BIN_DIR)/verilator_executable
 	rm -f $(VERI_LOG_DIR)/verilator_tb.vcd
 	$(BIN_DIR)/verilator_executable  \
 		$(VERI_FLAGS) \
-		"+firmware=$(SIM_TEST_INPUTS)/$(TEST)-m.hex" \
+		"+firmware=$(test-program)-m.hex" \
 		| tee $(VERI_LOG_DIR)/$(TEST).log
 	mv verilator_tb.vcd $(VERI_LOG_DIR)/$(TEST).vcd
 

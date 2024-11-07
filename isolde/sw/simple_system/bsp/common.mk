@@ -79,7 +79,7 @@ endif
 
 clean:
 	$(RM) -f $(OBJS) $(DEPS)
-	rm -f *.bin *.vmem *.elf *.headers
-
+	rm -f *.bin *.vmem *.elf *.headers *.d *.o
+ 
 distclean: clean
 	$(RM) -f $(OUTFILES)

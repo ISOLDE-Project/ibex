@@ -3,6 +3,11 @@ mkfile_path         := $(shell git rev-parse --show-toplevel)/isolde/lca_system
 IBEX_CONFIG         ?=  isolde
 FUSESOC_CONFIG_OPTS := $(shell cd $(ROOT_DIR) && $(ROOT_DIR)/util/ibex_config.py $(IBEX_CONFIG) fusesoc_opts)
 FUSESOC_PARAMS      ?=
+TEST                ?= vlinstr_test
+TEST_SRC_DIR	    = $(ROOT_DIR)/isolde/sw/simple_system/$(TEST)
+TEST_BIN_DIR	    = $(mkfile_path)/sw/bin
+test-program        ?= $(TEST_BIN_DIR)/$(TEST)
+BUILD_DIR           := build/$(IBEX_CONFIG)
 SYNTH_DIR           := synth/$(IBEX_CONFIG)
 TMP_DIR             := tmp/$(IBEX_CONFIG)
 FUSESOC_BUILD_ROOT  :=$(mkfile_path)/$(TMP_DIR)
@@ -20,11 +25,7 @@ CV_SW_PREFIX         :=  riscv32-unknown-elf-
 CV_SW_MARCH          :=  rv32im_zicsr
 CV_SW_CC             :=  gcc 
 
-#
-# Test-Program directores.
-TEST               ?= redmule
-TEST_FILES         ?= $(TEST).c
-TEST_TEST_DIR       = $(REDMULE_ROOT_DIR)/sw
+
 
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
@@ -60,15 +61,17 @@ synth: synth-setup
 
 	
 
-.PHONY: test-app $(test-program) clean
-# Rule for test-program
-$(test-program):
-	make -C $(dir $@)
+.PHONY: test-app $(test-program) clean $(TEST_BIN_DIR)
 
-test-app: $(test-program)
+$(TEST_BIN_DIR):
+	mkdir -p $@
+
+
+$(test-program).hex: $(test-program).elf
+test-app: $(TEST_BIN_DIR) $(test-program).hex
 
 clean-test:
-	make -C $(dir $(test-program)) clean
+	rm -f $(test-program)*
 
 
 
