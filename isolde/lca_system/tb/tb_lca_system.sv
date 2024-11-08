@@ -280,10 +280,10 @@ module tb_lca_system (
       .data_rdata_intg_i(),
       .data_err_i       (),
 
-      .irq_software_i(1'b0),
-      .irq_timer_i   ({28'd0, evt[0][0], 3'd0}),
+      .irq_software_i( evt[0][0]),
+      .irq_timer_i   (1'b0),
       .irq_external_i(1'b0),
-      .irq_fast_i    (15'b0),
+      .irq_fast_i    (1'b0),
       .irq_nm_i      (1'b0),
 
       .scramble_key_valid_i('0),

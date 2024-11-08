@@ -49,10 +49,10 @@ reset_handler:
   .global _start
 _start:
  
-  # Enabling CV32E40P mstatus.MIE
-  li      t0, 0x1
+  # Enabling interrupts globally.  mstatus.MIE
+  li      t0, 0x8
   csrrs   zero, mstatus, t0
-  # Enabling CV32E40P SW interrupt (mie[3])
+  # Enabling  SW interrupt (mie[3]) , see https://ibex-core.readthedocs.io/en/latest/03_reference/cs_registers.html#machine-interrupt-enable-register-mie
   li      t0, 0x8
   csrrs   zero, mie, t0
 
