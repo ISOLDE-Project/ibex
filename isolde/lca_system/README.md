@@ -63,6 +63,11 @@ Terminated test with 0 errors. See you!
 [TB] - errors=00000000
 [TB] - Success!
 ```  
+# REDMULE testing
+```sh
+make sim-inputs
+make TEST=redmule veri-run
+```
 
 ---  
 ---

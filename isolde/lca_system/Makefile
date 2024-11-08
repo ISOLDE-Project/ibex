@@ -35,7 +35,10 @@ include Makefile.verilator
 
 
 
-sim-inputs: $(SIM_TEST_INPUTS) $(SIM_TEST_INPUTS)/$(TEST).hex
+
+.PHONY: sim-inputs
+sim-inputs:
+	$(MAKE)  TEST=redmule TEST_FILES=redmule.c TEST_SRC_DIR=$(REDMULE_ROOT_DIR)/sw test-app
 
 
 $(SIM_TEST_INPUTS):
@@ -75,10 +78,8 @@ clean-test:
 
 
 
-clean: clean-flist
-#	rm -f $(test-program)
-	make -C $(dir $(test-program)) clean
-	rm -fr $(BUILD_DIR) logs
+clean: veri-clean clean-test-programs
+	rm -fr $(BUILD_DIR) $(TEST_BIN_DIR) logs 
 	rm -f *.log *.csv
 
 clean-hw:

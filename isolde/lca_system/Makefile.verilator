@@ -36,6 +36,7 @@ veri-clean:
 	rm -f *.flist
 	rm -fr log/$(VLT_TOP_MODULE) 
 	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist SIM_RESULTS=$(BIN_DIR) VLT_TOP_MODULE=$(VLT_TOP_MODULE) $@
+	rm -fr $(FUSESOC_BUILD_ROOT) 
 
 verilate: $(BIN_DIR)/verilator_executable
 
@@ -96,11 +97,6 @@ veri-run: $(BIN_DIR)/verilator_executable
 
 	
 
-
-.PHONY: clean-flist
-clean-flist:
-	rm -f ibex_sim.flist
-	rm -f manifest.flist
 
 .PHONY: help
 help:

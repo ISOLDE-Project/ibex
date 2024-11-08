@@ -67,7 +67,7 @@ RISCV_CC         =  $(CV_SW_CC)
 RISCV_CFLAGS     += 
 
 
-TEST_FILES        = $(filter %.c %.S,$(wildcard  $(TEST_SRC_DIR)/*))
+TEST_FILES        ?= $(filter %.c %.S,$(wildcard  $(TEST_SRC_DIR)/*))
 # Optionally use linker script provided in test directory
 # this must be evaluated at access time, so ifeq/ifneq does
 # not get parsed correctly
@@ -82,10 +82,11 @@ LD_FILE 	= $(if $(wildcard $(TEST_RESULTS_LD)),$(TEST_RESULTS_LD),$(if $(wildcar
 BSP                                  = $(CORE_V_VERIF)/bsp
 
 
+RISCV_CFLAGS += -I $(CORE_V_VERIF)
 RISCV_CFLAGS += -I $(BSP)
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)
-#RISCV_CFLAGS += -I $(TEST_SRC_DIR)/inc
-#RISCV_CFLAGS += -I $(TEST_SRC_DIR)/utils
+RISCV_CFLAGS += -I $(TEST_SRC_DIR)/inc
+RISCV_CFLAGS += -I $(TEST_SRC_DIR)/utils
 RISCV_CFLAGS += -DUSE_BSP
 
 
