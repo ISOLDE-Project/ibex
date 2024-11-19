@@ -131,7 +131,10 @@ inline uint32_t getTicks(){
 }
 
 // Define START_TIMING and END_TIMING macros
-#define START_TIMING(initval)  initval = getTicks()
-#define END_TIMING(initval, value)  printf("Timing for %s: %u cycles\n", value, getTicks() - initval)
+#define START_TIMING(value) \
+    uint32_t initval_##value = getTicks()
+
+#define END_TIMING(value) \
+    printf("Timing for %s: %u cycles\n", #value, getTicks() - initval_##value)
 
 #endif
