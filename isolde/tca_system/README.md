@@ -42,7 +42,6 @@ fib(11) = 89
 ```
 you can replace *fibonacci* with any test from isolde/sw/simple_system, e.g. make TEST=**dhrystone** veri-clean clean-test  verilate  test-app veri-run.  
 Default test is **vlinstr_test**.  
-# REDMULE testing
 ## build test app
 * **gcc** toolchain
 ```
@@ -53,18 +52,22 @@ make sim-inputs
 *Not implemented*
 ## execute test
 ```
- make TEST=redmule clean-test sim-inputs veri-clean verilate veri-run
+make run-test
 ```
 Output should be similar to this
 ```
-[TESTBENCH] @ t=0: loading firmware /home/uic52463/hdd1/tristan-project/ibex/isolde/lca_system/sw/bin/redmule-m.hex
-TOP.tb_lca_system.u_top.u_ibex_tracer.unnamedblk2.unnamedblk3: Writing execution trace to trace_core_00000000.log
-Timing for REDMULE_LCA: 240 cycles
+[TESTBENCH] @ t=0: loading firmware /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/lca_system/vsim/redmule-m.hex
+Timing for REDMULE: 233 cycles
 Resumed!
-[TB LCA] @ t=10374 - Success!
-[TB LCA] @ t=10374 - errors=00000000
+Terminated test with 0 errors. See you!
+[TB] - errors=00000000
+[TB] - Success!
 ```  
-
+# REDMULE testing
+```sh
+make sim-inputs
+make TEST=redmule veri-run
+```
 
 ---  
 ---
