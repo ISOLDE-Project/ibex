@@ -153,6 +153,7 @@ clean-test-programs: clean-bsp
 	find $(PRJ_HOME)/../sw/simple_system -name "*.o"       -delete
 	find  $(PRJ_HOME)/../sw/simple_system -name "*.hex"     -delete
 	find  $(PRJ_HOME)/../sw/simple_system -name "*.elf"     -delete
+	find  $(PRJ_HOME)/../sw/simple_system -name "*.d"     -delete
 	find  $(PRJ_HOME)/../sw/simple_system -name "*.map"     -delete
 	find  $(PRJ_HOME)/../sw/simple_system -name "*.readelf" -delete
 	find  $(PRJ_HOME)/../sw/simple_system -name "*.objdump" -delete
