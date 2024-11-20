@@ -1,4 +1,3 @@
-// Copyleft 2024 ISOLDE
 // Copyright 2023 ETH Zurich and University of Bologna.
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
@@ -8,55 +7,62 @@
 
 timeunit 1ps; timeprecision 1ps;
 
-module tb_tca_system (
+module tb_tca_system
+  import redmule_pkg::*;
+#(
+    parameter TCP = 1.0ns,  // clock period, 1 GHz clock
+    parameter TA  = 0.2ns,  // application time
+    parameter TT  = 0.8ns   // test time
+) (
     input logic clk_i,
     input logic rst_ni,
     input logic fetch_enable_i
-
 );
-  import redmule_pkg::*;
-  //ibex parameters
-  parameter bit SecureIbex = 1'b0;
-  parameter bit ICacheScramble = 1'b0;
-  parameter bit PMPEnable = 1'b0;
-  parameter int unsigned PMPGranularity = 0;
-  parameter int unsigned PMPNumRegions = 4;
-  parameter int unsigned MHPMCounterNum = 0;
-  parameter int unsigned MHPMCounterWidth = 40;
-  parameter bit RV32E = 1'b0;
-  parameter ibex_pkg::rv32m_e RV32M = `RV32M;
-  parameter ibex_pkg::rv32b_e RV32B = `RV32B;
-  parameter ibex_pkg::regfile_e RegFile = `RegFile;
-  parameter bit BranchTargetALU = 1'b0;
-  parameter bit WritebackStage = 1'b0;
-  parameter bit ICache = 1'b0;
-  parameter bit DbgTriggerEn = 1'b0;
-  parameter bit ICacheECC = 1'b0;
-  parameter bit BranchPredictor = 1'b0;
+
   // parameters
-  parameter int unsigned PROB_STALL = 0;
-  parameter int unsigned NC = 1;
-  parameter int unsigned ID = 10;
-  parameter int unsigned DW = redmule_pkg::DATA_W;
-  parameter int unsigned MP = DW / 32;
-  parameter int unsigned MEMORY_SIZE = 1118496;
-  parameter int unsigned STACK_MEMORY_SIZE = 192 * 1024;
-  parameter int unsigned PULP_XPULP = 1;
-  parameter int unsigned FPU = 0;
-  parameter int unsigned PULP_ZFINX = 0;
-  parameter logic [31:0] IMEM_ADDR = 32'h00100000;
-  parameter logic [31:0] DMEM_ADDR = 32'h00110000;
-  parameter logic [31:0] SMEM_ADDR = 32'h00140000;
-  parameter logic [31:0] BOOT_ADDR = 32'h00100000;
-  parameter logic [31:0] PERI_ADDR = 32'h00001000;
-  parameter logic [31:0] MMIO_ADDR = 32'h80000000;
+  localparam int unsigned PROB_STALL = 0;
+  localparam int unsigned NC = 1;
+  localparam int unsigned ID = 10;
+  localparam int unsigned DW = redmule_pkg::DATA_W;
+  localparam int unsigned MP = DW / 32;
+  localparam int unsigned MEMORY_SIZE = 32'h30000;
+  localparam int unsigned STACK_MEMORY_SIZE = 32'h30000;
+  localparam int unsigned PULP_XPULP = 1;
+  localparam int unsigned FPU = 0;
+  localparam int unsigned PULP_ZFINX = 0;
+  localparam logic [31:0] BASE_ADDR = 32'h1c000000;
+  localparam logic [31:0] HWPE_ADDR_BASE_BIT = 20;
+
+  int          fh; //filehandle
   //
-  parameter logic [31:0] MMADDR_EXIT = MMIO_ADDR + 32'h0;
-  parameter logic [31:0] MMADDR_PRINT = MMIO_ADDR + 32'h4;
+  /* see cv32e40p/bsp/link.ld
+MEMORY
+{
+    instrram    : ORIGIN = 0x00100000, LENGTH = 0x8000
+    dataram     : ORIGIN = 0x00110000, LENGTH = 0x30000
+    stack       : ORIGIN = 0x00140000, LENGTH = 0x30000
+}
+*/
+  localparam logic [31:0] IMEM_ADDR = 32'h00100000;
+  localparam int unsigned IMEM_SIZE = 32'h08000;
+  localparam logic [31:0] DMEM_ADDR = 32'h00110000;
+  localparam int unsigned DMEM_SIZE = 32'h30000;
+  localparam logic [31:0] SMEM_ADDR = 32'h00140000;
+  localparam int unsigned SMEM_SIZE = 32'h30000;
+  localparam int unsigned GMEM_SIZE = SMEM_ADDR + SMEM_SIZE - IMEM_ADDR;
+  //  see reset vector in cv32e40p/bsp/crt0.S
+  localparam logic [31:0] BOOT_ADDR = 32'h00100080;
+    //see cv32e40p/bsp/simple_system_regs.h
+  localparam logic [31:0] MMIO_ADDR = 32'h80000000;
+  localparam logic [31:0] MMADDR_EXIT = MMIO_ADDR + 32'h0;
+  localparam logic [31:0] MMADDR_PRINT = MMIO_ADDR + 32'h4;
 
-
+  // global signals
+  string stim_instr, stim_data;
   logic test_mode;
-  logic [31:0] core_boot_addr;
+    logic [  31:0]       cycle_counter;
+  logic                mmio_rvalid;
+  logic [  31:0]       mmio_rdata;
   logic redmule_busy;
 
   //hwpe_stream_intf_tcdm instr[0:0] (.clk(clk_i));
@@ -104,122 +110,156 @@ module tb_tca_system (
   logic                data_err;
   logic                core_sleep;
 
-  logic [  31:0]       cycle_counter;
-  logic                mmio_rvalid;
-  logic [  31:0]       mmio_rdata;
+  typedef struct packed {
+    logic        req;
+    logic [31:0] addr;
+  } core_inst_req_t;
 
+  typedef struct packed {
+    logic        gnt;
+    logic        valid;
+    logic [31:0] data;
+  } core_inst_rsp_t;
 
+  typedef struct packed {
+    logic req;
+    logic we;
+    logic [3:0] be;
+    logic [31:0] addr;
+    logic [31:0] data;
+  } core_data_req_t;
+
+  typedef struct packed {
+    logic gnt;
+    logic valid;
+    logic [31:0] data;
+  } core_data_rsp_t;
+
+  hci_core_intf #(.DW(DW)) redmule_tcdm (.clk(clk_i));
+
+  core_inst_req_t core_inst_req;
+  core_inst_rsp_t core_inst_rsp;
+
+  core_data_req_t core_data_req;
+  core_data_rsp_t core_data_rsp;
 
   // bindings
   always_comb begin : bind_periph
-    periph_req  = data_req & (data_addr >= PERI_ADDR) & (data_addr < IMEM_ADDR);
-    periph_add  = data_addr;
-    periph_wen  = ~data_we;
-    periph_be   = data_be;
-    periph_data = data_wdata;
-    periph_id   = '0;
+    periph_req     = '0;
+    periph_add     = core_data_req.addr;
+    periph_wen     = ~core_data_req.we;
+    periph_be      = core_data_req.be;
+    periph_data    = core_data_req.data;
+    periph_id      = '0;
+    periph_r_valid = '0;
   end
 
   always_comb begin : bind_instrs
-    tcdm[MP+1].req  = instr_req;
-    tcdm[MP+1].add  = instr_addr;
-    tcdm[MP+1].wen  = 1'b1;
-    tcdm[MP+1].be   = '0;
+    tcdm[MP+1].req = core_inst_req.req;
+    tcdm[MP+1].add = core_inst_req.addr;
+    tcdm[MP+1].wen = 1'b1;
+    tcdm[MP+1].be = '0;
     tcdm[MP+1].data = '0;
-    instr_gnt    = tcdm[MP+1].gnt;
-    instr_rdata  = tcdm[MP+1].r_data;
-    instr_rvalid = tcdm[MP+1].r_valid;
+    core_inst_rsp.gnt = tcdm[MP+1].gnt;
+    core_inst_rsp.valid = tcdm[MP+1].r_valid;
+    core_inst_rsp.data = tcdm[MP+1].r_data;
   end
 
   always_comb begin : bind_stack
-    stack[0].req  = data_req & (data_addr >= SMEM_ADDR) & (data_addr < SMEM_ADDR + 32'h30000);
-    stack[0].add  = data_addr;
-    stack[0].wen  = ~data_we;
-    stack[0].be   = data_be;
-    stack[0].data = data_wdata;
+    stack[0].req  = core_data_req.req & (core_data_req.addr >= SMEM_ADDR) &
+                                        (core_data_req.addr < SMEM_ADDR+SMEM_SIZE) ;
+    stack[0].add = core_data_req.addr;
+    stack[0].wen = ~core_data_req.we;
+    stack[0].be = core_data_req.be;
+    stack[0].data = core_data_req.data;
   end
 
-  //logic other_r_valid;
+  
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) mmio_rvalid <= '0;
-    else mmio_rvalid <= data_req & (data_addr >= MMIO_ADDR);
+    else mmio_rvalid <= core_data_req.req & (core_data_req.addr >= MMIO_ADDR);
   end
 
   for (genvar ii = 0; ii < MP; ii++) begin : tcdm_binding
-    assign tcdm[ii].req     = tcdm_req[ii];
-    assign tcdm[ii].add     = tcdm_add[ii];
-    assign tcdm[ii].wen     = tcdm_wen[ii];
-    assign tcdm[ii].be      = tcdm_be[ii];
-    assign tcdm[ii].data    = tcdm_data[ii];
+    assign tcdm[ii].req     = redmule_tcdm.req;
+    assign tcdm[ii].add     = redmule_tcdm.add + ii * 4;
+    assign tcdm[ii].wen     = redmule_tcdm.wen;
+    assign tcdm[ii].be      = redmule_tcdm.be[(ii+1)*4-1:ii*4];
+    assign tcdm[ii].data    = redmule_tcdm.data[(ii+1)*32-1:ii*32];
     assign tcdm_gnt[ii]     = tcdm[ii].gnt;
-    assign tcdm_r_data[ii]  = tcdm[ii].r_data;
     assign tcdm_r_valid[ii] = tcdm[ii].r_valid;
+    assign tcdm_r_data[ii]  = tcdm[ii].r_data;
   end
-  assign tcdm[MP].req = data_req & (data_addr >= DMEM_ADDR) & (data_addr < DMEM_ADDR + 32'h30000);
-  assign tcdm[MP].add = data_addr;
-  assign tcdm[MP].wen = ~data_we;
-  assign tcdm[MP].be = data_be;
-  assign tcdm[MP].data = data_wdata;
-  assign tcdm_r_opc = 0;
-  assign tcdm_r_user = 0;
-  assign data_gnt    = periph_req ?
-                       periph_gnt : stack[0].req ?
-                                    stack[0].gnt : tcdm[MP].req ?
-                                                   tcdm[MP].gnt : '1;
-  assign data_rdata  = periph_r_valid ? periph_r_data  :
-                                        stack[0].r_valid ? stack[0].r_data  :
-                                                           tcdm[MP].r_valid ? tcdm[MP].r_data : 
-                                                                                               mmio_rvalid ? mmio_rdata: '0;
+  assign redmule_tcdm.gnt = &tcdm_gnt;
+  assign redmule_tcdm.r_data = {tcdm_r_data};
+  assign redmule_tcdm.r_valid = &tcdm_r_valid;
+  assign redmule_tcdm.r_opc = '0;
+  assign redmule_tcdm.r_user = '0;
 
-  assign data_rvalid = periph_r_valid | stack[0].r_valid | tcdm[MP].r_valid | mmio_rvalid;
+  assign tcdm[MP].req  = core_data_req.req &
+                         (core_data_req.addr >= DMEM_ADDR) &
+                         (core_data_req.addr <  DMEM_ADDR + DMEM_SIZE) ;
+  assign tcdm[MP].add = core_data_req.addr;
+  assign tcdm[MP].wen = ~core_data_req.we;
+  assign tcdm[MP].be = core_data_req.be;
+  assign tcdm[MP].data = core_data_req.data;
 
-  redmule_wrap #(
-      .ID_WIDTH(ID),
-      .N_CORES (NC),
-      .DW      (DW),
-      .MP      (DW / 32)
-  ) i_redmule_wrap (
-      .clk_i           (clk_i),
-      .rst_ni          (rst_ni),
-      .test_mode_i     (test_mode),
-      .evt_o           (evt),
-      .busy_o          (redmule_busy),
-      .tcdm_req_o      (tcdm_req),
-      .tcdm_add_o      (tcdm_add),
-      .tcdm_wen_o      (tcdm_wen),
-      .tcdm_be_o       (tcdm_be),
-      .tcdm_data_o     (tcdm_data),
-      .tcdm_gnt_i      (tcdm_gnt),
-      .tcdm_r_data_i   (tcdm_r_data),
-      .tcdm_r_valid_i  (tcdm_r_valid),
-      .tcdm_r_opc_i    (tcdm_r_opc),
-      .tcdm_r_user_i   (tcdm_r_user),
-      .periph_req_i    (periph_req),
-      .periph_gnt_o    (periph_gnt),
-      .periph_add_i    (periph_add),
-      .periph_wen_i    (periph_wen),
-      .periph_be_i     (periph_be),
-      .periph_data_i   (periph_data),
-      .periph_id_i     (periph_id),
-      .periph_r_data_o (periph_r_data),
-      .periph_r_valid_o(periph_r_valid),
-      .periph_r_id_o   (periph_r_id)
-  );
+  assign core_data_rsp.gnt = periph_req ?
+                             periph_gnt : stack[0].req ?
+                                          stack[0].gnt : tcdm[MP].req ?
+                                                         tcdm[MP].gnt : '1;
+
+  assign core_data_rsp.data = periph_r_valid   ? periph_r_data    :
+                              stack[0].r_valid ? stack[0].r_data  :
+                                                 tcdm[MP].r_valid ? tcdm[MP].r_data : 
+                                                                    mmio_rvalid ? mmio_rdata: '0;
+  assign core_data_rsp.valid = periph_r_valid | stack[0].r_valid | tcdm[MP].r_valid | mmio_rvalid;
+
+  // tb_dummy_memory  #(
+  //   .MP             ( MP + 1        ),
+  //   .MEMORY_SIZE    ( MEMORY_SIZE   ),
+  //   .BASE_ADDR      ( 32'h1c010000  ),
+  //   .PROB_STALL     ( PROB_STALL    ),
+  //   .TCP            ( TCP           ),
+  //   .TA             ( TA            ),
+  //   .TT             ( TT            )
+  // ) i_dummy_dmemory (
+  //   .clk_i          ( clk_i         ),
+  //   .rst_ni         ( rst_ni        ),
+  //   .clk_delayed_i  ( '0            ),
+  //   .randomize_i    ( 1'b0          ),
+  //   .enable_i       ( 1'b1          ),
+  //   .stallable_i    ( 1'b1          ),
+  //   .tcdm           ( tcdm          )
+  // );
 
   tb_tcdm_verilator #(
-      .MP         (MP + 2),
-      .MEMORY_SIZE(MEMORY_SIZE),
+      .MP         (MP + 1),
+      .MEMORY_SIZE(GMEM_SIZE),
       .BASE_ADDR  (IMEM_ADDR)
-  ) i_dummy_memory (
+  ) i_dummy_dmemory (
       .clk_i   (clk_i),
       .rst_ni  (rst_ni),
       .enable_i(1'b1),
-      .tcdm    (tcdm)
+      .tcdm    (tcdm[MP:0])
+  );
+
+
+  tb_tcdm_verilator #(
+      .MP         (1),
+      .MEMORY_SIZE(GMEM_SIZE),
+      .BASE_ADDR  (IMEM_ADDR)
+  ) i_dummy_imemory (
+      .clk_i   (clk_i),
+      .rst_ni  (rst_ni),
+      .enable_i(1'b1),
+      .tcdm    (tcdm[MP+1:MP+1])
   );
 
   tb_tcdm_verilator #(
       .MP         (1),
-      .MEMORY_SIZE(32'h30000)
+      .MEMORY_SIZE(SMEM_SIZE),
+      .BASE_ADDR  (SMEM_ADDR)
   ) i_dummy_stack_memory (
       .clk_i   (clk_i),
       .rst_ni  (rst_ni),
@@ -227,126 +267,199 @@ module tb_tca_system (
       .tcdm    (stack)
   );
 
-
-  ibex_top_tracing #(
-      .SecureIbex      (SecureIbex),
-      .ICacheScramble  (ICacheScramble),
-      .PMPEnable       (PMPEnable),
-      .PMPGranularity  (PMPGranularity),
-      .PMPNumRegions   (PMPNumRegions),
-      .MHPMCounterNum  (MHPMCounterNum),
-      .MHPMCounterWidth(MHPMCounterWidth),
-      .RV32E           (RV32E),
-      .RV32M           (RV32M),
-      .RV32B           (RV32B),
-      .RegFile         (RegFile),
-      .BranchTargetALU (BranchTargetALU),
-      .ICache          (ICache),
-      .ICacheECC       (ICacheECC),
-      .WritebackStage  (WritebackStage),
-      .BranchPredictor (BranchPredictor),
-      .DbgTriggerEn    (DbgTriggerEn),
-      .DmHaltAddr      (32'h00100000),
-      .DmExceptionAddr (32'h00100000)
-  ) u_top (
-      .clk_i (clk_i),
-      .rst_ni(rst_ni),
-
-      .test_en_i  (1'b0),
-      .scan_rst_ni(1'b1),
-      .ram_cfg_i  (prim_ram_1p_pkg::RAM_1P_CFG_DEFAULT),
-
-      .hart_id_i  (32'b0),
-      // First instruction executed is at 0x0 + 0x80
-      .boot_addr_i(core_boot_addr),
-
-      .instr_req_o   (instr_req),
-      .instr_gnt_i   (instr_gnt),
-      .instr_rvalid_i(instr_rvalid),
-      .instr_addr_o  (instr_addr),
-      .instr_rdata_i (instr_rdata),
-      //.instr_rdata_intg_i     (instr_rdata_intg),
-      //.instr_err_i            (instr_err),
-
-      .data_req_o       (data_req),
-      .data_gnt_i       (data_gnt),
-      .data_rvalid_i    (data_rvalid),
-      .data_we_o        (data_we),
-      .data_be_o        (data_be),
-      .data_addr_o      (data_addr),
-      .data_wdata_o     (data_wdata),
-      .data_wdata_intg_o(),
-      .data_rdata_i     (data_rdata),
-      .data_rdata_intg_i(),
-      .data_err_i       (),
-
-      .irq_software_i( evt[0][0]),
-      .irq_timer_i   (1'b0),
-      .irq_external_i(1'b0),
-      .irq_fast_i    (1'b0),
-      .irq_nm_i      (1'b0),
-
-      .scramble_key_valid_i('0),
-      .scramble_key_i      ('0),
-      .scramble_nonce_i    ('0),
-      .scramble_req_o      (),
-
-      .debug_req_i        (1'b0),
-      .crash_dump_o       (),
-      .double_fault_seen_o(),
-
-      .fetch_enable_i        (fetch_enable_i),
-      .alert_minor_o         (),
-      .alert_major_internal_o(),
-      .alert_major_bus_o     (),
-      .core_sleep_o          ()
+  redmule_complex #(
+      .CoreType       (redmule_pkg::CV32X),  // CV32E40P, CV32E40X, IBEX, SNITCH, CVA6
+      .ID_WIDTH       (ID),
+      .N_CORES        (NC),
+      .DW             (DW),                  // TCDM port dimension (in bits)
+      .MP             (DW / 32),
+      .NumIrqs        (0),
+      .AddrWidth      (32),
+      .core_data_req_t(core_data_req_t),
+      .core_data_rsp_t(core_data_rsp_t),
+      .core_inst_req_t(core_inst_req_t),
+      .core_inst_rsp_t(core_inst_rsp_t)
+  ) i_dut (
+      .clk_i          (clk_i),
+      .rst_ni         (rst_ni),
+      .test_mode_i    (test_mode),
+      .fetch_enable_i (fetch_enable_i),
+      .boot_addr_i    (BOOT_ADDR),
+      .irq_i          ('0),
+      .irq_id_o       (),
+      .irq_ack_o      (),
+      .core_sleep_o   (core_sleep),
+      .core_inst_rsp_i(core_inst_rsp),
+      .core_inst_req_o(core_inst_req),
+      .core_data_rsp_i(core_data_rsp),
+      .core_data_req_o(core_data_req),
+      .tcdm           (redmule_tcdm)
   );
 
+    task dump_ctrl_fsm();
+    $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
+    $fwrite(fh, "ctrl_busy: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.ctrl_busy);
+    // $fwrite(fh, "instr_req: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.instr_req);
+    // $fwrite(fh, "pc_set: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pc_set);
+    // $fwrite(fh, "pc_set_clicv: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pc_set_clicv);
+    // $fwrite(fh, "pc_set_tbljmp: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pc_set_tbljmp);
+    // $fwrite(fh, "pc_mux: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pc_mux);
+    // $fwrite(fh, "mtvec_pc_mux: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.mtvec_pc_mux);
+    // $fwrite(fh, "mtvt_pc_mux: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.mtvt_pc_mux);
+    // $fwrite(fh, "nmi_mtvec_index: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.nmi_mtvec_index);
+    // $fwrite(fh, "block_data_addr: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.block_data_addr);
+    // $fwrite(fh, "irq_ack: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.irq_ack);
+    // $fwrite(fh, "irq_id: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.irq_id);
+    // $fwrite(fh, "irq_level: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.irq_level);
+    // $fwrite(fh, "irq_priv: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.irq_priv);
+    // $fwrite(fh, "irq_shv: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.irq_shv);
+    // $fwrite(fh, "dbg_ack: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.dbg_ack);
+    // $fwrite(fh, "debug_mode_if: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_mode_if);
+    // $fwrite(fh, "debug_mode: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_mode);
+    // $fwrite(fh, "debug_cause: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_cause);
+    // $fwrite(fh, "debug_csr_save: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_csr_save);
+    // $fwrite(fh, "debug_trigger_hit: %h\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_trigger_hit);
+    // $fwrite(fh, "debug_trigger_hit_update: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_trigger_hit_update);
+    // $fwrite(fh, "debug_no_sleep: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_no_sleep);
+    // $fwrite(fh, "debug_havereset: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_havereset);
+    // $fwrite(fh, "debug_running: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_running);
+    // $fwrite(fh, "debug_halted: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_halted);
+    $fwrite(fh, "wake_from_sleep: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.wake_from_sleep);
+    $fwrite(fh, "pipe_pc: %h\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pipe_pc);
+    // $fwrite(fh, "csr_cause: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.csr_cause);
+    // $fwrite(fh, "csr_restore_mret: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.csr_restore_mret);
+    // $fwrite(fh, "csr_restore_mret_ptr: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.csr_restore_mret_ptr);
+    // $fwrite(fh, "csr_restore_dret: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.csr_restore_dret);
+    // $fwrite(fh, "csr_save_cause: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.csr_save_cause);
+    // $fwrite(fh, "pending_nmi: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pending_nmi);
+    // $fwrite(fh, "mhpmevent: %h\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.mhpmevent);
+    // $fwrite(fh, "halt_if: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.halt_if);
+    // $fwrite(fh, "halt_id: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.halt_id);
+    // $fwrite(fh, "halt_ex: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.halt_ex);
+    // $fwrite(fh, "halt_wb: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.halt_wb);
+    // $fwrite(fh, "halt_limited_wb: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.halt_limited_wb);
+    // $fwrite(fh, "kill_if: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.kill_if);
+    // $fwrite(fh, "kill_id: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.kill_id);
+    // $fwrite(fh, "kill_ex: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.kill_ex);
+    // $fwrite(fh, "kill_wb: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.kill_wb);
+    // $fwrite(fh, "kill_xif: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.kill_xif);
+    // $fwrite(fh, "exception_in_wb: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.exception_in_wb);
+    // $fwrite(fh, "exception_cause_wb: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.exception_cause_wb);
+    //$fwrite(fh, "xif_commit_if.result_valid: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.xif_commit_if.result_valid);
+  //$fwrite(fh, "xif_commit_if.result_ready: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.xif_commit_if.result_ready);
+    $fwrite(fh, "xif_csr_error_i: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.xif_csr_error_i);
+  endtask
+
+task dump_core_sleep_unit();
+   $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
+  $fwrite(fh, "core_sleep_o: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.sleep_unit_i.core_sleep_o);
+  $fwrite(fh, "fetch_enable_i: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.sleep_unit_i.fetch_enable_i);
+  $fwrite(fh, "fetch_enable_o: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.sleep_unit_i.fetch_enable_o);
+
+  // Core status
+  $fwrite(fh, "if_busy_i: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.sleep_unit_i.if_busy_i);
+  $fwrite(fh, "lsu_busy_i: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.sleep_unit_i.lsu_busy_i);
+  
+  endtask
 
 
 
-  initial begin : load_prog
-    automatic string firmware;
 
 
+    
+  //   enum logic [1:0] {NONE,READ,WRITE } local_wen;
+  //   always_ff @(posedge clk_i) begin
+  //     if (~rst_ni) begin
+  //         local_wen =NONE;
+  //     end
+  //     if (redmule_tcdm.req) begin
+  //       if (redmule_tcdm.gnt) begin
+  //         if (redmule_tcdm.wen) 
+  //           // Log read operation
+  //           $fwrite(fh, "%t : read address=%h\n", $time, redmule_tcdm.add);
+  //         else begin
+  //           $fwrite(fh, "%t : write address=%h\n", $time, redmule_tcdm.add);
+  //         end
+  //         if (local_wen == READ & redmule_tcdm.r_valid) begin
+  //           $fwrite(fh, "%t : r_data=%h\n", $time, redmule_tcdm.r_data);
+  //           $fwrite(fh, "%t : r_opc=%h\n", $time, redmule_tcdm.r_opc);
+  //           $fwrite(fh, "%t : r_user=%h\n", $time, redmule_tcdm.r_user);
+  //           end 
+  //         if(local_wen == WRITE)
+  //           $fwrite(fh, "%t : data=%h\n", $time, redmule_tcdm.data);
+  //         // Common fields
+  //         $fwrite(fh, "%t : be=%h\n", $time, redmule_tcdm.be);
+  //         $fwrite(fh, "%t : boffs=%h\n", $time, redmule_tcdm.boffs);
+  //         $fwrite(fh, "%t : user=%h\n", $time, redmule_tcdm.user);
+  //         local_wen = redmule_tcdm.wen ? READ:WRITE;
+  //       end else begin
+  //         local_wen =NONE;
+  //       end
 
-    if ($value$plusargs("firmware=%s", firmware)) begin
+  //   end
+  // end
 
-      $display("[TESTBENCH] @ t=%0t: loading firmware %0s", $time, firmware);
-      // load instruction memory
-      $readmemh(firmware, tb_tca_system.i_dummy_memory.memory);
-    end else begin
-      $display("No firmware specified");
-      $finish;
-    end
-       test_mode = 1'b0;
-    core_boot_addr = BOOT_ADDR;
-  end
-
+// Declare the task with an input parameter for errors
 task endSimulation(input int errors);
     if (errors != 0) begin
-        $display("[TB LCA] @ t=%0t - Fail!", $time);
-        $error("[TB LCA] @ t=%0t - errors=%08x", $time, errors);
+        $display("[TB TCA] @ t=%0t - Fail!", $time);
+        $error("[TB TCA] @ t=%0t - errors=%08x", $time, errors);
     end else begin
-        $display("[TB LCA] @ t=%0t - Success!", $time);
-        $display("[TB LCA] @ t=%0t - errors=%08x", $time, errors);
+        $display("[TB TCA] @ t=%0t - Success!", $time);
+        $display("[TB TCA] @ t=%0t - errors=%08x", $time, errors);
     end
     $finish;
 endtask
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+// Use the task with core_data_req.data
+always_ff @(posedge clk_i) begin
     if (~rst_ni) cycle_counter <= '0;
     else cycle_counter <= cycle_counter + 1;
 
-    if ((data_addr == MMADDR_EXIT) && data_req) begin
-      if (data_we)  endSimulation(data_wdata); 
-      else mmio_rdata <= cycle_counter;
+    if ((core_data_req.addr == MMADDR_EXIT) && core_data_req.req ) begin
+        if (core_data_req.we ) 
+           endSimulation(core_data_req.data); 
+        else
+           mmio_rdata <= cycle_counter;
     end
-    if ((data_addr == MMADDR_PRINT) && (data_we & data_req)) begin
-      $write("%c", data_wdata[7:0]);
+    if ((core_data_req.addr == MMADDR_PRINT) &&
+        (core_data_req.we & core_data_req.req )) begin
+        $write("%c", core_data_req.data);
     end
+    dump_ctrl_fsm();
+    dump_core_sleep_unit();
+end
+
+
+  initial begin
+    integer id;
+    int cnt_rd, cnt_wr;
+    fh = $fopen("rtl_debug_trace.log", "w");
+    // Load instruction and data memory
+    if (!$value$plusargs("STIM_INSTR=%s", stim_instr)) begin
+      $display("No STIM_INSTR specified");
+      $finish;
+    end else begin
+      $display("[TESTBENCH] @ t=%0t: loading %0s into imemory", $time, stim_instr);
+      $readmemh(stim_instr, tb_tca_system.i_dummy_imemory.memory);
+    end
+
+    if (!$value$plusargs("STIM_DATA=%s", stim_data)) begin
+      $display("No STIM_DATA specified");
+      $finish;
+    end else begin
+      $display("[TESTBENCH] @ t=%0t: loading %0s into dmemory", $time, stim_data);
+      $readmemh(stim_data, tb_tca_system.i_dummy_dmemory.memory);
+    end
+
+    test_mode = 1'b0;
+
   end
 
-  
-
+  // close output file for writing
+  final begin
+   
+      $fclose(fh);
+   
+  end
 endmodule  // tb_tca_system

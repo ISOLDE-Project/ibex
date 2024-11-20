@@ -1,9 +1,9 @@
 ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
 mkfile_path         := $(shell git rev-parse --show-toplevel)/isolde/tca_system
 IBEX_CONFIG         ?=  isolde
-FUSESOC_CONFIG_OPTS := $(shell cd $(ROOT_DIR) && $(ROOT_DIR)/util/ibex_config.py $(IBEX_CONFIG) fusesoc_opts)
+#FUSESOC_CONFIG_OPTS := $(shell cd $(ROOT_DIR) && $(ROOT_DIR)/util/ibex_config.py $(IBEX_CONFIG) fusesoc_opts)
 FUSESOC_PARAMS      ?=
-TEST                ?= vlinstr_test
+TEST                ?= redmule_complex
 TEST_SRC_DIR	    = $(ROOT_DIR)/isolde/sw/simple_system/$(TEST)
 TEST_BIN_DIR	    = $(mkfile_path)/sw/bin
 test-program        ?= $(TEST_BIN_DIR)/$(TEST)
@@ -30,15 +30,16 @@ CV_SW_CC             :=  gcc
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 
+REDMULE_COMPLEX := 1
+export REDMULE_COMPLEX
 
 include Makefile.verilator
 
 
 
-
-.PHONY: sim-inputs
-sim-inputs:
-	$(MAKE)  TEST=redmule TEST_FILES=redmule.c TEST_SRC_DIR=$(REDMULE_ROOT_DIR)/sw test-app
+.PHONY: sim-input
+sim-input:
+	$(MAKE)  TEST=redmule_complex TEST_FILES=redmule_complex.c TEST_SRC_DIR=$(REDMULE_ROOT_DIR)/sw test-app
 
 
 $(SIM_TEST_INPUTS):

@@ -12,6 +12,6 @@ dependencies:
 sources:
   files:   
 
-    - target: redmule_test_hwpe
+    - target: redmule_test_complex
       files:
         - tb/tb_tca_system.sv

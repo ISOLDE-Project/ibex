@@ -88,11 +88,12 @@ RISCV_CFLAGS += -I $(TEST_SRC_DIR)
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)/inc
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)/utils
 RISCV_CFLAGS += -DUSE_BSP
+RISCV_CFLAGS += -DCV32E40X
 
 
 %.elf:
 	@echo "$(BANNER)"
-	@echo "* Compiling the test"
+	@echo "* Compiling $@"
 	@echo "$(BANNER)"
 	mkdir -p $(SIM_BSP_RESULTS)
 	cp $(BSP)/Makefile $(SIM_BSP_RESULTS)
@@ -111,12 +112,13 @@ RISCV_CFLAGS += -DUSE_BSP
 
 %.hex: %.elf
 	@echo "$(BANNER)"
-	@echo "* Generating hexfile, readelf and objdump files"
+	@echo "* Generating $@, readelf and objdump files"
 	@echo "$(BANNER)"
 	$(RISCV_EXE_PREFIX)objcopy -O verilog \
 		$< \
 		$@
 	python $(SCRIPTS_DIR)/addr_offset.py  $@  $*-m.hex 0x00100000
+	python $(SCRIPTS_DIR)/addr_offset.py  $@  $*-d.hex 0x00100000
 	$(RISCV_EXE_PREFIX)readelf -a $< > $*.readelf
 	$(RISCV_EXE_PREFIX)objdump \
 		-fhSD \
