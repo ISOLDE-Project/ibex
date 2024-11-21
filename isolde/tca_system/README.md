@@ -65,10 +65,26 @@ Terminated test with 0 errors. See you!
 ```  
 # REDMULE testing
 ```sh
-make sim-inputs
-make TEST=redmule veri-run
+ make veri-clean verilate clean-test sim-input run-test2
 ```
-
+Expected output:
+```
+[/home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/.bender/git/checkouts/cv32e40x-144d5e945ccbcd99/rtl/cv32e40x_controller_fsm.sv:1148]                 1842 instr_req: 0
+[/home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/.bender/git/checkouts/cv32e40x-144d5e945ccbcd99/rtl/cv32e40x_controller_fsm.sv:1146]                 1842 wake_from_sleep: 1
+[/home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/.bender/git/checkouts/cv32e40x-144d5e945ccbcd99/rtl/cv32e40x_controller_fsm.sv:1147]                 1842 ctrl_busy: 1
+[/home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/.bender/git/checkouts/cv32e40x-144d5e945ccbcd99/rtl/cv32e40x_controller_fsm.sv:1148]                 1842 instr_req: 0
+Timing for REDMULE_TCA: 226 cycles
+[APP TCA] Terminated test with 0 errors. See you!
+[TB TCA] @ t=12140 - Success!
+[TB TCA] @ t=12140 - errors=00000000
+- /home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/tb/tb_tca_system.sv:411: Verilog $finish
+```
+**Note**:  
+Make sure that you apply the patch
+```sh
+cd $ROOT_DIR/isolde/tca_system/.bender/git/checkouts/cv32e40x-144d5e945ccbcd99
+git apply ../../../../verilator.patch 
+```
 ---  
 ---
 # Ibex Simple System
