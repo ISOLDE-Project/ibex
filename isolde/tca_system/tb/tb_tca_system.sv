@@ -33,7 +33,7 @@ module tb_tca_system
   localparam logic [31:0] BASE_ADDR = 32'h1c000000;
   localparam logic [31:0] HWPE_ADDR_BASE_BIT = 20;
 
-  int          fh; //filehandle
+  int fh;  //filehandle
   //
   /* see cv32e40p/bsp/link.ld
 MEMORY
@@ -52,18 +52,18 @@ MEMORY
   localparam int unsigned GMEM_SIZE = SMEM_ADDR + SMEM_SIZE - IMEM_ADDR;
   //  see reset vector in cv32e40p/bsp/crt0.S
   localparam logic [31:0] BOOT_ADDR = 32'h00100080;
-    //see cv32e40p/bsp/simple_system_regs.h
+  //see cv32e40p/bsp/simple_system_regs.h
   localparam logic [31:0] MMIO_ADDR = 32'h80000000;
   localparam logic [31:0] MMADDR_EXIT = MMIO_ADDR + 32'h0;
   localparam logic [31:0] MMADDR_PRINT = MMIO_ADDR + 32'h4;
 
   // global signals
   string stim_instr, stim_data;
-  logic test_mode;
-    logic [  31:0]       cycle_counter;
-  logic                mmio_rvalid;
-  logic [  31:0]       mmio_rdata;
-  logic redmule_busy;
+  logic        test_mode;
+  logic [31:0] cycle_counter;
+  logic        mmio_rvalid;
+  logic [31:0] mmio_rdata;
+  logic        redmule_busy;
 
   //hwpe_stream_intf_tcdm instr[0:0] (.clk(clk_i));
   hwpe_stream_intf_tcdm stack[0:0] (.clk(clk_i));
@@ -174,7 +174,7 @@ MEMORY
     stack[0].data = core_data_req.data;
   end
 
-  
+
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) mmio_rvalid <= '0;
     else mmio_rvalid <= core_data_req.req & (core_data_req.addr >= MMIO_ADDR);
@@ -267,106 +267,148 @@ MEMORY
       .tcdm    (stack)
   );
 
-  redmule_complex #(
-      .CoreType       (redmule_pkg::CV32X),  // CV32E40P, CV32E40X, IBEX, SNITCH, CVA6
-      .ID_WIDTH       (ID),
-      .N_CORES        (NC),
-      .DW             (DW),                  // TCDM port dimension (in bits)
-      .MP             (DW / 32),
-      .NumIrqs        (0),
-      .AddrWidth      (32),
-      .core_data_req_t(core_data_req_t),
-      .core_data_rsp_t(core_data_rsp_t),
-      .core_inst_req_t(core_inst_req_t),
-      .core_inst_rsp_t(core_inst_rsp_t)
-  ) i_dut (
-      .clk_i          (clk_i),
-      .rst_ni         (rst_ni),
-      .test_mode_i    (test_mode),
-      .fetch_enable_i (fetch_enable_i),
-      .boot_addr_i    (BOOT_ADDR),
-      .irq_i          ('0),
-      .irq_id_o       (),
-      .irq_ack_o      (),
-      .core_sleep_o   (core_sleep),
-      .core_inst_rsp_i(core_inst_rsp),
-      .core_inst_req_o(core_inst_req),
-      .core_data_rsp_i(core_data_rsp),
-      .core_data_req_o(core_data_req),
-      .tcdm           (redmule_tcdm)
+ 
+
+
+  localparam int unsigned NumRs = 3;
+  localparam int unsigned XifMemWidth = 32;
+  localparam int unsigned XifRFReadWidth = 32;
+  localparam int unsigned XifRFWriteWidth = 32;
+  localparam logic [31:0] XifMisa = '0;
+  localparam logic [1:0] XifEcsXs = '0;
+
+  cv32e40x_if_xif #(
+      .X_NUM_RS   (NumRs),
+      .X_ID_WIDTH (ID),
+      .X_MEM_WIDTH(XifMemWidth),
+      .X_RFR_WIDTH(XifRFReadWidth),
+      .X_RFW_WIDTH(XifRFWriteWidth),
+      .X_MISA     (XifMisa),
+      .X_ECS_XS   (XifEcsXs)
+  ) core_xif ();
+
+xif_monitor_cpu_issue xif_monitor_cpu_issue_i (clk_i, core_xif);
+
+
+  cv32e40x_core #(
+      .M_EXT      (cv32e40x_pkg::M),
+      .X_EXT      (1),
+      .X_NUM_RS   (NumRs),
+      .X_ID_WIDTH (ID),
+      .X_MEM_WIDTH(XifMemWidth),
+      .X_RFR_WIDTH(XifRFReadWidth),
+      .X_RFW_WIDTH(XifRFWriteWidth),
+      .X_MISA     (XifMisa),
+      .X_ECS_XS   (XifEcsXs)
+  ) i_core (
+      // Clock and Reset
+      .clk_i              (clk_i),
+      .rst_ni             (rst_ni),
+      .scan_cg_en_i       (1'b0),                     // Enable all clock gates for testing
+      // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
+      .boot_addr_i        (BOOT_ADDR),
+      .dm_exception_addr_i('0),
+      .dm_halt_addr_i     ('0),
+      .mhartid_i          ('0),
+      .mimpid_patch_i     ('0),
+      .mtvec_addr_i       ('0),
+      // Instruction memory interface
+      .instr_req_o        (core_inst_req.req),
+      .instr_gnt_i        (core_inst_rsp.gnt),
+      .instr_rvalid_i     (core_inst_rsp.valid),
+      .instr_addr_o       (core_inst_req.addr),
+      .instr_memtype_o    (),
+      .instr_prot_o       (),
+      .instr_dbg_o        (),
+      .instr_rdata_i      (core_inst_rsp.data),
+      .instr_err_i        ('0),
+      // Data memory interface
+      .data_req_o         (core_data_req.req),
+      .data_gnt_i         (core_data_rsp.gnt),
+      .data_rvalid_i      (core_data_rsp.valid),
+      .data_addr_o        (core_data_req.addr),
+      .data_be_o          (core_data_req.be),
+      .data_we_o          (core_data_req.we),
+      .data_wdata_o       (core_data_req.data),
+      .data_memtype_o     (),
+      .data_prot_o        (),
+      .data_dbg_o         (),
+      .data_atop_o        (),
+      .data_rdata_i       (core_data_rsp.data),
+      .data_err_i         ('0),
+      .data_exokay_i      ('1),
+      // Cycle, Time
+      .mcycle_o           (),
+      .time_i             ('0),
+      // eXtension interface
+      .xif_compressed_if  (core_xif.cpu_compressed),
+      .xif_issue_if       (core_xif.cpu_issue),
+      .xif_commit_if      (core_xif.cpu_commit),
+      .xif_mem_if         (core_xif.cpu_mem),
+      .xif_mem_result_if  (core_xif.cpu_mem_result),
+      .xif_result_if      (core_xif.cpu_result),
+      // Basic interrupt architecture
+      .irq_i              ({27'd0, evt, 3'd0}),
+      // Event wakeup signals
+      .wu_wfe_i           ('0),                       // Wait-for-event wakeup
+      // CLIC interrupt architecture
+      .clic_irq_i         ('0),
+      .clic_irq_id_i      ('0),
+      .clic_irq_level_i   ('0),
+      .clic_irq_priv_i    ('0),
+      .clic_irq_shv_i     ('0),
+      // Fence.i flush handshake
+      .fencei_flush_req_o (),
+      .fencei_flush_ack_i ('0),
+      // Debug Interface
+      .debug_req_i        ('0),
+      .debug_havereset_o  (),
+      .debug_running_o    (),
+      .debug_halted_o     (),
+      .debug_pc_valid_o   (),
+      .debug_pc_o         (),
+      // CPU Control Signals
+      .fetch_enable_i     (fetch_enable_i),
+      .core_sleep_o       (core_sleep)
   );
 
-    task dump_ctrl_fsm();
-    $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
-    $fwrite(fh, "ctrl_busy: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.ctrl_busy);
-    // $fwrite(fh, "instr_req: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.instr_req);
-    // $fwrite(fh, "pc_set: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pc_set);
-    // $fwrite(fh, "pc_set_clicv: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pc_set_clicv);
-    // $fwrite(fh, "pc_set_tbljmp: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pc_set_tbljmp);
-    // $fwrite(fh, "pc_mux: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pc_mux);
-    // $fwrite(fh, "mtvec_pc_mux: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.mtvec_pc_mux);
-    // $fwrite(fh, "mtvt_pc_mux: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.mtvt_pc_mux);
-    // $fwrite(fh, "nmi_mtvec_index: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.nmi_mtvec_index);
-    // $fwrite(fh, "block_data_addr: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.block_data_addr);
-    // $fwrite(fh, "irq_ack: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.irq_ack);
-    // $fwrite(fh, "irq_id: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.irq_id);
-    // $fwrite(fh, "irq_level: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.irq_level);
-    // $fwrite(fh, "irq_priv: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.irq_priv);
-    // $fwrite(fh, "irq_shv: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.irq_shv);
-    // $fwrite(fh, "dbg_ack: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.dbg_ack);
-    // $fwrite(fh, "debug_mode_if: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_mode_if);
-    // $fwrite(fh, "debug_mode: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_mode);
-    // $fwrite(fh, "debug_cause: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_cause);
-    // $fwrite(fh, "debug_csr_save: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_csr_save);
-    // $fwrite(fh, "debug_trigger_hit: %h\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_trigger_hit);
-    // $fwrite(fh, "debug_trigger_hit_update: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_trigger_hit_update);
-    // $fwrite(fh, "debug_no_sleep: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_no_sleep);
-    // $fwrite(fh, "debug_havereset: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_havereset);
-    // $fwrite(fh, "debug_running: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_running);
-    // $fwrite(fh, "debug_halted: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.debug_halted);
-    $fwrite(fh, "wake_from_sleep: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.wake_from_sleep);
-    $fwrite(fh, "pipe_pc: %h\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pipe_pc);
-    // $fwrite(fh, "csr_cause: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.csr_cause);
-    // $fwrite(fh, "csr_restore_mret: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.csr_restore_mret);
-    // $fwrite(fh, "csr_restore_mret_ptr: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.csr_restore_mret_ptr);
-    // $fwrite(fh, "csr_restore_dret: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.csr_restore_dret);
-    // $fwrite(fh, "csr_save_cause: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.csr_save_cause);
-    // $fwrite(fh, "pending_nmi: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.pending_nmi);
-    // $fwrite(fh, "mhpmevent: %h\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.mhpmevent);
-    // $fwrite(fh, "halt_if: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.halt_if);
-    // $fwrite(fh, "halt_id: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.halt_id);
-    // $fwrite(fh, "halt_ex: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.halt_ex);
-    // $fwrite(fh, "halt_wb: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.halt_wb);
-    // $fwrite(fh, "halt_limited_wb: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.halt_limited_wb);
-    // $fwrite(fh, "kill_if: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.kill_if);
-    // $fwrite(fh, "kill_id: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.kill_id);
-    // $fwrite(fh, "kill_ex: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.kill_ex);
-    // $fwrite(fh, "kill_wb: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.kill_wb);
-    // $fwrite(fh, "kill_xif: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.kill_xif);
-    // $fwrite(fh, "exception_in_wb: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.exception_in_wb);
-    // $fwrite(fh, "exception_cause_wb: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.ctrl_fsm_o.exception_cause_wb);
-    //$fwrite(fh, "xif_commit_if.result_valid: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.xif_commit_if.result_valid);
-  //$fwrite(fh, "xif_commit_if.result_ready: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.xif_commit_if.result_ready);
-    $fwrite(fh, "xif_csr_error_i: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.controller_i.xif_csr_error_i);
+  redmule_isolde #(
+      .ID_WIDTH (ID),
+      .N_CORES  (NC),
+      .DW       (DW),  // TCDM port dimension (in bits
+      .AddrWidth(32)
+  ) i_dut (
+      .clk_i         (clk_i),
+      .rst_ni        (rst_ni),
+      .test_mode_i   (test_mode),
+      .fetch_enable_i(fetch_enable_i),
+      .evt_o         (evt),
+      .tcdm          (redmule_tcdm),
+      .core_xif      (core_xif)
+  );
+
+  task dump_ctrl_fsm();
+    $fwrite(fh, "Simulation Time: %t\n", $time);  // Print the current simulation time
+
   endtask
 
-task dump_core_sleep_unit();
-   $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
-  $fwrite(fh, "core_sleep_o: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.sleep_unit_i.core_sleep_o);
-  $fwrite(fh, "fetch_enable_i: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.sleep_unit_i.fetch_enable_i);
-  $fwrite(fh, "fetch_enable_o: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.sleep_unit_i.fetch_enable_o);
+  task dump_core_sleep_unit();
+    //  $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
+    // $fwrite(fh, "core_sleep_o: %b\n", tb_tca_system.i_dut.i_core.sleep_unit_i.core_sleep_o);
+    // $fwrite(fh, "fetch_enable_i: %b\n", tb_tca_system.i_dut.i_core.sleep_unit_i.fetch_enable_i);
+    // $fwrite(fh, "fetch_enable_o: %b\n", tb_tca_system.i_dut.i_core.sleep_unit_i.fetch_enable_o);
 
-  // Core status
-  $fwrite(fh, "if_busy_i: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.sleep_unit_i.if_busy_i);
-  $fwrite(fh, "lsu_busy_i: %b\n", tb_tca_system.i_dut.gen_cv32e40x.i_core.sleep_unit_i.lsu_busy_i);
-  
+    // // Core status
+    // $fwrite(fh, "if_busy_i: %b\n", tb_tca_system.i_dut.i_core.sleep_unit_i.if_busy_i);
+    // $fwrite(fh, "lsu_busy_i: %b\n", tb_tca_system.i_dut.i_core.sleep_unit_i.lsu_busy_i);
+
   endtask
 
 
 
 
 
-    
+
   //   enum logic [1:0] {NONE,READ,WRITE } local_wen;
   //   always_ff @(posedge clk_i) begin
   //     if (~rst_ni) begin
@@ -399,36 +441,33 @@ task dump_core_sleep_unit();
   //   end
   // end
 
-// Declare the task with an input parameter for errors
-task endSimulation(input int errors);
+  // Declare the task with an input parameter for errors
+  task endSimulation(input int errors);
     if (errors != 0) begin
-        $display("[TB TCA] @ t=%0t - Fail!", $time);
-        $error("[TB TCA] @ t=%0t - errors=%08x", $time, errors);
+      $display("[TB TCA] @ t=%0t - Fail!", $time);
+      $error("[TB TCA] @ t=%0t - errors=%08x", $time, errors);
     end else begin
-        $display("[TB TCA] @ t=%0t - Success!", $time);
-        $display("[TB TCA] @ t=%0t - errors=%08x", $time, errors);
+      $display("[TB TCA] @ t=%0t - Success!", $time);
+      $display("[TB TCA] @ t=%0t - errors=%08x", $time, errors);
     end
     $finish;
-endtask
+  endtask
 
-// Use the task with core_data_req.data
-always_ff @(posedge clk_i) begin
+  // Use the task with core_data_req.data
+  always_ff @(posedge clk_i) begin
     if (~rst_ni) cycle_counter <= '0;
     else cycle_counter <= cycle_counter + 1;
 
-    if ((core_data_req.addr == MMADDR_EXIT) && core_data_req.req ) begin
-        if (core_data_req.we ) 
-           endSimulation(core_data_req.data); 
-        else
-           mmio_rdata <= cycle_counter;
+    if ((core_data_req.addr == MMADDR_EXIT) && core_data_req.req) begin
+      if (core_data_req.we) endSimulation(core_data_req.data);
+      else mmio_rdata <= cycle_counter;
     end
-    if ((core_data_req.addr == MMADDR_PRINT) &&
-        (core_data_req.we & core_data_req.req )) begin
-        $write("%c", core_data_req.data);
+    if ((core_data_req.addr == MMADDR_PRINT) && (core_data_req.we & core_data_req.req)) begin
+      $write("%c", core_data_req.data);
     end
-    dump_ctrl_fsm();
-    dump_core_sleep_unit();
-end
+    // dump_ctrl_fsm();
+    // dump_core_sleep_unit();
+  end
 
 
   initial begin
@@ -458,8 +497,8 @@ end
 
   // close output file for writing
   final begin
-   
-      $fclose(fh);
-   
+
+    $fclose(fh);
+
   end
 endmodule  // tb_tca_system
