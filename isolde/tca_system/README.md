@@ -21,7 +21,7 @@ make veri-clean clean-test-programs
 
 ## build the simulation and run the a test application
 ```
-make TEST=fibonacci veri-clean clean-test  verilate  test-app veri-run
+make TEST=fibonacci veri-clean verilate clean-test test-app run-test2
 ``` 
 Output should be similar to this:  
 ```

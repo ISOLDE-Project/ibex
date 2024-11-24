@@ -8,18 +8,33 @@
 timeunit 1ps; timeprecision 1ps;
 
 module tb_tca_system
-  import redmule_pkg::*;
-#(
-    parameter TCP = 1.0ns,  // clock period, 1 GHz clock
-    parameter TA  = 0.2ns,  // application time
-    parameter TT  = 0.8ns   // test time
-) (
+(
     input logic clk_i,
     input logic rst_ni,
     input logic fetch_enable_i
 );
 
-  // parameters
+  //ibex parameters
+  parameter bit SecureIbex = 1'b0;
+  parameter bit ICacheScramble = 1'b0;
+  parameter bit PMPEnable = 1'b0;
+  parameter int unsigned PMPGranularity = 0;
+  parameter int unsigned PMPNumRegions = 4;
+  parameter int unsigned MHPMCounterNum = 0;
+  parameter int unsigned MHPMCounterWidth = 40;
+  parameter bit RV32E = 1'b0;
+  parameter ibex_pkg::rv32m_e RV32M = `RV32M;
+  parameter ibex_pkg::rv32b_e RV32B = `RV32B;
+  parameter ibex_pkg::regfile_e RegFile = `RegFile;
+  parameter bit BranchTargetALU = 1'b0;
+  parameter bit WritebackStage = 1'b0;
+  parameter bit ICache = 1'b0;
+  parameter bit DbgTriggerEn = 1'b0;
+  parameter bit ICacheECC = 1'b0;
+  parameter bit BranchPredictor = 1'b0;
+
+  // REDMULE parameters
+  import redmule_pkg::*;
   localparam int unsigned PROB_STALL = 0;
   localparam int unsigned NC = 1;
   localparam int unsigned ID = 10;
@@ -290,86 +305,78 @@ MEMORY
 xif_monitor_cpu_issue xif_monitor_cpu_issue_i (clk_i, core_xif);
 
 
-  cv32e40x_core #(
-      .M_EXT      (cv32e40x_pkg::M),
-      .X_EXT      (1),
-      .X_NUM_RS   (NumRs),
-      .X_ID_WIDTH (ID),
-      .X_MEM_WIDTH(XifMemWidth),
-      .X_RFR_WIDTH(XifRFReadWidth),
-      .X_RFW_WIDTH(XifRFWriteWidth),
-      .X_MISA     (XifMisa),
-      .X_ECS_XS   (XifEcsXs)
-  ) i_core (
-      // Clock and Reset
-      .clk_i              (clk_i),
-      .rst_ni             (rst_ni),
-      .scan_cg_en_i       (1'b0),                     // Enable all clock gates for testing
-      // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
-      .boot_addr_i        (BOOT_ADDR),
-      .dm_exception_addr_i('0),
-      .dm_halt_addr_i     ('0),
-      .mhartid_i          ('0),
-      .mimpid_patch_i     ('0),
-      .mtvec_addr_i       ('0),
-      // Instruction memory interface
-      .instr_req_o        (core_inst_req.req),
-      .instr_gnt_i        (core_inst_rsp.gnt),
-      .instr_rvalid_i     (core_inst_rsp.valid),
-      .instr_addr_o       (core_inst_req.addr),
-      .instr_memtype_o    (),
-      .instr_prot_o       (),
-      .instr_dbg_o        (),
-      .instr_rdata_i      (core_inst_rsp.data),
-      .instr_err_i        ('0),
-      // Data memory interface
-      .data_req_o         (core_data_req.req),
-      .data_gnt_i         (core_data_rsp.gnt),
-      .data_rvalid_i      (core_data_rsp.valid),
-      .data_addr_o        (core_data_req.addr),
-      .data_be_o          (core_data_req.be),
-      .data_we_o          (core_data_req.we),
-      .data_wdata_o       (core_data_req.data),
-      .data_memtype_o     (),
-      .data_prot_o        (),
-      .data_dbg_o         (),
-      .data_atop_o        (),
-      .data_rdata_i       (core_data_rsp.data),
-      .data_err_i         ('0),
-      .data_exokay_i      ('1),
-      // Cycle, Time
-      .mcycle_o           (),
-      .time_i             ('0),
-      // eXtension interface
-      .xif_compressed_if  (core_xif.cpu_compressed),
-      .xif_issue_if       (core_xif.cpu_issue),
-      .xif_commit_if      (core_xif.cpu_commit),
-      .xif_mem_if         (core_xif.cpu_mem),
-      .xif_mem_result_if  (core_xif.cpu_mem_result),
-      .xif_result_if      (core_xif.cpu_result),
-      // Basic interrupt architecture
-      .irq_i              ({27'd0, evt, 3'd0}),
-      // Event wakeup signals
-      .wu_wfe_i           ('0),                       // Wait-for-event wakeup
-      // CLIC interrupt architecture
-      .clic_irq_i         ('0),
-      .clic_irq_id_i      ('0),
-      .clic_irq_level_i   ('0),
-      .clic_irq_priv_i    ('0),
-      .clic_irq_shv_i     ('0),
-      // Fence.i flush handshake
-      .fencei_flush_req_o (),
-      .fencei_flush_ack_i ('0),
-      // Debug Interface
-      .debug_req_i        ('0),
-      .debug_havereset_o  (),
-      .debug_running_o    (),
-      .debug_halted_o     (),
-      .debug_pc_valid_o   (),
-      .debug_pc_o         (),
-      // CPU Control Signals
-      .fetch_enable_i     (fetch_enable_i),
-      .core_sleep_o       (core_sleep)
+  ibex_top_tracing #(
+      .SecureIbex      (SecureIbex),
+      .ICacheScramble  (ICacheScramble),
+      .PMPEnable       (PMPEnable),
+      .PMPGranularity  (PMPGranularity),
+      .PMPNumRegions   (PMPNumRegions),
+      .MHPMCounterNum  (MHPMCounterNum),
+      .MHPMCounterWidth(MHPMCounterWidth),
+      .RV32E           (RV32E),
+      .RV32M           (RV32M),
+      .RV32B           (RV32B),
+      .RegFile         (RegFile),
+      .BranchTargetALU (BranchTargetALU),
+      .ICache          (ICache),
+      .ICacheECC       (ICacheECC),
+      .WritebackStage  (WritebackStage),
+      .BranchPredictor (BranchPredictor),
+      .DbgTriggerEn    (DbgTriggerEn),
+      .DmHaltAddr      (32'h00100000),
+      .DmExceptionAddr (32'h00100000)
+  ) u_top (
+      .clk_i (clk_i),
+      .rst_ni(rst_ni),
+
+      .test_en_i  (1'b0),
+      .scan_rst_ni(1'b1),
+      .ram_cfg_i  (prim_ram_1p_pkg::RAM_1P_CFG_DEFAULT),
+
+      .hart_id_i  (32'b0),
+      // First instruction executed is at 0x0 + 0x80
+      .boot_addr_i(BOOT_ADDR),
+    // Instruction memory interface
+      .instr_req_o   (core_inst_req.req),
+      .instr_gnt_i   (core_inst_rsp.gnt),
+      .instr_rvalid_i(core_inst_rsp.valid),
+      .instr_addr_o  (core_inst_req.addr),
+      .instr_rdata_i (core_inst_rsp.data),
+      //.instr_rdata_intg_i     (instr_rdata_intg),
+      //.instr_err_i            (instr_err),
+ //     // Data memory interface
+      .data_req_o       (core_data_req.req),
+      .data_gnt_i       (core_data_rsp.gnt),
+      .data_rvalid_i    (core_data_rsp.valid),
+      .data_addr_o      (core_data_req.addr),
+      .data_be_o        (core_data_req.be),
+      .data_we_o        (core_data_req.we),      
+      .data_wdata_o     (core_data_req.data),
+      .data_wdata_intg_o(),
+      .data_rdata_i     (core_data_rsp.data),
+      .data_rdata_intg_i(),
+      .data_err_i       (),
+
+      .irq_software_i( evt[0][0]),
+      .irq_timer_i   (1'b0),
+      .irq_external_i(1'b0),
+      .irq_fast_i    (1'b0),
+      .irq_nm_i      (1'b0),
+
+      .scramble_key_valid_i('0),
+      .scramble_key_i      ('0),
+      .scramble_nonce_i    ('0),
+      .scramble_req_o      (),
+
+      .debug_req_i        (1'b0),
+      .crash_dump_o       (),
+      .double_fault_seen_o(),
+
+      .fetch_enable_i        (fetch_enable_i),
+      .alert_minor_o         (),
+      .alert_major_internal_o(),
+      .alert_major_bus_o     (),
+      .core_sleep_o          (core_sleep)
   );
 
   redmule_isolde #(

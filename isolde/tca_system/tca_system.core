@@ -7,142 +7,142 @@ description: "Generic simple system for running binaries on ibex using verilator
 filesets:
   files_simple_system:
     depend:
-#      - isolde:ibex:tca_system_core
+      - isolde:ibex:tca_system_core
     files:
       - tool_verilator ? (tb/core/tb_top_verilator.cpp)
     file_type: cppSource
 
-# parameters:
-#   RV32E:
-#     datatype: int
-#     paramtype: vlogparam
-#     default: 0
-#     description: "Enable the E ISA extension (reduced register set) [0/1]"
+parameters:
+  RV32E:
+    datatype: int
+    paramtype: vlogparam
+    default: 0
+    description: "Enable the E ISA extension (reduced register set) [0/1]"
 
-#   RV32M:
-#     datatype: str
-#     default: ibex_pkg::RV32MFast
-#     paramtype: vlogdefine
-#     description: "RV32M implementation parameter enum. See the ibex_pkg::rv32m_e enum in ibex_pkg.sv for permitted values."
+  RV32M:
+    datatype: str
+    default: ibex_pkg::RV32MFast
+    paramtype: vlogdefine
+    description: "RV32M implementation parameter enum. See the ibex_pkg::rv32m_e enum in ibex_pkg.sv for permitted values."
 
-#   RV32B:
-#     datatype: str
-#     default: ibex_pkg::RV32BNone
-#     paramtype: vlogdefine
-#     description: "Bitmanip implementation parameter enum. See the ibex_pkg::rv32b_e enum in ibex_pkg.sv for permitted values."
+  RV32B:
+    datatype: str
+    default: ibex_pkg::RV32BNone
+    paramtype: vlogdefine
+    description: "Bitmanip implementation parameter enum. See the ibex_pkg::rv32b_e enum in ibex_pkg.sv for permitted values."
 
-#   RegFile:
-#     datatype: str
-#     default: ibex_pkg::RegFileFF
-#     paramtype: vlogdefine
-#     description: "Register file implementation parameter enum. See the ibex_pkg::regfile_e enum in ibex_pkg.sv for permitted values."
+  RegFile:
+    datatype: str
+    default: ibex_pkg::RegFileFF
+    paramtype: vlogdefine
+    description: "Register file implementation parameter enum. See the ibex_pkg::regfile_e enum in ibex_pkg.sv for permitted values."
 
-#   ICache:
-#     datatype: int
-#     default: 0
-#     paramtype: vlogparam
-#     description: "Enable instruction cache"
+  ICache:
+    datatype: int
+    default: 0
+    paramtype: vlogparam
+    description: "Enable instruction cache"
 
-#   ICacheECC:
-#     datatype: int
-#     default: 0
-#     paramtype: vlogparam
-#     description: "Enable ECC protection in instruction cache"
+  ICacheECC:
+    datatype: int
+    default: 0
+    paramtype: vlogparam
+    description: "Enable ECC protection in instruction cache"
 
-#   SRAMInitFile:
-#     datatype: str
-#     paramtype: vlogparam
-#     description: "Path to a vmem file to initialize the RAM with"
+  # SRAMInitFile:
+  #   datatype: str
+  #   paramtype: vlogparam
+  #   description: "Path to a vmem file to initialize the RAM with"
 
-#   BranchTargetALU:
-#     datatype: int
-#     paramtype: vlogparam
-#     default: 0
-#     description: "Enables separate branch target ALU (increasing branch performance EXPERIMENTAL)"
+  BranchTargetALU:
+    datatype: int
+    paramtype: vlogparam
+    default: 0
+    description: "Enables separate branch target ALU (increasing branch performance EXPERIMENTAL)"
 
-#   WritebackStage:
-#     datatype: int
-#     paramtype: vlogparam
-#     default: 0
-#     description: "Enables third pipeline stage (EXPERIMENTAL)"
+  WritebackStage:
+    datatype: int
+    paramtype: vlogparam
+    default: 0
+    description: "Enables third pipeline stage (EXPERIMENTAL)"
 
-#   SecureIbex:
-#     datatype: int
-#     default: 0
-#     paramtype: vlogparam
-#     description: "Enables security hardening features (EXPERIMENTAL) [0/1]"
+  SecureIbex:
+    datatype: int
+    default: 0
+    paramtype: vlogparam
+    description: "Enables security hardening features (EXPERIMENTAL) [0/1]"
 
-#   ICacheScramble:
-#     datatype: int
-#     default: 0
-#     paramtype: vlogparam
-#     description: "Enables ICache scrambling feature (EXPERIMENTAL) [0/1]"
+  ICacheScramble:
+    datatype: int
+    default: 0
+    paramtype: vlogparam
+    description: "Enables ICache scrambling feature (EXPERIMENTAL) [0/1]"
 
-#   BranchPredictor:
-#     datatype: int
-#     paramtype: vlogparam
-#     default: 0
-#     description: "Enables static branch prediction (EXPERIMENTAL)"
+  BranchPredictor:
+    datatype: int
+    paramtype: vlogparam
+    default: 0
+    description: "Enables static branch prediction (EXPERIMENTAL)"
 
-#   DbgTriggerEn:
-#     datatype: int
-#     default: 0
-#     paramtype: vlogparam
-#     description: "Enable support for debug triggers. "
+  DbgTriggerEn:
+    datatype: int
+    default: 0
+    paramtype: vlogparam
+    description: "Enable support for debug triggers. "
 
-#   PMPEnable:
-#     datatype: int
-#     default: 0
-#     paramtype: vlogparam
-#     description: "Enable PMP"
+  PMPEnable:
+    datatype: int
+    default: 0
+    paramtype: vlogparam
+    description: "Enable PMP"
 
-#   PMPGranularity:
-#     datatype: int
-#     default: 0
-#     paramtype: vlogparam
-#     description: "Granularity of NAPOT range, 0 = 4 byte, 1 = byte, 2 = 16 byte, 3 = 32 byte etc"
+  PMPGranularity:
+    datatype: int
+    default: 0
+    paramtype: vlogparam
+    description: "Granularity of NAPOT range, 0 = 4 byte, 1 = byte, 2 = 16 byte, 3 = 32 byte etc"
 
-#   PMPNumRegions:
-#     datatype: int
-#     default: 4
-#     paramtype: vlogparam
-#     description: "Number of PMP regions"
+  PMPNumRegions:
+    datatype: int
+    default: 4
+    paramtype: vlogparam
+    description: "Number of PMP regions"
 
-#   MHPMCounterNum:
-#     datatype: int
-#     paramtype: vlogparam
-#     default: 0
-#     description: Number of performance monitor event counters [0/29]
+  MHPMCounterNum:
+    datatype: int
+    paramtype: vlogparam
+    default: 0
+    description: Number of performance monitor event counters [0/29]
 
-#   MHPMCounterWidth:
-#     datatype: int
-#     paramtype: vlogparam
-#     default: 40
-#     description: Bit width of performance monitor event counters [32/64]
+  MHPMCounterWidth:
+    datatype: int
+    paramtype: vlogparam
+    default: 40
+    description: Bit width of performance monitor event counters [32/64]
 
 targets:
   default: &default_target
     filesets:
       - files_simple_system
     toplevel: tb_tca_system
-    # parameters:
-    #   - RV32E
-    #   - RV32M
-    #   - RV32B
-    #   - RegFile
-    #   - ICache
-    #   - ICacheScramble
-    #   - ICacheECC
-    #   - BranchTargetALU
-    #   - WritebackStage
-    #   - SecureIbex
-    #   - BranchPredictor
-    #   - DbgTriggerEn
-    #   - PMPEnable
-    #   - PMPGranularity
-    #   - PMPNumRegions
-    #   - MHPMCounterNum
-    #   - MHPMCounterWidth
+    parameters:
+      - RV32E
+      - RV32M
+      - RV32B
+      - RegFile
+      - ICache
+      - ICacheScramble
+      - ICacheECC
+      - BranchTargetALU
+      - WritebackStage
+      - SecureIbex
+      - BranchPredictor
+      - DbgTriggerEn
+      - PMPEnable
+      - PMPGranularity
+      - PMPNumRegions
+      - MHPMCounterNum
+      - MHPMCounterWidth
     #   - SRAMInitFile
 
   lint:

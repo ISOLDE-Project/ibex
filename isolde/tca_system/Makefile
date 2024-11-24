@@ -1,7 +1,7 @@
 ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
 mkfile_path         := $(shell git rev-parse --show-toplevel)/isolde/tca_system
 IBEX_CONFIG         ?=  isolde
-#FUSESOC_CONFIG_OPTS := $(shell cd $(ROOT_DIR) && $(ROOT_DIR)/util/ibex_config.py $(IBEX_CONFIG) fusesoc_opts)
+FUSESOC_CONFIG_OPTS := $(shell cd $(ROOT_DIR) && $(ROOT_DIR)/util/ibex_config.py $(IBEX_CONFIG) fusesoc_opts)
 FUSESOC_PARAMS      ?=
 TEST                ?= redmule_complex
 TEST_SRC_DIR	    = $(ROOT_DIR)/isolde/sw/simple_system/$(TEST)
