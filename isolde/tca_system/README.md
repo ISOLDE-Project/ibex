@@ -41,7 +41,14 @@ fib(10) = 55
 fib(11) = 89
 ```
 you can replace *fibonacci* with any test from isolde/sw/simple_system, e.g. make TEST=**dhrystone** veri-clean clean-test  verilate  test-app veri-run.  
-Default test is **vlinstr_test**.  
+Default test is **redmule_complex**.
+**Examples**  
+```sh
+make TEST=vlinstr_test clean-test test-app run-test2
+
+make TEST=vlinstr_test veri-clean verilate clean-test test-app run-test2
+```
+
 ## build test app
 * **gcc** toolchain
 ```

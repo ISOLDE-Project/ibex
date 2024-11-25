@@ -580,6 +580,7 @@ module ibex_id_stage
   isolde_decoder isolde_decoder_i (
       .clk_i(clk_i),
       .rst_ni(rst_ni),
+      .isolde_decoder_instr_exec_i(instr_exec_i),
       .isolde_decoder_instr_batch_i(instr_batch_rdata_i),
       .isolde_decoder_enable_i(illegal_std_instr),
       .isolde_decoder_illegal_instr_o(illegal_insn_dec),
