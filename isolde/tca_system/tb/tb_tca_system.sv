@@ -292,7 +292,17 @@ MEMORY
   localparam logic [31:0] XifMisa = '0;
   localparam logic [1:0] XifEcsXs = '0;
 
-  cv32e40x_if_xif #(
+  // cv32e40x_if_xif #(
+  //     .X_NUM_RS   (NumRs),
+  //     .X_ID_WIDTH (ID),
+  //     .X_MEM_WIDTH(XifMemWidth),
+  //     .X_RFR_WIDTH(XifRFReadWidth),
+  //     .X_RFW_WIDTH(XifRFWriteWidth),
+  //     .X_MISA     (XifMisa),
+  //     .X_ECS_XS   (XifEcsXs)
+  // ) core_xif ();
+
+     isolde_cv_x_if #(
       .X_NUM_RS   (NumRs),
       .X_ID_WIDTH (ID),
       .X_MEM_WIDTH(XifMemWidth),
@@ -376,7 +386,14 @@ xif_monitor_cpu_issue xif_monitor_cpu_issue_i (clk_i, core_xif);
       .alert_minor_o         (),
       .alert_major_internal_o(),
       .alert_major_bus_o     (),
-      .core_sleep_o          (core_sleep)
+      .core_sleep_o          (core_sleep),
+            // eXtension interface
+      .xif_compressed_if   ( core_xif.cpu_compressed    ),
+      .xif_issue_if        ( core_xif.cpu_issue         ),
+      .xif_commit_if       ( core_xif.cpu_commit        ),
+      .xif_mem_if          ( core_xif.cpu_mem           ),
+      .xif_mem_result_if   ( core_xif.cpu_mem_result    ),
+      .xif_result_if       ( core_xif.cpu_result        )
   );
 
   redmule_isolde #(

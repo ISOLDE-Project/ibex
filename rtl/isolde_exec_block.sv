@@ -8,10 +8,17 @@ module isolde_exec_block
     parameter string LogName = "isolde_exec_block.log"
 ) (
     // ISOLDE register file
-           isolde_register_file_if   isolde_rf_bus,
-           isolde_x_register_file_if x_rf_bus,
-           isolde_fetch2exec_if      isolde_exec_from_decoder,
-    output logic                     isolde_exec_busy_o
+           isolde_register_file_if       isolde_rf_bus,
+           isolde_x_register_file_if     x_rf_bus,
+           isolde_fetch2exec_if          isolde_exec_from_decoder,
+    output logic                         isolde_exec_busy_o,
+    // eXtension interface
+           isolde_cv_x_if.cpu_compressed xif_compressed_if,
+           isolde_cv_x_if.cpu_issue      xif_issue_if,
+           isolde_cv_x_if.cpu_commit     xif_commit_if,
+           isolde_cv_x_if.cpu_mem        xif_mem_if,
+           isolde_cv_x_if.cpu_mem_result xif_mem_result_if,
+           isolde_cv_x_if.cpu_result     xif_result_if
 );
 
 
@@ -126,8 +133,8 @@ module isolde_exec_block
 
   task static start_gemm;
 `ifndef SYNTHESIS
-//  $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
-    $fwrite(log_fh, " --- @t=%t    %s\n", $time,"isolde_exec_block::start_gemm");
+    //  $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
+    $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_gemm");
     $fwrite(log_fh, "  func3=%b\n", isolde_exec_from_decoder.func3);
     $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_bus.raddr_0, x_rf_bus.rdata_0);
     $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_bus.raddr_1, x_rf_bus.rdata_1);

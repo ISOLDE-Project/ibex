@@ -2,7 +2,7 @@ module xif_monitor_cpu_issue #(
     string FILENAME = "cpu_issue_dump.txt"  // Output file name
 )(
     input logic clk_i,                         // Clock signal
-    input cv32e40x_if_xif.cpu_issue issue_if // Specific modport instance for monitoring
+    isolde_cv_x_if.cpu_issue issue_if // Specific modport instance for monitoring
 );
 
     // File handle
