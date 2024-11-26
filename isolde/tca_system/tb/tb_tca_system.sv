@@ -37,7 +37,7 @@ module tb_tca_system
   import redmule_pkg::*;
   localparam int unsigned PROB_STALL = 0;
   localparam int unsigned NC = 1;
-  localparam int unsigned ID = 10;
+  localparam int unsigned ID = isolde_cv_x_if_pkg::X_ID_WIDTH;
   localparam int unsigned DW = redmule_pkg::DATA_W;
   localparam int unsigned MP = DW / 32;
   localparam int unsigned MEMORY_SIZE = 32'h30000;
@@ -285,31 +285,16 @@ MEMORY
  
 
 
-  localparam int unsigned NumRs = 3;
-  localparam int unsigned XifMemWidth = 32;
-  localparam int unsigned XifRFReadWidth = 32;
-  localparam int unsigned XifRFWriteWidth = 32;
-  localparam logic [31:0] XifMisa = '0;
-  localparam logic [1:0] XifEcsXs = '0;
 
-  // cv32e40x_if_xif #(
-  //     .X_NUM_RS   (NumRs),
-  //     .X_ID_WIDTH (ID),
-  //     .X_MEM_WIDTH(XifMemWidth),
-  //     .X_RFR_WIDTH(XifRFReadWidth),
-  //     .X_RFW_WIDTH(XifRFWriteWidth),
-  //     .X_MISA     (XifMisa),
-  //     .X_ECS_XS   (XifEcsXs)
-  // ) core_xif ();
 
      isolde_cv_x_if #(
-      .X_NUM_RS   (NumRs),
-      .X_ID_WIDTH (ID),
-      .X_MEM_WIDTH(XifMemWidth),
-      .X_RFR_WIDTH(XifRFReadWidth),
-      .X_RFW_WIDTH(XifRFWriteWidth),
-      .X_MISA     (XifMisa),
-      .X_ECS_XS   (XifEcsXs)
+      .X_NUM_RS   (isolde_cv_x_if_pkg::X_NUM_RS),
+      .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
+      .X_MEM_WIDTH(isolde_cv_x_if_pkg::X_MEM_WIDTH),
+      .X_RFR_WIDTH(isolde_cv_x_if_pkg::X_RFR_WIDTH),
+      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH),
+      .X_MISA     (isolde_cv_x_if_pkg::X_MISA),
+      .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
   ) core_xif ();
 
 xif_monitor_cpu_issue xif_monitor_cpu_issue_i (clk_i, core_xif);

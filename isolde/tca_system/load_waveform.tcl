@@ -35,6 +35,15 @@ TOP.tb_tca_system.u_top.u_ibex_top.u_ibex_core.id_stage_i.isolde_decoder_i.rst_n
 TOP.tb_tca_system.u_top.u_ibex_top.u_ibex_core.id_stage_i.isolde_decoder_i.vlen_instr_words_d[2:0]
 TOP.tb_tca_system.u_top.u_ibex_top.u_ibex_core.id_stage_i.isolde_decoder_i.vlen_instr_words_q[2:0]
 
+TOP.tb_tca_system.core_xif.issue_valid
+TOP.tb_tca_system.core_xif.issue_ready
+TOP.tb_tca_system.core_xif.issue_req[149:118]
+TOP.tb_tca_system.core_xif.issue_req[105:74]
+TOP.tb_tca_system.core_xif.issue_req[73:42]
+TOP.tb_tca_system.core_xif.issue_req[41:10]
+TOP.tb_tca_system.core_xif.issue_req[9:7]
+
+
 }
 
 

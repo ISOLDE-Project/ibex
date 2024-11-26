@@ -7,7 +7,9 @@ package isolde_decoder_pkg;
     isolde_opcode_nop,
     isolde_opcode_vle32_4,
     isolde_opcode_gemm,
-    isolde_opcode_conv2d
+    isolde_opcode_conv2d,
+    isolde_opcode_R_type,
+    isolde_opcode_redmule
   } isolde_opcode_e;
 
 
@@ -50,11 +52,11 @@ package isolde_decoder_pkg;
         end
         RISCV_ENC_C0: begin
           vlen_instr_words_o = 1;
-          isolde_op_code_o = isolde_opcode_nop;
+          isolde_op_code_o = isolde_opcode_R_type;
         end
         RISCV_ENC_C1: begin
           vlen_instr_words_o = 1;
-          isolde_op_code_o = isolde_opcode_nop;
+          isolde_op_code_o = isolde_opcode_redmule;
         end
         default: isolde_op_code_o = isolde_opcode_invalid;
       endcase

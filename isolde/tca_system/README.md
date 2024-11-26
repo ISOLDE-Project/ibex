@@ -57,34 +57,23 @@ make sim-inputs
 ```
 * **llvm** toolchain
 *Not implemented*
-## execute test
-```
-make run-test
-```
-Output should be similar to this
-```
-[TESTBENCH] @ t=0: loading firmware /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/lca_system/vsim/redmule-m.hex
-Timing for REDMULE: 233 cycles
-Resumed!
-Terminated test with 0 errors. See you!
-[TB] - errors=00000000
-[TB] - Success!
-```  
+ 
 # REDMULE testing
 ```sh
  make veri-clean verilate clean-test sim-input run-test2
 ```
 Expected output:
 ```
-[/home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/.bender/git/checkouts/cv32e40x-144d5e945ccbcd99/rtl/cv32e40x_controller_fsm.sv:1148]                 1842 instr_req: 0
-[/home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/.bender/git/checkouts/cv32e40x-144d5e945ccbcd99/rtl/cv32e40x_controller_fsm.sv:1146]                 1842 wake_from_sleep: 1
-[/home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/.bender/git/checkouts/cv32e40x-144d5e945ccbcd99/rtl/cv32e40x_controller_fsm.sv:1147]                 1842 ctrl_busy: 1
-[/home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/.bender/git/checkouts/cv32e40x-144d5e945ccbcd99/rtl/cv32e40x_controller_fsm.sv:1148]                 1842 instr_req: 0
-Timing for REDMULE_TCA: 226 cycles
+[TESTBENCH] @ t=0: loading /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/tca_system/sw/bin/redmule_complex-m.hex into imemory
+[TESTBENCH] @ t=0: loading /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/tca_system/sw/bin/redmule_complex-d.hex into dmemory
+TOP.tb_tca_system.u_top.u_ibex_tracer.unnamedblk2.unnamedblk3: Writing execution trace to trace_core_00000000.log
+[APP TCA] Starting test. Godspeed!
+Timing for REDMULE_TCA: 231 cycles
 [APP TCA] Terminated test with 0 errors. See you!
-[TB TCA] @ t=12140 - Success!
-[TB TCA] @ t=12140 - errors=00000000
-- /home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/tb/tb_tca_system.sv:411: Verilog $finish
+[TB TCA] @ t=13506 - Success!
+[TB TCA] @ t=13506 - errors=00000000
+- /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/tca_system/tb/tb_tca_system.sv:462: Verilog $finish
+mv verilator_tb.vcd /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/tca_system/log/tb_tca_system/redmule_complex.vcd
 ```
 **Note**:  
 Make sure that you apply the patch

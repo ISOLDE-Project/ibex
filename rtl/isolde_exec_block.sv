@@ -35,10 +35,11 @@ module isolde_exec_block
 `endif
 
   // FSM states
-  typedef enum logic [1:0] {
+  typedef enum logic [2:0] {
     IDLE,
     START,  //start execution
-    WAIT    //wait for completion
+    WAIT,  //wait for completion
+    DEASSERT
   } state_t;
 
   state_t ievli_state, ievli_next;
@@ -68,6 +69,8 @@ module isolde_exec_block
           cnt <= 1;
           case (isolde_opcode_dec)
             isolde_opcode_nop: start_nop();
+            isolde_opcode_redmule: start_nop_redmule();
+            isolde_opcode_R_type: start_nop_RType();
             isolde_opcode_vle32_4: start_vle32_4();
             isolde_opcode_gemm: start_gemm();
             isolde_opcode_conv2d: start_conv2d();
@@ -78,6 +81,10 @@ module isolde_exec_block
         end
         WAIT: begin
           cnt <= cnt + 1;
+        end
+        DEASSERT: begin
+          xif_issue_if.issue_valid <= 0;
+          ievli_state <=  IDLE;
         end
       endcase
     end
@@ -107,8 +114,14 @@ module isolde_exec_block
           ievli_next = start_exec ? START : IDLE;
         end
       end
+      DEASSERT: begin
+         isolde_exec_busy_o = 0;
+        ievli_next = DEASSERT;
+      end
     endcase
   end
+
+
 
   task static start_nop;
 `ifndef SYNTHESIS
@@ -130,6 +143,50 @@ module isolde_exec_block
       ievli_state <= IDLE;  // resume with next cycle
     end
   endtask
+
+
+
+  task static start_nop_RType;
+`ifndef SYNTHESIS
+    $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_nop_RType");
+    $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
+    $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_bus.raddr_0, x_rf_bus.rdata_0);
+    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_bus.raddr_1, x_rf_bus.rdata_1);
+    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_bus.raddr_2, x_rf_bus.rdata_2);
+`endif
+    begin
+      xif_issue_if.issue_req.instr <= isolde_exec_from_decoder.isolde_decoder_instr;
+      xif_issue_if.issue_req.rs[0] <= x_rf_bus.rdata_1; // rs1
+      xif_issue_if.issue_req.rs[1] <= x_rf_bus.rdata_2; // rs2
+      xif_issue_if.issue_req.rs[2] <= x_rf_bus.rdata_0; //rd
+      xif_issue_if.issue_req.rs_valid <= 3'b111;
+      xif_issue_if.issue_valid <= 1;
+      //
+      ievli_state <=  DEASSERT;
+    end
+  endtask
+
+
+  task static start_nop_redmule;
+`ifndef SYNTHESIS
+    $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_nop_RType");
+    $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
+    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_bus.raddr_0, x_rf_bus.rdata_0);
+    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_bus.raddr_1, x_rf_bus.rdata_1);
+    $fwrite(log_fh, "    @rs3=%d: %h\n", x_rf_bus.raddr_2, x_rf_bus.rdata_2);
+`endif
+    begin
+      xif_issue_if.issue_req.instr <= isolde_exec_from_decoder.isolde_decoder_instr;
+      xif_issue_if.issue_req.rs[0] <= x_rf_bus.rdata_0; //rs1
+      xif_issue_if.issue_req.rs[1] <= x_rf_bus.rdata_1; // rs2
+      xif_issue_if.issue_req.rs[2] <= x_rf_bus.rdata_2; // rs3
+      xif_issue_if.issue_req.rs_valid <= 3'b111;
+      xif_issue_if.issue_valid <= 1;
+      //
+      ievli_state <=  DEASSERT;
+    end
+  endtask
+
 
   task static start_gemm;
 `ifndef SYNTHESIS
