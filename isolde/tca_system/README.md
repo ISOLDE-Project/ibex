@@ -1,4 +1,4 @@
-# ISOLDE Loosely-coupled accelerator (LCA) model. 
+# ISOLDE Tightly-coupled accelerator (TCA) model.
 ## [REDMULE](https://github.com/ISOLDE-Project/redmule) hardware accelerator
 Details about the accelerator are [here](https://github.com/ISOLDE-Project/redmule?tab=readme-ov-file#redmule)
 ## Prerequisites
@@ -75,12 +75,7 @@ Timing for REDMULE_TCA: 231 cycles
 - /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/tca_system/tb/tb_tca_system.sv:462: Verilog $finish
 mv verilator_tb.vcd /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/tca_system/log/tb_tca_system/redmule_complex.vcd
 ```
-**Note**:  
-Make sure that you apply the patch
-```sh
-cd $ROOT_DIR/isolde/tca_system/.bender/git/checkouts/cv32e40x-144d5e945ccbcd99
-git apply ../../../../verilator.patch 
-```
+
 ---  
 ---
 # Ibex Simple System
