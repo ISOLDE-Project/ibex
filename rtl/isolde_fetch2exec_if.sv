@@ -17,6 +17,6 @@ interface isolde_fetch2exec_if #(
   logic [2:0] func3;  //instr[14-12]
   logic [1:0] funct2;
   logic [31:0] isolde_decoder_instr;  // Offloaded instruction
-  logic [IMM32_OPS  -1:0][31:0] isolde_decoder_imm32;        // Register file source operands for the offloaded instruction
-  logic [IMM32_OPS  -1:0] isolde_decoder_imm32_valid;  // Validity of the register file source operand(s)
+  logic [IMM32_OPS  -1:0][31:0] isolde_decoder_imm32;        // Immediate operands for the offloaded instruction
+  logic [IMM32_OPS  -1:0] isolde_decoder_imm32_valid;  // Validity of the immediate operands
 endinterface

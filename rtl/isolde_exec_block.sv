@@ -170,7 +170,7 @@ module isolde_exec_block
 
   task static start_nop_redmule;
 `ifndef SYNTHESIS
-    $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_nop_RType");
+    $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_nop_redmule");
     $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
     $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_bus.raddr_0, x_rf_bus.rdata_0);
     $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_bus.raddr_1, x_rf_bus.rdata_1);
@@ -216,6 +216,7 @@ module isolde_exec_block
 `ifndef SYNTHESIS
     //  $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_redmule_gemm");
+    $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
     $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_bus.raddr_0, x_rf_bus.rdata_0);
     $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_bus.raddr_1, x_rf_bus.rdata_1);
     $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_bus.raddr_2, x_rf_bus.rdata_2);
@@ -226,7 +227,16 @@ module isolde_exec_block
 
 `endif
     begin
-      cnt_max <= DEASSERT;  // wait cycles time for completion
+      xif_issue_if.issue_req.instr <= isolde_exec_from_decoder.isolde_decoder_instr;
+      xif_issue_if.issue_req.rs[0] <= x_rf_bus.rdata_0;  //rs1
+      xif_issue_if.issue_req.rs[1] <= x_rf_bus.rdata_1;  // rs2
+      xif_issue_if.issue_req.rs[2] <= x_rf_bus.rdata_2;  // rs3
+      xif_issue_if.issue_req.rs_valid <= 3'b111;
+      xif_issue_if.issue_req.imm32 <= isolde_exec_from_decoder.isolde_decoder_imm32;
+      xif_issue_if.issue_req.imm32_valid <= isolde_exec_from_decoder.isolde_decoder_imm32_valid;
+      xif_issue_if.issue_valid <= 1;
+      //
+      ievli_state <= DEASSERT;
     end
   endtask
 

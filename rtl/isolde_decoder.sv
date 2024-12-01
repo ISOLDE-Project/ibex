@@ -225,6 +225,7 @@ module isolde_decoder
     begin
       if (3'h4 == read_ptr) begin
         //first 32 bits
+        isolde_decoder_exec_bus.isolde_decoder_instr <= isolde_decoder_instr_batch_i[4];
         x_rf_bus.raddr_2 <= isolde_decoder_instr_batch_i[4][24:20];  //rs2
         x_rf_bus.raddr_1 <= isolde_decoder_instr_batch_i[4][19:15];  //rs1
         x_rf_bus.raddr_0 <= isolde_decoder_instr_batch_i[4][11:7];  //rd             

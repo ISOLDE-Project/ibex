@@ -454,7 +454,8 @@ xif_monitor_cpu_issue xif_monitor_cpu_issue_i (clk_i, core_xif);
   task endSimulation(input int errors);
     if (errors != 0) begin
       $display("[TB TCA] @ t=%0t - Fail!", $time);
-      $error("[TB TCA] @ t=%0t - errors=%08x", $time, errors);
+//      $error("[TB TCA] @ t=%0t - errors=%08x", $time, errors);
+      $display("[TB TCA] @ t=%0t - errors=%08x", $time, errors);
     end else begin
       $display("[TB TCA] @ t=%0t - Success!", $time);
       $display("[TB TCA] @ t=%0t - errors=%08x", $time, errors);

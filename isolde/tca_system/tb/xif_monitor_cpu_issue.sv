@@ -32,6 +32,10 @@ module xif_monitor_cpu_issue #(
             for (int i = 0; i < issue_if.X_NUM_RS; i++) begin
                 $fwrite(fh, "  rs[%0d]: 0x%h (valid: %b)\n", i, issue_if.issue_req.rs[i], issue_if.issue_req.rs_valid[i]);
             end
+            for (int i = 0; i < issue_if.X_IMM32_OPS; i++) begin
+            $fwrite(fh, "  imm32[%0d]: 0x%h (valid: %b)\n", i, issue_if.issue_req.imm32[i],
+                    issue_if.issue_req.imm32_valid[i]);
+            end
             $fwrite(fh, "  ecs: 0x%h (valid: %b)\n", issue_if.issue_req.ecs, issue_if.issue_req.ecs_valid);
         end
     end
