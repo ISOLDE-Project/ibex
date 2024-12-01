@@ -142,6 +142,31 @@ printf("custom-0 instr begin\n");
               (0b001     <<  7) | \
               (0b0101011 <<  0)   \n");
            printf("custom-0 instr end\n");      
+printf("160b custom instr begin\n");  
+
+asm volatile (
+  "li t0, 0x0BADCAFE\n"   // Load 1 into t3
+  "li t1, 0x0BAD0000\n"   // Load 2 into t4
+  "li t2, 0x0000CAFE\n"   // Load 3 into t5
+  :                // No output operands
+  :                // No input operands
+  : "t0", "t1", "t2"  // Clobber list (indicates the registers modified)
+);
+    asm volatile(".word (0x4       << 25) | \
+              (0x7  << 20) | \
+              (0x6   << 15) | \
+              (0b101   << 12) | \
+              (0x5      <<  7) | \
+              (0b1111111 <<  0)   \n"
+//
+                ".word 0x00000010\n"
+                ".word 0x00000011\n"
+                ".word 0x00000012\n"
+                ".word 0x386284ab\n"
+  ); 
+
+printf("160b custom instr end\n");  
+
 #endif
 
   return 0;

@@ -60,7 +60,7 @@ make sim-inputs
  
 # REDMULE testing
 ```sh
- make veri-clean verilate clean-test sim-input run-test2
+make veri-clean verilate clean-test sim-input run-test2
 ```
 Expected output:
 ```
