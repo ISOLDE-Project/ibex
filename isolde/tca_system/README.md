@@ -64,16 +64,15 @@ make veri-clean verilate clean-test sim-input run-test2
 ```
 Expected output:
 ```
-[TESTBENCH] @ t=0: loading /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/tca_system/sw/bin/redmule_complex-m.hex into imemory
-[TESTBENCH] @ t=0: loading /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/tca_system/sw/bin/redmule_complex-d.hex into dmemory
+[TESTBENCH] @ t=0: loading /home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/sw/bin/redmule_complex-m.hex into imemory
+[TESTBENCH] @ t=0: loading /home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/sw/bin/redmule_complex-d.hex into dmemory
 TOP.tb_tca_system.u_top.u_ibex_tracer.unnamedblk2.unnamedblk3: Writing execution trace to trace_core_00000000.log
-[APP TCA] Starting test. Godspeed!
-Timing for REDMULE_TCA: 231 cycles
-[APP TCA] Terminated test with 0 errors. See you!
-[TB TCA] @ t=13506 - Success!
-[TB TCA] @ t=13506 - errors=00000000
-- /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/tca_system/tb/tb_tca_system.sv:462: Verilog $finish
-mv verilator_tb.vcd /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/tca_system/log/tb_tca_system/redmule_complex.vcd
+[APP TCA vli] Starting test. Godspeed!
+Timing for REDMULE_TCA_VLI: 226 cycles
+[APP TCA vli] Terminated test with 0 errors. See you!
+[TB TCA] @ t=13792 - Success!
+[TB TCA] @ t=13792 - errors=00000000
+- /home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/tb/tb_tca_system.sv:463: Verilog $finish
 ```
 
 ---  

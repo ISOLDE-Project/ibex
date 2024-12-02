@@ -223,18 +223,17 @@ module isolde_decoder
   task static decode_redmule_gemm;
 
     begin
-      if (3'h4 == read_ptr) begin
+      if (3'h3 == read_ptr) begin
         //first 32 bits
-        isolde_decoder_exec_bus.isolde_decoder_instr <= isolde_decoder_instr_batch_i[4];
-        x_rf_bus.raddr_2 <= isolde_decoder_instr_batch_i[4][24:20];  //rs2
-        x_rf_bus.raddr_1 <= isolde_decoder_instr_batch_i[4][19:15];  //rs1
-        x_rf_bus.raddr_0 <= isolde_decoder_instr_batch_i[4][11:7];  //rd             
+        isolde_decoder_exec_bus.isolde_decoder_instr <= isolde_decoder_instr_batch_i[3];
+        x_rf_bus.raddr_2 <= isolde_decoder_instr_batch_i[3][24:20];  //rs2
+        x_rf_bus.raddr_1 <= isolde_decoder_instr_batch_i[3][19:15];  //rs1
+        x_rf_bus.raddr_0 <= isolde_decoder_instr_batch_i[3][11:7];  //rd             
         // extension 32 bits
-        isolde_decoder_exec_bus.isolde_decoder_imm32_valid <= 4'b1111;
-        isolde_decoder_exec_bus.isolde_decoder_imm32[3] <= isolde_decoder_instr_batch_i[0];
-        isolde_decoder_exec_bus.isolde_decoder_imm32[2] <= isolde_decoder_instr_batch_i[1];
-        isolde_decoder_exec_bus.isolde_decoder_imm32[1] <= isolde_decoder_instr_batch_i[2];
-        isolde_decoder_exec_bus.isolde_decoder_imm32[0] <= isolde_decoder_instr_batch_i[3];
+        isolde_decoder_exec_bus.isolde_decoder_imm32_valid <= 4'b0111;
+        isolde_decoder_exec_bus.isolde_decoder_imm32[2] <= isolde_decoder_instr_batch_i[0];
+        isolde_decoder_exec_bus.isolde_decoder_imm32[1] <= isolde_decoder_instr_batch_i[1];
+        isolde_decoder_exec_bus.isolde_decoder_imm32[0] <= isolde_decoder_instr_batch_i[2];
       end
     end
   endtask
