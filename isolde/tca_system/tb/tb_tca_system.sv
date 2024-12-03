@@ -460,6 +460,14 @@ xif_monitor_cpu_issue xif_monitor_cpu_issue_i (clk_i, core_xif);
       $display("[TB TCA] @ t=%0t - Success!", $time);
       $display("[TB TCA] @ t=%0t - errors=%08x", $time, errors);
     end
+     $display("[TB TCA] @ t=%0t - writes[imemory] =%d", $time, tb_tca_system.i_dummy_imemory.cnt_wr);
+     $display("[TB TCA] @ t=%0t - reads [imemory] =%d", $time, tb_tca_system.i_dummy_imemory.cnt_rd);
+     //
+     $display("[TB TCA] @ t=%0t - writes[dmemory] =%d", $time, tb_tca_system.i_dummy_dmemory.cnt_wr);
+     $display("[TB TCA] @ t=%0t - reads [dmemory] =%d", $time, tb_tca_system.i_dummy_dmemory.cnt_rd);
+          //
+     $display("[TB TCA] @ t=%0t - writes[stack] =%d", $time, tb_tca_system.i_dummy_stack_memory.cnt_wr);
+     $display("[TB TCA] @ t=%0t - reads [stack] =%d", $time, tb_tca_system.i_dummy_stack_memory.cnt_rd);
     $finish;
   endtask
 

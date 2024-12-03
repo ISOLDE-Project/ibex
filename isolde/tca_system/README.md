@@ -59,21 +59,48 @@ make sim-inputs
 *Not implemented*
  
 # REDMULE testing
+## 128b custom instruction
+
 ```sh
-make veri-clean verilate clean-test sim-input run-test2
+make  veri-clean verilate clean-test sim-input TEST_CFLAGS=-DCUSTOM_128B run-test2
 ```
 Expected output:
 ```
 [TESTBENCH] @ t=0: loading /home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/sw/bin/redmule_complex-m.hex into imemory
 [TESTBENCH] @ t=0: loading /home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/sw/bin/redmule_complex-d.hex into dmemory
 TOP.tb_tca_system.u_top.u_ibex_tracer.unnamedblk2.unnamedblk3: Writing execution trace to trace_core_00000000.log
-[APP TCA vli] Starting test. Godspeed!
+[APP TCA custom-128b] Starting test. Godspeed!
 Timing for REDMULE_TCA_VLI: 226 cycles
-[APP TCA vli] Terminated test with 0 errors. See you!
-[TB TCA] @ t=13792 - Success!
-[TB TCA] @ t=13792 - errors=00000000
-- /home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/tb/tb_tca_system.sv:463: Verilog $finish
+[APP TCA custom-128b] Terminated test with 0 errors. See you!
+[TB TCA] @ t=14306 - Success!
+[TB TCA] @ t=14306 - errors=00000000
+[TB TCA] @ t=14306 - writes[imemory] =          0
+[TB TCA] @ t=14306 - reads [imemory] =       6262
+[TB TCA] @ t=14306 - writes[dmemory] =        464
+[TB TCA] @ t=14306 - reads [dmemory] =        716
+[TB TCA] @ t=14306 - writes[stack] =        106
+[TB TCA] @ t=14306 - reads [stack] =        101
 ```
-
+## 32b custom instruction
+```sh
+make  clean-test sim-input TEST_CFLAGS=-DCUSTOM_32B run-test2
+```
+Expected output:
+```
+[TESTBENCH] @ t=0: loading /home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/sw/bin/redmule_complex-m.hex into imemory
+[TESTBENCH] @ t=0: loading /home/uic52463/hdd1/tristan-project/ibex/isolde/tca_system/sw/bin/redmule_complex-d.hex into dmemory
+TOP.tb_tca_system.u_top.u_ibex_tracer.unnamedblk2.unnamedblk3: Writing execution trace to trace_core_00000000.log
+[APP TCA custom-32b] Starting test. Godspeed!
+Timing for REDMULE_TCA: 230 cycles
+[APP TCA custom-32b] Terminated test with 0 errors. See you!
+[TB TCA] @ t=14138 - Success!
+[TB TCA] @ t=14138 - errors=00000000
+[TB TCA] @ t=14138 - writes[imemory] =          0
+[TB TCA] @ t=14138 - reads [imemory] =       6176
+[TB TCA] @ t=14138 - writes[dmemory] =        464
+[TB TCA] @ t=14138 - reads [dmemory] =        710
+[TB TCA] @ t=14138 - writes[stack] =        106
+[TB TCA] @ t=14138 - reads [stack] =        101
+```
 ---  
 ---
