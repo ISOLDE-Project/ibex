@@ -1,24 +1,8 @@
-
-#  -Core Firmware and the RISCV GCC Toolchain (SDK)
-include ../../mk/Common.mk
-
-
-
+###############################################################################
+#
+# Copyleft  2024 ISOLDE
 
 TEST         ?= hello-world
-# Test-Program directores.
-# Relative path is used for Verilator which cannot seem to handle loooong pathnames.
-TEST_PROGRAM_PATH    = $(CORE_V_VERIF)/$(CV_CORE_LC)/tests/programs/custom
-TEST_PROGRAM_RELPATH = ../../$(CV_CORE_LC)/tests/programs/custom
-#TEST_PROGRAM_RELPATH = $(CORE_V_VERIF)/$(CV_CORE_LC)/tests/programs/custom
-TEST_TEST_DIR        := $(TEST_PROGRAM_PATH)/$(TEST)
-
-#TEST_FILES        = $(filter %.c %.S,$(wildcard  $(TEST_TEST_DIR)/*))
-TEST_FILES_FULL   = $(filter %.c %.S,$(wildcard $(TEST_TEST_DIR)/*))
-TEST_FILES        = $(notdir $(TEST_FILES_FULL))
-
-
-
 
 # Common output directories
 RUN_INDEX                ?= 0
@@ -26,7 +10,7 @@ SIM_RESULTS              ?= simulation_results
 SIM_TEST_RESULTS         = $(SIM_RESULTS)/$(TEST)
 SIM_RUN_RESULTS          = $(SIM_TEST_RESULTS)/$(RUN_INDEX)
 SIM_TEST_PROGRAM_RESULTS = $(SIM_RUN_RESULTS)/test_program
-SIM_BSP_RESULTS          = $(CORE_V_VERIF)/sw/build/bsp
+
 
 # Compile compile flags for all simulators
 SV_CMP_FLAGS =
@@ -43,8 +27,6 @@ VERI_FLAGS         +=
 VERI_COMPILE_FLAGS += -Wno-BLKANDNBLK $(SV_CMP_FLAGS) # hope this doesn't hurt us in the long run
 VERI_TRACE         ?=
 VERI_OBJ_DIR       ?= $(VLT_TOP_MODULE)_cobj_dir
-#VERI_LOG_DIR       ?= cobj_dir/logs
-VERI_LOG_DIR       ?= $(SIM_TEST_PROGRAM_RESULTS)
 VERI_CFLAGS        += -O2
 
 ###############################################################################

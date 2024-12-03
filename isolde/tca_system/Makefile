@@ -7,7 +7,6 @@ TEST                ?= redmule_complex
 TEST_SRC_DIR	    = $(ROOT_DIR)/isolde/sw/simple_system/$(TEST)
 TEST_BIN_DIR	    = $(mkfile_path)/sw/bin
 test-program        ?= $(TEST_BIN_DIR)/$(TEST)
-BUILD_DIR           := build/$(IBEX_CONFIG)
 SYNTH_DIR           := synth/$(IBEX_CONFIG)
 TMP_DIR             := tmp/$(IBEX_CONFIG)
 FUSESOC_BUILD_ROOT  :=$(mkfile_path)/$(TMP_DIR)
@@ -33,7 +32,8 @@ num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 REDMULE_COMPLEX := 1
 export REDMULE_COMPLEX
 
-include Makefile.verilator
+include mk/sw-build.mk
+include mk/verilator-build.mk
 
 
 
@@ -74,15 +74,15 @@ $(TEST_BIN_DIR):
 $(test-program).hex: $(test-program).elf
 test-app: $(TEST_BIN_DIR) $(test-program).hex
 
-clean-test:
+clean-test: clean-bsp
 	rm -f $(test-program)*
 
 
 
 clean: veri-clean clean-test-programs
-	rm -fr $(BUILD_DIR) $(TEST_BIN_DIR) logs 
+	rm -fr $(TEST_BIN_DIR) logs 
 	rm -f *.log *.csv
 
 clean-hw:
-	rm -fr $(BUILD_DIR) logs
+	rm -fr  log
 

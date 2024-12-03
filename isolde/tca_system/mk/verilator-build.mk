@@ -1,4 +1,6 @@
-
+###############################################################################
+#
+# Copyleft  2024 ISOLDE
 
 #############
 # Verilator #
@@ -8,7 +10,7 @@ include $(REDMULE_ROOT_DIR)/bender_common.mk
 include $(REDMULE_ROOT_DIR)/bender_sim.mk
 include $(REDMULE_ROOT_DIR)/bender_synth.mk
 
-include mk/Common.mk
+
 
 VLT_TOP_MODULE ?= tb_tca_system
 

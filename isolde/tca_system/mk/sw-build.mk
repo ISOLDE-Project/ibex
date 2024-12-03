@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# Copyleft  2024
+# Copyleft  2024 ISOLDE
 # Copyright 2020 OpenHW Group
 #
 # Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
@@ -90,7 +90,7 @@ RISCV_CFLAGS += -I $(TEST_SRC_DIR)/utils
 RISCV_CFLAGS += -DUSE_BSP
 #RISCV_CFLAGS += -DCV32E40X 
 RISCV_CFLAGS += -DIBEX 
-
+RISCV_CFLAGS += $(TEST_CFLAGS)
 
 %.elf:
 	@echo "$(BANNER)"
