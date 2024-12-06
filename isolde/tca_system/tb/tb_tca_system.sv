@@ -160,55 +160,116 @@ MEMORY
   core_data_rsp_t core_data_rsp;
 
   // performance counters FSM states
-  typedef enum logic [1:0] {
+  typedef enum logic [2:0] {
     IDLE,
-    LATCHED
+    LATCH,
+    WAIT,
+    DIFF,
+    PRINT
   } perfcnt_state_t;
+
+  typedef struct packed {
+    int cnt_wr;
+    int cnt_rd;
+  } mem_io_t;
 
   typedef struct packed {
     logic [31:0] id;
     logic [31:0] cycle_counter;
+    mem_io_t  imem;
+    mem_io_t  dmem;
+    mem_io_t  stack_mem;
   } perfcnt_t;
 
 
 perfcnt_state_t perfcnt_state, perfcnt_next;
 perfcnt_t perfcnt_d,perfcnt_q;
 
-  task perfcnt_fsm();
-    $fwrite(fh, "Simulation Time: %t\n", $time);  // Print the current simulation time
-    case (perfcnt_state)
-      IDLE: begin
-        perfcnt_d.id <=  core_data_req.data;
-        perfcnt_d.cycle_counter<=cycle_counter;
-        perfcnt_state<=LATCHED;
-      end
-      LATCHED: begin
-        perfcnt_q.cycle_counter<=cycle_counter-perfcnt_d.cycle_counter;
-        perfcnt_state<=IDLE;
-        $fwrite(fh, "@ %t latch_id: %d\n", $time,perfcnt_d.id);  // Print the current simulation time
-        $fwrite(fh, "cycles %d\n", perfcnt_q.cycle_counter );  // Print the current simulation time
-      end
-    endcase
-  endtask
-
   always_ff @(posedge clk_i) begin
     if (~rst_ni) begin
       perfcnt_d<='0;
       perfcnt_q<='0;
-      perfcnt_next=IDLE;
+      perfcnt_state=IDLE;
+    end else begin
+      perfcnt_state <= perfcnt_next;
+    case (perfcnt_next)
+      LATCH: begin
+          perfcnt_d.id <= core_data_req.data;
+          perfcnt_d.cycle_counter <= cycle_counter;
+          perfcnt_d.dmem.cnt_wr<=tb_tca_system.i_dummy_dmemory.cnt_wr;
+          perfcnt_d.dmem.cnt_rd<=tb_tca_system.i_dummy_dmemory.cnt_rd;
+          perfcnt_d.imem.cnt_rd<=tb_tca_system.i_dummy_imemory.cnt_rd;
+          perfcnt_d.stack_mem.cnt_wr <= tb_tca_system.i_dummy_stack_memory.cnt_wr;
+          perfcnt_d.stack_mem.cnt_rd <= tb_tca_system.i_dummy_stack_memory.cnt_rd;
+          //$display("LATCH @%t id=%d,cycle_counter=%d\n",$time, core_data_req.data,cycle_counter);
+      end
+      DIFF: begin                  
+        perfcnt_q.id <= perfcnt_d.id;
+          perfcnt_q.cycle_counter <= (cycle_counter - perfcnt_d.cycle_counter);
+          perfcnt_q.dmem.cnt_wr<= ( tb_tca_system.i_dummy_dmemory.cnt_wr - perfcnt_d.dmem.cnt_wr);
+          perfcnt_q.dmem.cnt_rd<= ( tb_tca_system.i_dummy_dmemory.cnt_rd - perfcnt_d.dmem.cnt_rd);
+          //
+          perfcnt_q.imem.cnt_rd<= ( tb_tca_system.i_dummy_imemory.cnt_rd - perfcnt_d.imem.cnt_rd);
+          //
+          perfcnt_q.stack_mem.cnt_wr <= (tb_tca_system.i_dummy_stack_memory.cnt_wr-perfcnt_d.stack_mem.cnt_wr);
+          perfcnt_q.stack_mem.cnt_rd <= (tb_tca_system.i_dummy_stack_memory.cnt_rd-perfcnt_d.stack_mem.cnt_rd);
+
+          //$display("DIFF @%t id=%d,cycle_counter=%h\n",$time,  perfcnt_d.id, cycle_counter);
+      end
+      PRINT: begin
+         $display("PRINT @%t id=%d,cycles =%d\n",$time,  perfcnt_q.id, perfcnt_q.cycle_counter);
+        // $display("[TB TCA] @ t=%0t - writes[imemory] =%d", $time, tb_tca_system.i_dummy_imemory.cnt_wr);
+         $display("[TB TCA] @ t=%0t - reads [imemory] =%d", $time,  perfcnt_q.imem.cnt_rd);
+        //
+        $display("[TB TCA] @ t=%0t - writes[dmemory] =%d", $time,perfcnt_q.dmem.cnt_wr);
+        $display("[TB TCA] @ t=%0t - reads [dmemory] =%d", $time, perfcnt_q.dmem.cnt_rd);
+          //
+         $display("[TB TCA] @ t=%0t - writes[stack] =%d", $time, perfcnt_q.stack_mem.cnt_wr);
+        $display("[TB TCA] @ t=%0t - reads [stack] =%d", $time, perfcnt_q.stack_mem.cnt_rd);
+      end
+    endcase
     end
 
+  end
+
+
+  task perfcnt_fsm();
+    $fwrite(fh, "Simulation Time: %t\n", $time);  // Print the current simulation time
+    case (perfcnt_state)
+      IDLE: begin
+        perfcnt_next=LATCH;
+      end
+      WAIT: begin
+        perfcnt_next=DIFF;
+      end
+
+    endcase
+  endtask
+
+
+always_comb begin
     if ((core_data_req.addr == MMADDR_PERF) && core_data_req.req) begin
       if (core_data_req.we) perfcnt_fsm();
       else begin
-         $fwrite(fh, " %t, unsopported read @\n", $time,core_data_req.addr);  // Print the current simulation time
+         $fwrite(fh, " %t, unsupported read @\n", $time,core_data_req.addr);  // Print the current simulation time
+      end
+  
+    end else begin
+      case (perfcnt_state)
+      LATCH: begin
+        perfcnt_next=WAIT;
+      end
+      DIFF: begin
+        perfcnt_next=PRINT;
+      end
+        PRINT: begin
+          perfcnt_next=IDLE;
+        end
+
+
+    endcase
       end
     end
-    // dump_ctrl_fsm();
-    // dump_core_sleep_unit();
-  end
-
-  
 
   // bindings
   always_comb begin : bind_periph
