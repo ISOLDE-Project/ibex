@@ -83,7 +83,7 @@ BSP                                  = $(CORE_V_VERIF)/bsp
 
 
 RISCV_CFLAGS += -I $(CORE_V_VERIF)
-RISCV_CFLAGS += -I $(BSP)
+#RISCV_CFLAGS += -I $(BSP)
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)/inc
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)/utils

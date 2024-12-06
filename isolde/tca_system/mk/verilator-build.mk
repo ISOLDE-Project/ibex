@@ -86,8 +86,9 @@ $(BIN_DIR)/verilator_executable:  ibex_sim.flist manifest.flist
 veri-run: $(BIN_DIR)/verilator_executable 
 	@echo "$(BANNER)"
 	@echo "* Running with Verilator: $(BIN_DIR)/verilator_executable "
-	@echo "*               log file: $(VERI_LOG_DIR)/$(TEST).log"
-	@echo "*             *.vcd file: $(VERI_LOG_DIR)/$(TEST).vcd"
+	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
+	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/rtl_debug_trace.log"
+	@echo "*                              *.vcd: $(VERI_LOG_DIR)"
 	@echo "$(BANNER)"
 	mkdir -p $(VERI_LOG_DIR)
 	rm -f $(VERI_LOG_DIR)/verilator_tb.vcd
@@ -102,8 +103,9 @@ veri-run: $(BIN_DIR)/verilator_executable
 run-test2: $(BIN_DIR)/verilator_executable 
 	@echo "$(BANNER)"
 	@echo "* Running with Verilator: "
-	@echo "*                         logfile in $(VERI_LOG_DIR)/$(TEST).log"
-	@echo "*                         *.vcd   in $(VERI_LOG_DIR)"
+	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
+	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/rtl_debug_trace.log"
+	@echo "*                              *.vcd: $(VERI_LOG_DIR)"
 	@echo "$(BANNER)"
 	mkdir -p $(VERI_LOG_DIR)
 	rm -f $(VERI_LOG_DIR)/verilator_tb.vcd

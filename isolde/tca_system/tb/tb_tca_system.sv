@@ -71,6 +71,7 @@ MEMORY
   localparam logic [31:0] MMIO_ADDR = 32'h80000000;
   localparam logic [31:0] MMADDR_EXIT = MMIO_ADDR + 32'h0;
   localparam logic [31:0] MMADDR_PRINT = MMIO_ADDR + 32'h4;
+  localparam logic [31:0] MMADDR_PERF = MMIO_ADDR + 32'h8;
 
   // global signals
   string stim_instr, stim_data;
@@ -157,6 +158,57 @@ MEMORY
 
   core_data_req_t core_data_req;
   core_data_rsp_t core_data_rsp;
+
+  // performance counters FSM states
+  typedef enum logic [1:0] {
+    IDLE,
+    LATCHED
+  } perfcnt_state_t;
+
+  typedef struct packed {
+    logic [31:0] id;
+    logic [31:0] cycle_counter;
+  } perfcnt_t;
+
+
+perfcnt_state_t perfcnt_state, perfcnt_next;
+perfcnt_t perfcnt_d,perfcnt_q;
+
+  task perfcnt_fsm();
+    $fwrite(fh, "Simulation Time: %t\n", $time);  // Print the current simulation time
+    case (perfcnt_state)
+      IDLE: begin
+        perfcnt_d.id <=  core_data_req.data;
+        perfcnt_d.cycle_counter<=cycle_counter;
+        perfcnt_state<=LATCHED;
+      end
+      LATCHED: begin
+        perfcnt_q.cycle_counter<=cycle_counter-perfcnt_d.cycle_counter;
+        perfcnt_state<=IDLE;
+        $fwrite(fh, "@ %t latch_id: %d\n", $time,perfcnt_d.id);  // Print the current simulation time
+        $fwrite(fh, "cycles %d\n", perfcnt_q.cycle_counter );  // Print the current simulation time
+      end
+    endcase
+  endtask
+
+  always_ff @(posedge clk_i) begin
+    if (~rst_ni) begin
+      perfcnt_d<='0;
+      perfcnt_q<='0;
+      perfcnt_next=IDLE;
+    end
+
+    if ((core_data_req.addr == MMADDR_PERF) && core_data_req.req) begin
+      if (core_data_req.we) perfcnt_fsm();
+      else begin
+         $fwrite(fh, " %t, unsopported read @\n", $time,core_data_req.addr);  // Print the current simulation time
+      end
+    end
+    // dump_ctrl_fsm();
+    // dump_core_sleep_unit();
+  end
+
+  
 
   // bindings
   always_comb begin : bind_periph
@@ -483,6 +535,11 @@ xif_monitor_cpu_issue xif_monitor_cpu_issue_i (clk_i, core_xif);
     if ((core_data_req.addr == MMADDR_PRINT) && (core_data_req.we & core_data_req.req)) begin
       $write("%c", core_data_req.data);
     end
+        if ((core_data_req.addr == MMADDR_PERF) && (core_data_req.we & core_data_req.req)) begin
+      $display("t=%t @%h<-%h", $time,core_data_req.addr,core_data_req.data);
+    end
+
+    
     // dump_ctrl_fsm();
     // dump_core_sleep_unit();
   end
