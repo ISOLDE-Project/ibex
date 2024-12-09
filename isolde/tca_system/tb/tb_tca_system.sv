@@ -236,6 +236,35 @@ MEMORY
   end
 
 
+  always_comb begin
+    if (rst_ni && (core_data_req.addr == MMADDR_PERF) && core_data_req.req && core_data_req.we) begin 
+        case (perfcnt_state)
+          IDLE: begin
+            perfcnt_next = LATCH;
+          end
+          WAIT: begin
+            perfcnt_next = DIFF;
+          end
+        endcase
+    end else begin
+      case (perfcnt_state)
+        LATCH: begin
+          perfcnt_next = WAIT;
+        end
+        DIFF: begin
+          perfcnt_next = PRINT;
+        end
+        PRINT: begin
+          perfcnt_next = IDLE;
+        end
+      endcase
+    end
+  end
+
+/**
+read performance counters implementation
+**/
+
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) perfcnt_rvalid <= '0;
     else if (core_data_req.req & (core_data_req.addr >= MMADDR_PERF))
@@ -258,35 +287,7 @@ MEMORY
       endcase
     end else perfcnt_rdata = '0;
   end
-
-  always_comb begin
-    if (rst_ni && (core_data_req.addr == MMADDR_PERF) && core_data_req.req) begin
-      if (core_data_req.we) begin
-        case (perfcnt_state)
-          IDLE: begin
-            perfcnt_next = LATCH;
-          end
-          WAIT: begin
-            perfcnt_next = DIFF;
-          end
-        endcase
-      end
-    end else begin
-      case (perfcnt_state)
-        LATCH: begin
-          perfcnt_next = WAIT;
-        end
-        DIFF: begin
-          perfcnt_next = PRINT;
-        end
-        PRINT: begin
-          perfcnt_next = IDLE;
-        end
-      endcase
-    end
-  end
-
-
+  
   // bindings
   always_comb begin : bind_periph
     periph_req     = '0;
@@ -539,15 +540,15 @@ MEMORY
       $display("[TB TCA] @ t=%0t - Success!", $time);
       $display("[TB TCA] @ t=%0t - errors=%08x", $time, errors);
     end
-    $display("[TB TCA] @ t=%0t - writes[imemory] =%d", $time, tb_tca_system.i_dummy_imemory.cnt_wr);
-    $display("[TB TCA] @ t=%0t - reads [imemory] =%d", $time, tb_tca_system.i_dummy_imemory.cnt_rd);
+     $fwrite(fh,"[TB TCA] @ t=%0t - writes[imemory] =%d\n", $time, tb_tca_system.i_dummy_imemory.cnt_wr);
+     $fwrite(fh,"[TB TCA] @ t=%0t - reads [imemory] =%d\n", $time, tb_tca_system.i_dummy_imemory.cnt_rd);
     //
-    $display("[TB TCA] @ t=%0t - writes[dmemory] =%d", $time, tb_tca_system.i_dummy_dmemory.cnt_wr);
-    $display("[TB TCA] @ t=%0t - reads [dmemory] =%d", $time, tb_tca_system.i_dummy_dmemory.cnt_rd);
+     $fwrite(fh,"[TB TCA] @ t=%0t - writes[dmemory] =%d\n", $time, tb_tca_system.i_dummy_dmemory.cnt_wr);
+     $fwrite(fh,"[TB TCA] @ t=%0t - reads [dmemory] =%d\n", $time, tb_tca_system.i_dummy_dmemory.cnt_rd);
     //
-    $display("[TB TCA] @ t=%0t - writes[stack] =%d", $time,
+     $fwrite(fh,"[TB TCA] @ t=%0t - writes[stack] =%d\n", $time,
              tb_tca_system.i_dummy_stack_memory.cnt_wr);
-    $display("[TB TCA] @ t=%0t - reads [stack] =%d", $time,
+     $fwrite(fh,"[TB TCA] @ t=%0t - reads [stack] =%d\n", $time,
              tb_tca_system.i_dummy_stack_memory.cnt_rd);
     $finish;
   endtask
@@ -576,7 +577,7 @@ MEMORY
       $write("%c", core_data_req.data);
     end else 
     if ((core_data_req.addr == MMADDR_PERF) && (core_data_req.we & core_data_req.req)) begin
-      $display("t=%t @%h<-%h", $time, core_data_req.addr, core_data_req.data);
+       $fwrite(fh,"t=%t @%h<-%h\n", $time, core_data_req.addr, core_data_req.data);
     end
   end
 
