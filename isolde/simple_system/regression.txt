@@ -1,0 +1,8 @@
+#lit regression.txt  | FileChecketc..
+
+
+RUN: make run-test | FileCheck %s
+
+
+CHECK: Timing for loading t3-t6 with immediate values : 10 cycles
+CHECK: Timing for vle32.q Q0, 1, 2, 3, 4 : 7 cycles

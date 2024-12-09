@@ -1,0 +1,1 @@
+set -o pipefail;set -x;{ { set +x; } 2>/dev/null && echo 'RUN: at line 4': 'make run-test | FileCheck /home/uig89066/Desktop/Work/ibexbun/ibex/isolde/simple_system/regression.txt' >&2 && { set -x; } 2>/dev/null && {   make run-test | FileCheck /home/uig89066/Desktop/Work/ibexbun/ibex/isolde/simple_system/regression.txt; }; }

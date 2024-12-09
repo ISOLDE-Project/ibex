@@ -131,8 +131,11 @@ regs Kusti, 23.10.2004
 /* Optional external types dependencies */
 
 #if TINYPRINTF_DEFINE_TFP_SPRINTF
-# include <sys/types.h>  /* size_t */
+#ifndef _SYS_TYPES_H_
+typedef unsigned int size_t;
 #endif
+#endif
+
 
 /* Declarations */
 

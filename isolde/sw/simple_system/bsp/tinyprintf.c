@@ -42,9 +42,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /*
  * Configuration adjustments
  */
-#ifdef PRINTF_SIZE_T_SUPPORT
-#include <sys/types.h>
-#endif
 
 #ifdef PRINTF_LONG_LONG_SUPPORT
 # define PRINTF_LONG_SUPPORT
@@ -63,7 +60,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifdef __SIZEOF_INT__
 # define SIZEOF_INT __SIZEOF_INT__
 #endif
-
+ 
 #ifdef __GNUC__
 # define _TFP_GCC_NO_INLINE_  __attribute__ ((noinline))
 #else
