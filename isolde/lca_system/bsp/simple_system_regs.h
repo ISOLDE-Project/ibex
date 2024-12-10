@@ -12,9 +12,10 @@ see tb/core/mm_ram.sv
 
 
 #define MMADDR_EXIT                0x80000000
-#define MMADDR_PRINT               0x80000004
 #define MMADDR_CYCLE_COUNTER       MMADDR_EXIT
-
+#define MMADDR_PRINT               MMADDR_EXIT+0x4
+#define MMADDR_PERF_COUNTERS       0x80000008
+                                   
 //#define SIM_CTRL_BASE 0x20000
 //#define SIM_CTRL_OUT 0x0
 //#define SIM_CTRL_CTRL 0x8

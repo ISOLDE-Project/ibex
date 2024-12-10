@@ -42,106 +42,55 @@
 #include <cstdint>
 #include <cerrno>
 
-void dump_memory();
-double sc_time_stamp();
 
-static vluint64_t t = 0;
-TOP_LEVEL_DUT *top;
 
-int main(int argc, char **argv, char **env)
-{
-uint32_t timeOut{207374};
-#ifdef MCY
-    int mutidx = 0;
-    for (int i = 1; i < argc; i++)
-    {
-      if (!strcmp(argv[i], "--mutidx") && i+1 < argc)
-      {
-        i++;
-        std::string s(argv[i]);
-        mutidx = std::stoi(s);
-      }
-    }
-#endif
 
+typedef TOP_LEVEL_DUT VTopModule;
+typedef std::unique_ptr<VTopModule> dut_ptr;
+
+void dut_reset(dut_ptr&dut, const vluint64_t sim_time, const vluint64_t rst_time, const vluint64_t rst_cycles) {
+  dut->rst_ni = 0;
+  if (sim_time > rst_time && sim_time < rst_time + rst_cycles) dut->rst_ni = 1;
+
+  if (sim_time > rst_time + rst_cycles && sim_time < rst_time + 2 * rst_cycles) dut->rst_ni = 0;
+
+  if (sim_time > rst_time + 2 * rst_cycles) dut->rst_ni = 1;
+}
+
+void dut_set_fetch_en(dut_ptr&dut, const vluint64_t sim_time, bool value) {
+  dut->fetch_enable_i = 0;
+  if (sim_time > 100) {
+    dut->fetch_enable_i = value;
+  }
+}
+
+int main(int argc, char **argv, char **env){
+
+    uint32_t timeOut{207374};
     Verilated::commandArgs(argc, argv);
+    dut_ptr dut = std::make_unique<VTopModule>();
+
     Verilated::traceEverOn(true);
-    top = new TOP_LEVEL_DUT();
-
-    // svSetScope(svGetScopeFromName(
-    //     "TOP.tb_top_verilator.cv32e40p_tb_wrapper_i.ram_i.dp_ram_i"));
-    // Verilated::scopesDump();
-
-#ifdef VCD_TRACE
-    VerilatedVcdC *tfp = new VerilatedVcdC;
-    top->trace(tfp, 99);
+    auto tfp = std::make_unique<VerilatedVcdC>();
+  dut->trace(tfp.get(), 5);
     tfp->open("verilator_tb.vcd");
-#endif
-    top->fetch_enable_i = 1;
-    top->clk_i          = 0;
-    top->rst_ni         = 1;
+//https://github.com/verilator/verilator/blob/v5.028/include/verilated.h
+  VerilatedContext* contextp = dut->contextp();
+  while (!Verilated::gotFinish()  && (contextp->time()< timeOut) ) {
+        // Start clock toggling
+    dut->clk_i ^= 1;
 
-    top->eval();
-#ifdef DUMP_MEMORY    
-    dump_memory();
-#endif    
+    // Reset DUT
+    dut_reset(dut, contextp->time(), 20, 10);
+    // Set fetch enable to core
+    dut_set_fetch_en(dut, contextp->time(), 1);
+    dut->eval();
+    tfp->dump(contextp->time());
+    contextp->timeInc(1);
+  }
 
-#ifdef MCY
-    // svSetScope(svGetScopeFromName(
-    //     "TOP.tb_top_verilator.cv32e40p_tb_wrapper_i.riscv_core_i.ex_stage_i.alu_i.int_div.div_i"));
-    svLogicVecVal idx = {0};
-    idx.aval = mutidx;
-    set_mutidx(&idx);
-    std::cout << "[tb_top_verilator] mutsel = " << idx.aval << "\n";
-#endif
-
-    while (!Verilated::gotFinish() && t < timeOut) {
-        if(t<15)
-            top->rst_ni = 0;
-        if (t > 40)
-            top->rst_ni = 1;
-        top->clk_i = !top->clk_i;
-        top->eval();
-#ifdef VCD_TRACE
-        tfp->dump(t);
-#endif
-        t += 5;
+  dut->final();
+  tfp->close();
+  //delete dut;
+  exit(EXIT_SUCCESS);
     }
-#ifdef VCD_TRACE
-    tfp->close();
-#endif
-    delete top;
-    exit(0);
-}
-
-double sc_time_stamp()
-{
-    return t;
-}
-
-#ifdef DUMP_MEMORY  
-void dump_memory()
-{
-    errno = 0;
-    std::ofstream mem_file;
-    svLogicVecVal addr = {0};
-
-    mem_file.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    try {
-        mem_file.open("memory_dump.bin");
-        for (size_t i = 0; i < 1048576; i++) {
-            addr.aval    = i;
-            uint32_t val = read_byte(&addr);
-            //uint32_t val = read_byte(&addr.aval);  // mike@openhwgroup.org: if the above line fails to compile on your system, try this line
-            mem_file << std::setfill('0') << std::setw(2) << std::hex << val
-                     << std::endl;
-        }
-        mem_file.close();
-
-        std::cout << "[tb_top_verilator] finished dumping memory" << std::endl;
-
-    } catch (std::ofstream::failure e) {
-        std::cerr << "[tb_top_verilator] exception opening/reading/closing file memory_dump.bin\n";
-    }
-}
-#endif
