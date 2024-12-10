@@ -3,7 +3,7 @@ mkfile_path         := $(shell git rev-parse --show-toplevel)/isolde/lca_system
 IBEX_CONFIG         ?=  isolde
 FUSESOC_CONFIG_OPTS := $(shell cd $(ROOT_DIR) && $(ROOT_DIR)/util/ibex_config.py $(IBEX_CONFIG) fusesoc_opts)
 FUSESOC_PARAMS      ?=
-TEST                ?= vlinstr_test
+TEST                ?= dhrystone
 TEST_SRC_DIR	    = $(ROOT_DIR)/isolde/sw/simple_system/$(TEST)
 TEST_BIN_DIR	    = $(mkfile_path)/sw/bin
 test-program        ?= $(TEST_BIN_DIR)/$(TEST)
@@ -31,8 +31,8 @@ num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 
 
-include Makefile.verilator
-
+include mk/sw-build.mk
+include mk/verilator-build.mk
 
 
 
@@ -75,6 +75,7 @@ test-app: $(TEST_BIN_DIR) $(test-program).hex
 
 clean-test:
 	rm -f $(test-program)*
+	rm -fr $(TEST_BIN_DIR) 
 
 
 
@@ -85,7 +86,3 @@ clean: veri-clean clean-test-programs
 clean-hw:
 	rm -fr $(BUILD_DIR) logs
 
-clean-bender:
-	rm -fr .bender
-	rm -f Bender.lock
-	

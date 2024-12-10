@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# Copyleft  2024
+# Copyleft  2024 ISOLDE
 # Copyright 2020 OpenHW Group
 #
 # Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
@@ -48,7 +48,7 @@
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 
-PRJ_HOME      := $(shell git rev-parse --show-toplevel)/isolde/lca_system
+PRJ_HOME      := $(shell git rev-parse --show-toplevel)/isolde/tca_system
 CORE_V_VERIF  := $(PRJ_HOME)
 TBSRC_HOME    := $(PRJ_HOME)/tb
 TBSRC_CORE    := $(TBSRC_HOME)/core
@@ -83,16 +83,18 @@ BSP                                  = $(CORE_V_VERIF)/bsp
 
 
 RISCV_CFLAGS += -I $(CORE_V_VERIF)
-RISCV_CFLAGS += -I $(BSP)
+#RISCV_CFLAGS += -I $(BSP)
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)/inc
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)/utils
 RISCV_CFLAGS += -DUSE_BSP
-
+#RISCV_CFLAGS += -DCV32E40X 
+RISCV_CFLAGS += -DIBEX 
+RISCV_CFLAGS += $(TEST_CFLAGS)
 
 %.elf:
 	@echo "$(BANNER)"
-	@echo "* Compiling the test"
+	@echo "* Compiling $@"
 	@echo "$(BANNER)"
 	mkdir -p $(SIM_BSP_RESULTS)
 	cp $(BSP)/Makefile $(SIM_BSP_RESULTS)
@@ -111,12 +113,13 @@ RISCV_CFLAGS += -DUSE_BSP
 
 %.hex: %.elf
 	@echo "$(BANNER)"
-	@echo "* Generating hexfile, readelf and objdump files"
+	@echo "* Generating $@, readelf and objdump files"
 	@echo "$(BANNER)"
 	$(RISCV_EXE_PREFIX)objcopy -O verilog \
 		$< \
 		$@
 	python $(SCRIPTS_DIR)/addr_offset.py  $@  $*-m.hex 0x00100000
+	python $(SCRIPTS_DIR)/addr_offset.py  $@  $*-d.hex 0x00100000
 	$(RISCV_EXE_PREFIX)readelf -a $< > $*.readelf
 	$(RISCV_EXE_PREFIX)objdump \
 		-fhSD \

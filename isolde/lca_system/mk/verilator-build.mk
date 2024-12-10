@@ -1,4 +1,6 @@
-
+###############################################################################
+#
+# Copyleft  2024 ISOLDE
 
 #############
 # Verilator #
@@ -8,7 +10,7 @@ include $(REDMULE_ROOT_DIR)/bender_common.mk
 include $(REDMULE_ROOT_DIR)/bender_sim.mk
 include $(REDMULE_ROOT_DIR)/bender_synth.mk
 
-include mk/Common.mk
+
 
 VLT_TOP_MODULE ?= tb_lca_system
 
@@ -46,9 +48,9 @@ CORE_FILES := $(filter %.core,$(wildcard $(mkfile_path)/*))
 CORE_FILES += $(filter %.core,$(wildcard $(ROOT_DIR)/*))
 CORE_FILE_NAMES := $(notdir $(CORE_FILES))
 
-fusesoc_ignore: $(ROOT_DIR)/isolde/lca_system/.bender/FUSESOC_IGNORE $(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE
+fusesoc_ignore: $(ROOT_DIR)/isolde/tca_system/.bender/FUSESOC_IGNORE $(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE
 
-$(ROOT_DIR)/isolde/lca_system/.bender/FUSESOC_IGNORE:
+$(ROOT_DIR)/isolde/tca_system/.bender/FUSESOC_IGNORE:
 	@if [ ! -f $@ ]; then touch $@; fi
 
 $(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE:
@@ -84,8 +86,9 @@ $(BIN_DIR)/verilator_executable:  ibex_sim.flist manifest.flist
 veri-run: $(BIN_DIR)/verilator_executable 
 	@echo "$(BANNER)"
 	@echo "* Running with Verilator: $(BIN_DIR)/verilator_executable "
-	@echo "*               log file: $(VERI_LOG_DIR)/$(TEST).log"
-	@echo "*             *.vcd file: $(VERI_LOG_DIR)/$(TEST).vcd"
+	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
+	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/rtl_debug_trace.log"
+	@echo "*                              *.vcd: $(VERI_LOG_DIR)"
 	@echo "$(BANNER)"
 	mkdir -p $(VERI_LOG_DIR)
 	rm -f $(VERI_LOG_DIR)/verilator_tb.vcd
@@ -95,7 +98,7 @@ veri-run: $(BIN_DIR)/verilator_executable
 		| tee $(VERI_LOG_DIR)/$(TEST).log
 	mv verilator_tb.vcd $(VERI_LOG_DIR)/$(TEST).vcd
 
-	
+
 .PHONY: run-test2
 run-test2: $(BIN_DIR)/verilator_executable 
 	@echo "$(BANNER)"
@@ -113,6 +116,7 @@ run-test2: $(BIN_DIR)/verilator_executable
 		| tee $(VERI_LOG_DIR)/$(TEST).log
 	mv verilator_tb.vcd $(VERI_LOG_DIR)/$(TEST).vcd
 	mv rtl_debug_trace.log $(VERI_LOG_DIR)
+
 
 .PHONY: help
 help:
