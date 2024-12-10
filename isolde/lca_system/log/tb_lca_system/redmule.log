@@ -1,5 +1,8 @@
-[TESTBENCH] @ t=0: loading firmware /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/lca_system/sw/bin/redmule-m.hex
+[TESTBENCH] @ t=0: loading /home/uic52463/hdd1/tristan-project/ibex/isolde/lca_system/sw/bin/redmule-m.hex into imemory
+[TESTBENCH] @ t=0: loading /home/uic52463/hdd1/tristan-project/ibex/isolde/lca_system/sw/bin/redmule-d.hex into dmemory
 TOP.tb_lca_system.u_top.u_ibex_tracer.unnamedblk2.unnamedblk3: Writing execution trace to trace_core_00000000.log
 Timing for REDMULE_LCA: 240 cycles
 Resumed!
-[LCA] Terminated test with 0 errors. See you!
+[TB LCA] @ t=51130 - Success!
+[TB LCA] @ t=51130 - errors=00000000
+- /home/uic52463/hdd1/tristan-project/ibex/isolde/lca_system/tb/tb_lca_system.sv:483: Verilog $finish
