@@ -2,7 +2,7 @@ ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
 IBEX_CONFIG         ?=  small
 FUSESOC_CONFIG_OPTS := $(shell cd $(ROOT_DIR) && $(ROOT_DIR)/util/ibex_config.py $(IBEX_CONFIG) fusesoc_opts)
 TEST                ?= dhrystone
-test-program        ?= $(ROOT_DIR)/examples/sw/simple_system/$(TEST)/$(TEST).elf
+test-program        ?= $(ROOT_DIR)/isolde/sw/simple_system/$(TEST)/$(TEST).elf
 BUILD_DIR           := build/$(IBEX_CONFIG)
 SYNTH_DIR           := synth/$(IBEX_CONFIG)
 TMP_DIR             := tmp/$(IBEX_CONFIG)
@@ -10,7 +10,7 @@ TMP_DIR             := tmp/$(IBEX_CONFIG)
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 
-build-hw:
+verilate:
 	fusesoc --cores-root=$(ROOT_DIR) run --target=sim --setup --build  --build-root=$(BUILD_DIR) lowrisc:ibex:ibex_simple_system $(FUSESOC_CONFIG_OPTS)
 
 flist: ibex_manifest.flist
@@ -68,7 +68,7 @@ clean-hw:
 
 
 
-veri-test: 
+veri-run: 
 	make -C $(dir $(test-program)) clean
 	make -C $(dir $(test-program)) 	
 	@rm -f ibex_simple_system.log

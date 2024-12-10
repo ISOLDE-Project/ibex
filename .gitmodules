@@ -1,0 +1,4 @@
+[submodule "vendor/redmule"]
+	path = vendor/redmule
+	url = https://github.com/ISOLDE-Project/redmule.git
+	branch = isolde/lca
