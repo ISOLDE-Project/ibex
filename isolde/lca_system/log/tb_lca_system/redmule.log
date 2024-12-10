@@ -1,5 +1,5 @@
 [TESTBENCH] @ t=0: loading firmware /ubuntu_20.04/home/ext/tristan-project/ibex/isolde/lca_system/sw/bin/redmule-m.hex
 TOP.tb_lca_system.u_top.u_ibex_tracer.unnamedblk2.unnamedblk3: Writing execution trace to trace_core_00000000.log
-Timing for REDMULE: 240 cycles
+Timing for REDMULE_LCA: 240 cycles
 Resumed!
-Terminated test with 0 errors. See you!
+[LCA] Terminated test with 0 errors. See you!

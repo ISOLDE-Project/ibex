@@ -32,7 +32,7 @@ make sim-inputs
 *Not implemented*
 ## execute test
 ```sh
-make TEST=redmule  veri-run
+make TEST=redmule clean-test sim-inputs veri-run
 ```
 Output should be similar to this
 ```
