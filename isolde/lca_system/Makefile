@@ -38,7 +38,7 @@ include mk/verilator-build.mk
 
 .PHONY: sim-inputs
 sim-inputs:
-	$(MAKE)  TEST=redmule TEST_FILES=redmule.c TEST_SRC_DIR=$(REDMULE_ROOT_DIR)/sw test-app
+	$(MAKE)  TEST=redmule TEST_FILES=redmule.c TEST_SRC_DIR=$(REDMULE_ROOT_DIR)/sw test-build
 
 
 $(SIM_TEST_INPUTS):
@@ -64,22 +64,22 @@ synth: synth-setup
 
 	
 
-.PHONY: test-app $(test-program) clean $(TEST_BIN_DIR)
+.PHONY: test-build $(test-program) clean $(TEST_BIN_DIR)
 
 $(TEST_BIN_DIR):
 	mkdir -p $@
 
 
 $(test-program).hex: $(test-program).elf
-test-app: $(TEST_BIN_DIR) $(test-program).hex
+test-build: $(TEST_BIN_DIR) $(test-program).hex
 
-clean-test:
+test-clean:
 	rm -f $(test-program)*
 	rm -fr $(TEST_BIN_DIR) 
 
 
 
-clean: veri-clean clean-test-programs
+clean: veri-clean test-clean-programs
 	rm -fr $(BUILD_DIR) $(TEST_BIN_DIR) logs 
 	rm -f *.log *.csv
 
