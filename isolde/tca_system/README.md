@@ -83,7 +83,7 @@ Timing for REDMULE_TCA_VLI: 226 cycles
 ```
 ## 32b custom instruction
 ```sh
-make  clean-test sim-input TEST_CFLAGS=-DCUSTOM_32B run-test2
+make  test-clean sim-input TEST_CFLAGS=-DCUSTOM_32B veri-run
 ```
 Expected output:
 ```

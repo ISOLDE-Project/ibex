@@ -82,25 +82,9 @@ $(BIN_DIR)/verilator_executable:  ibex_sim.flist manifest.flist
 											  verilate      
 
 
+
 .PHONY: veri-run
 veri-run: $(BIN_DIR)/verilator_executable 
-	@echo "$(BANNER)"
-	@echo "* Running with Verilator: $(BIN_DIR)/verilator_executable "
-	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
-	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/rtl_debug_trace.log"
-	@echo "*                              *.vcd: $(VERI_LOG_DIR)"
-	@echo "$(BANNER)"
-	mkdir -p $(VERI_LOG_DIR)
-	rm -f $(VERI_LOG_DIR)/verilator_tb.vcd
-	$(BIN_DIR)/verilator_executable  \
-		$(VERI_FLAGS) \
-		"+firmware=$(test-program)-m.hex" \
-		| tee $(VERI_LOG_DIR)/$(TEST).log
-	mv verilator_tb.vcd $(VERI_LOG_DIR)/$(TEST).vcd
-
-
-.PHONY: run-test2
-run-test2: $(BIN_DIR)/verilator_executable 
 	@echo "$(BANNER)"
 	@echo "* Running with Verilator: "
 	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
