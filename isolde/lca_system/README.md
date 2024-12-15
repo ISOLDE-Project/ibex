@@ -45,7 +45,7 @@ Terminated test with 0 errors. See you!
 # REDMULE testing
 ```sh
 make sim-inputs
-make TEST=redmule run-test2
+make TEST=redmule veri-run
 ```
 
 ---  

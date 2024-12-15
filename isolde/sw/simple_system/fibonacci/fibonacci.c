@@ -17,7 +17,9 @@
  */
 
 //#include <stdio.h>
-#include "tinyprintf.h"
+#include <bsp/tinyprintf.h>
+#include <bsp/simple_system_common.h>
+#include <bsp/simple_system_regs.h>
 #include <stdlib.h>
 
 static int fib(int i) {
@@ -30,11 +32,11 @@ int main(int argc, char *argv[]) {
     int num =  15;
 
     printf("starting fib(%d)...\n", num);
-
+    START_TIMING(FIBONACCI);
     for(i=0; i<num; i++) {
         printf("fib(%d) = %d\n", i, fib(i));
     }
-
+    END_TIMING(FIBONACCI);
     printf("finishing...\n");
 
     return 0;

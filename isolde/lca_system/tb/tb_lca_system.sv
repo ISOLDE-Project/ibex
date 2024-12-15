@@ -78,6 +78,8 @@ MEMORY
   logic        test_mode;
   logic [31:0] cycle_counter;
   logic        mmio_rvalid;
+  logic        mmio_req;
+  logic        mmio_gnt;
   logic [31:0] mmio_rdata;
   //
   logic        perfcnt_rvalid;
@@ -106,7 +108,7 @@ MEMORY
     logic [31:0] data;
   } core_inst_rsp_t;
 
-  typedef struct packed {
+  typedef struct {
     logic req;
     logic we;
     logic [3:0] be;
@@ -114,7 +116,7 @@ MEMORY
     logic [31:0] data;
   } core_data_req_t;
 
-  typedef struct packed {
+  typedef struct {
     logic gnt;
     logic valid;
     logic [31:0] data;
@@ -129,7 +131,7 @@ MEMORY
   core_data_req_t core_data_req;
   core_data_rsp_t core_data_rsp;
 
-// performance counters FSM states
+  // performance counters FSM states
   typedef enum logic [2:0] {
     IDLE,
     LATCH,
@@ -204,15 +206,15 @@ MEMORY
 
 
   always_comb begin
-    if (rst_ni && (core_data_req.addr == MMADDR_PERF) && core_data_req.req && core_data_req.we) begin 
-        case (perfcnt_state)
-          IDLE: begin
-            perfcnt_next = LATCH;
-          end
-          WAIT: begin
-            perfcnt_next = DIFF;
-          end
-        endcase
+    if (rst_ni && (core_data_req.addr == MMADDR_PERF) && core_data_req.req && core_data_req.we) begin
+      case (perfcnt_state)
+        IDLE: begin
+          perfcnt_next = LATCH;
+        end
+        WAIT: begin
+          perfcnt_next = DIFF;
+        end
+      endcase
     end else begin
       case (perfcnt_state)
         LATCH: begin
@@ -228,7 +230,7 @@ MEMORY
     end
   end
 
-/**
+  /**
 read performance counters implementation
 **/
 
@@ -262,11 +264,11 @@ read performance counters implementation
     periph.req    = core_data_req.req &
                          (core_data_req.addr >= PERI_ADDR) &
                          (core_data_req.addr < IMEM_ADDR) ;
-    periph.add    = core_data_req.addr;
-    periph.wen    = ~core_data_req.we;
-    periph.be     = core_data_req.be;
-    periph.data   = core_data_req.data;
-    periph.id     = '0;
+    periph.add = core_data_req.addr;
+    periph.wen = ~core_data_req.we;
+    periph.be = core_data_req.be;
+    periph.data = core_data_req.data;
+    periph.id = '0;
     //periph_r_valid = '0;
   end
 
@@ -320,7 +322,8 @@ read performance counters implementation
   assign core_data_rsp.gnt =  periph.req ?
                        periph.gnt : stack[0].req ?
                                     stack[0].gnt : tcdm[MP].req ?
-                                                   tcdm[MP].gnt : '1;
+                                                   tcdm[MP].gnt : mmio_req ?
+                                                                  mmio_rvalid : '1;
 
   assign core_data_rsp.data = periph.r_valid   ? periph.r_data    :
                                         stack[0].r_valid ? stack[0].r_data  :
@@ -442,7 +445,7 @@ read performance counters implementation
       .alert_major_bus_o     (),
       .core_sleep_o          (core_sleep)
   );
- redmule_isolde #(
+  redmule_isolde #(
       .ID_WIDTH (ID),
       .N_CORES  (NC),
       .DW       (DW),  // TCDM port dimension (in bits
@@ -454,13 +457,13 @@ read performance counters implementation
       .fetch_enable_i(fetch_enable_i),
       .evt_o         (evt),
       .tcdm          (redmule_tcdm),
-      .periph      (periph)
+      .periph        (periph)
   );
 
 
 
 
-// Declare the task with an input parameter for errors
+  // Declare the task with an input parameter for errors
   task endSimulation(input int errors);
     if (errors != 0) begin
       $display("[TB LCA] @ t=%0t - Fail!", $time);
@@ -470,45 +473,66 @@ read performance counters implementation
       $display("[TB LCA] @ t=%0t - Success!", $time);
       $display("[TB LCA] @ t=%0t - errors=%08x", $time, errors);
     end
-     $fwrite(fh,"[TB LCA] @ t=%0t - writes[imemory] =%d\n", $time, tb_lca_system.i_dummy_imemory.cnt_wr);
-     $fwrite(fh,"[TB LCA] @ t=%0t - reads [imemory] =%d\n", $time, tb_lca_system.i_dummy_imemory.cnt_rd);
+    $fwrite(fh, "[TB LCA] @ t=%0t - writes[imemory] =%d\n", $time,
+            tb_lca_system.i_dummy_imemory.cnt_wr);
+    $fwrite(fh, "[TB LCA] @ t=%0t - reads [imemory] =%d\n", $time,
+            tb_lca_system.i_dummy_imemory.cnt_rd);
     //
-     $fwrite(fh,"[TB LCA] @ t=%0t - writes[dmemory] =%d\n", $time, tb_lca_system.i_dummy_dmemory.cnt_wr);
-     $fwrite(fh,"[TB LCA] @ t=%0t - reads [dmemory] =%d\n", $time, tb_lca_system.i_dummy_dmemory.cnt_rd);
+    $fwrite(fh, "[TB LCA] @ t=%0t - writes[dmemory] =%d\n", $time,
+            tb_lca_system.i_dummy_dmemory.cnt_wr);
+    $fwrite(fh, "[TB LCA] @ t=%0t - reads [dmemory] =%d\n", $time,
+            tb_lca_system.i_dummy_dmemory.cnt_rd);
     //
-     $fwrite(fh,"[TB LCA] @ t=%0t - writes[stack] =%d\n", $time,
-             tb_lca_system.i_dummy_stack_memory.cnt_wr);
-     $fwrite(fh,"[TB LCA] @ t=%0t - reads [stack] =%d\n", $time,
-             tb_lca_system.i_dummy_stack_memory.cnt_rd);
+    $fwrite(fh, "[TB LCA] @ t=%0t - writes[stack] =%d\n", $time,
+            tb_lca_system.i_dummy_stack_memory.cnt_wr);
+    $fwrite(fh, "[TB LCA] @ t=%0t - reads [stack] =%d\n", $time,
+            tb_lca_system.i_dummy_stack_memory.cnt_rd);
     $finish;
   endtask
 
   /*
 ** The semantics of the r_valid signal are not well defined with respect to the usual TCDM protocol. In PULP clusters, r_valid will be asserted also after write transactions, not only in reads. 
 ** https://hwpe-doc.readthedocs.io/en/latest/protocols.html#hwpe-mem
+** see also https://ibex-core.readthedocs.io/en/latest/03_reference/load_store_unit.html
 **/
 
-
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (~rst_ni) mmio_rvalid <= '0;
-    else
-      mmio_rvalid <= core_data_req.req & ( (core_data_req.addr >= MMIO_ADDR) && (core_data_req.addr < MMADDR_PERF) );
+  always_comb begin
+    mmio_req =  core_data_req.req && (core_data_req.addr >= MMIO_ADDR) && (core_data_req.addr < MMADDR_PERF) ;
+    mmio_gnt = mmio_req;
   end
 
-  always_ff @(posedge clk_i) begin
-    if (~rst_ni) cycle_counter <= '0;
-    else cycle_counter <= cycle_counter + 1;
-    if ((core_data_req.addr == MMADDR_EXIT) && core_data_req.req) begin
-      if (core_data_req.we) endSimulation(core_data_req.data);
-      else mmio_rdata <= cycle_counter;
-    end else 
 
-    if ((core_data_req.addr == MMADDR_PRINT) && (core_data_req.we & core_data_req.req)) begin
-      $write("%c", core_data_req.data);
-    end else 
-    if ((core_data_req.addr == MMADDR_PERF) && (core_data_req.we & core_data_req.req)) begin
-       $fwrite(fh,"t=%t @%h<-%h\n", $time, core_data_req.addr, core_data_req.data);
-    end
+
+  always_ff @(posedge clk_i) begin
+    if (~rst_ni) begin
+      cycle_counter <= '0;
+      mmio_rvalid   <= 0;
+    end else cycle_counter <= cycle_counter + 1;
+
+    if (mmio_gnt) begin
+      case (core_data_req.addr)
+        MMADDR_EXIT: begin
+          if (core_data_req.we) endSimulation(core_data_req.data);
+          else if (~mmio_rvalid) begin
+            mmio_rdata  <= cycle_counter;
+            mmio_rvalid <= 1;
+          end 
+
+        end
+        MMADDR_PRINT:
+        if (core_data_req.we) begin
+          if (~mmio_rvalid) begin
+            $write("%c", core_data_req.data);  
+            mmio_rvalid <= 1;
+          end 
+        end
+        default: begin
+          mmio_rdata  <= '0;
+          mmio_rvalid <= 0;
+        end
+      endcase
+    end else mmio_rvalid <= 0;
+
   end
 
 
