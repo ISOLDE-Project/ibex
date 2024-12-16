@@ -26,23 +26,34 @@ static int fib(int i) {
     return (i>1) ? fib(i-1) + fib(i-2) : i;
 }
 
+ char dummyData[]={1,2,3,4,5,6};
 int main(int argc, char *argv[]) {
 
-    //(*(volatile int *) MMADDR_PERF_COUNTERS) =(int) 0x1;
+    
     START_PERFCNT(1);
+
     int i;
-    int num =  15;
+    const int num =  sizeof(dummyData)/sizeof(dummyData[0]);
 
     printf("starting fib(%d)...\n", num);
     START_TIMING(FIBONACCI);
     for(i=0; i<num; i++) {
         printf("fib(%d) = %d\n", i, fib(i));
+
     }
     END_TIMING(FIBONACCI);
     printf("finishing...\n");
 
-   //(*(volatile int *) MMADDR_PERF_COUNTERS) =(int) 0x1;
-   STOP_PERFCNT(1);
-
+   
+   
+    //force missaligend reads/writes
+    for(i=0;i<num;++i)
+        printf("[before ]dummyData[%d] = %d\n", i, dummyData[i]);
+    printf("writing test..\n");
+     for(i=0;i<num;++i){
+        dummyData[i]=fib(i);
+        printf("[after  ]dummyData[%d] = %d\n", i, dummyData[i]);
+    }
+   STOP_PERFCNT(1); 
     return 0;
 }
