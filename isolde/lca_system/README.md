@@ -47,6 +47,9 @@ Terminated test with 0 errors. See you!
 make sim-inputs
 make TEST=redmule veri-run
 ```
-
+# Regression
+```sh
+make  test-clean test-build  TEST=fibonacci veri-run
+```
 ---  
 ---
