@@ -28,7 +28,8 @@ static int fib(int i) {
 
 int main(int argc, char *argv[]) {
 
-    (*(volatile int *) MMADDR_PERF_COUNTERS) =(int) 0x1;
+    //(*(volatile int *) MMADDR_PERF_COUNTERS) =(int) 0x1;
+    START_PERFCNT(1);
     int i;
     int num =  15;
 
@@ -40,9 +41,8 @@ int main(int argc, char *argv[]) {
     END_TIMING(FIBONACCI);
     printf("finishing...\n");
 
-   (*(volatile int *) MMADDR_PERF_COUNTERS) =(int) 0x1;
-
-    printPerfCnt();
+   //(*(volatile int *) MMADDR_PERF_COUNTERS) =(int) 0x1;
+   STOP_PERFCNT(1);
 
     return 0;
 }
