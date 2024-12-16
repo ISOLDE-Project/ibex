@@ -48,11 +48,10 @@
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 
-PRJ_HOME      := $(shell git rev-parse --show-toplevel)/isolde/tca_system
+PRJ_HOME      := $(shell git rev-parse --show-toplevel)/isolde/lca_system
 CORE_V_VERIF  := $(PRJ_HOME)
 TBSRC_HOME    := $(PRJ_HOME)/tb
 TBSRC_CORE    := $(TBSRC_HOME)/core
-
 
 #
 SCRIPTS_DIR     = $(REDMULE_ROOT_DIR)/scripts
@@ -80,7 +79,7 @@ LD_FILE 	= $(if $(wildcard $(TEST_RESULTS_LD)),$(TEST_RESULTS_LD),$(if $(wildcar
 
 
 BSP                                  = $(CORE_V_VERIF)/bsp
-
+SIM_BSP_RESULTS                      = $(CORE_V_VERIF)/sw/build/bsp
 
 RISCV_CFLAGS += -I $(CORE_V_VERIF)
 #RISCV_CFLAGS += -I $(BSP)
@@ -153,14 +152,14 @@ clean-bsp:
 	rm -rf $(SIM_BSP_RESULTS)
 
 clean-test-programs: clean-bsp
-	find $(PRJ_HOME)/../sw/simple_system -name "*.o"       -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.hex"     -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.elf"     -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.d"     -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.map"     -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.readelf" -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.objdump" -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.headers" -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "corev_*.S" -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.itb" -delete	
+	find $(PRJ_HOME)/../sw -name "*.o"       -delete
+	find  $(PRJ_HOME)/../sw -name "*.hex"     -delete
+	find  $(PRJ_HOME)/../sw -name "*.elf"     -delete
+	find  $(PRJ_HOME)/../sw -name "*.d"     -delete
+	find  $(PRJ_HOME)/../sw -name "*.map"     -delete
+	find  $(PRJ_HOME)/../sw -name "*.readelf" -delete
+	find  $(PRJ_HOME)/../sw -name "*.objdump" -delete
+	find  $(PRJ_HOME)/../sw -name "*.headers" -delete
+	find  $(PRJ_HOME)/../sw -name "corev_*.S" -delete
+	find  $(PRJ_HOME)/../sw -name "*.itb" -delete	
 

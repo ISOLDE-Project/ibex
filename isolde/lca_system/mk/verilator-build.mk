@@ -22,7 +22,6 @@ SIM_RESULTS              ?= simulation_results
 SIM_TEST_RESULTS         = $(SIM_RESULTS)/$(TEST)
 SIM_RUN_RESULTS          = $(SIM_TEST_RESULTS)/$(RUN_INDEX)
 SIM_TEST_PROGRAM_RESULTS = $(SIM_RUN_RESULTS)/test_program
-SIM_BSP_RESULTS          = $(CORE_V_VERIF)/sw/build/bsp
 #####
 VERI_LOG_DIR      ?= $(mkfile_path)/log/$(VLT_TOP_MODULE)
 SIM_TEST_INPUTS   ?= $(mkfile_path)/vsim

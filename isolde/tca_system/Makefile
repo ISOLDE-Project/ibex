@@ -4,7 +4,7 @@ IBEX_CONFIG         ?=  isolde
 FUSESOC_CONFIG_OPTS := $(shell cd $(ROOT_DIR) && $(ROOT_DIR)/util/ibex_config.py $(IBEX_CONFIG) fusesoc_opts)
 FUSESOC_PARAMS      ?=
 TEST                ?= redmule_complex
-TEST_SRC_DIR	    = $(ROOT_DIR)/isolde/sw/simple_system/$(TEST)
+TEST_SRC_DIR	    = $(ROOT_DIR)/isolde/sw/$(TEST)
 TEST_BIN_DIR	    = $(mkfile_path)/sw/bin
 test-program        ?= $(TEST_BIN_DIR)/$(TEST)
 SYNTH_DIR           := synth/$(IBEX_CONFIG)
@@ -76,13 +76,16 @@ test-build: $(TEST_BIN_DIR) $(test-program).hex
 
 test-clean: clean-bsp
 	rm -f $(test-program)*
+	rm -fr $(TEST_BIN_DIR) 
+	rm -fr $(SIM_BSP_RESULTS)
+	-find $(TEST_SRC_DIR) -name "*.o"       -delete
 
 
 
 clean: veri-clean test-clean-programs
-	rm -fr $(TEST_BIN_DIR) logs 
+	rm -fr $(BUILD_DIR) $(TEST_BIN_DIR) logs 
 	rm -f *.log *.csv
 
 clean-hw:
-	rm -fr  log
+	rm -fr $(BUILD_DIR) logs
 

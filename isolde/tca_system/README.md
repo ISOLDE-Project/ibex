@@ -44,9 +44,7 @@ you can replace *fibonacci* with any test from isolde/sw/simple_system, e.g. mak
 Default test is **redmule_complex**.
 **Examples**  
 ```sh
-make TEST=vlinstr_test clean-test test-app run-test2
-
-make TEST=vlinstr_test veri-clean verilate clean-test test-app run-test2
+ make TEST=vlinstr_test test-clean test-build veri-run
 ```
 
 ## build test app
@@ -62,7 +60,8 @@ make sim-inputs
 ## 128b custom instruction
 
 ```sh
-make  veri-clean verilate clean-test sim-input TEST_CFLAGS=-DCUSTOM_128B run-test2
+make  veri-clean verilate test-clean sim-input TEST_CFLAGS=-DCUSTOM_128B veri-run
+make  test-clean sim-input TEST_CFLAGS=-DCUSTOM_128B veri-run
 ```
 Expected output:
 ```

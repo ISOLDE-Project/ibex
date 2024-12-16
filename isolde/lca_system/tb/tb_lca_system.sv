@@ -78,10 +78,15 @@ MEMORY
   logic        test_mode;
   logic [31:0] cycle_counter;
   logic        mmio_rvalid;
+  logic        mmio_req;
+  logic        mmio_gnt;
   logic [31:0] mmio_rdata;
   //
   logic        perfcnt_rvalid;
+  logic        perfcnt_req;
+  logic        perfcnt_gnt;
   logic [31:0] perfcnt_rdata;
+  //
   logic        redmule_busy;
 
   //hwpe_stream_intf_tcdm instr[0:0] (.clk(clk_i));
@@ -106,7 +111,7 @@ MEMORY
     logic [31:0] data;
   } core_inst_rsp_t;
 
-  typedef struct packed {
+  typedef struct {
     logic req;
     logic we;
     logic [3:0] be;
@@ -114,7 +119,7 @@ MEMORY
     logic [31:0] data;
   } core_data_req_t;
 
-  typedef struct packed {
+  typedef struct {
     logic gnt;
     logic valid;
     logic [31:0] data;
@@ -204,7 +209,9 @@ MEMORY
 
 
   always_comb begin
-    if (rst_ni && (core_data_req.addr == MMADDR_PERF) && core_data_req.req && core_data_req.we) begin 
+    perfcnt_req = rst_ni && core_data_req.req && (core_data_req.addr >= MMADDR_PERF);
+    perfcnt_gnt = perfcnt_req;
+    if (perfcnt_req && core_data_req.we && (core_data_req.addr == MMADDR_PERF)) begin
         case (perfcnt_state)
           IDLE: begin
             perfcnt_next = LATCH;
@@ -234,25 +241,24 @@ read performance counters implementation
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) perfcnt_rvalid <= '0;
-    else if (core_data_req.req & (core_data_req.addr >= MMADDR_PERF))
-      if (core_data_req.we) perfcnt_rvalid <= 1;
-      else perfcnt_rvalid <= (perfcnt_next == IDLE) ? 1 : 0;
-    else perfcnt_rvalid <= 0;
-  end
-
-  always_comb begin
-    if (perfcnt_rvalid) begin
+    else begin
+      if (perfcnt_req) begin
+        perfcnt_rvalid <= 1;
+        if (~core_data_req.we) begin
       case (core_data_req.addr)
-        MMADDR_PERF: perfcnt_rdata = perfcnt_q.id;
-        MMADDR_PERF + 32'h4: perfcnt_rdata = perfcnt_q.cycle_counter;
-        MMADDR_PERF + 32'h8: perfcnt_rdata = perfcnt_q.imem.cnt_wr;
-        MMADDR_PERF + 32'hC: perfcnt_rdata = perfcnt_q.imem.cnt_rd;
-        MMADDR_PERF + 32'h10: perfcnt_rdata = perfcnt_q.dmem.cnt_wr;
-        MMADDR_PERF + 32'h14: perfcnt_rdata = perfcnt_q.dmem.cnt_rd;
-        MMADDR_PERF + 32'h18: perfcnt_rdata = perfcnt_q.stack_mem.cnt_wr;
-        MMADDR_PERF + 32'h1C: perfcnt_rdata = perfcnt_q.stack_mem.cnt_rd;
+            MMADDR_PERF: perfcnt_rdata <= perfcnt_q.id;
+            MMADDR_PERF + 32'h4: perfcnt_rdata <= perfcnt_q.cycle_counter;
+            MMADDR_PERF + 32'h8: perfcnt_rdata <= perfcnt_q.imem.cnt_wr;
+            MMADDR_PERF + 32'hC: perfcnt_rdata <= perfcnt_q.imem.cnt_rd;
+            MMADDR_PERF + 32'h10: perfcnt_rdata <= perfcnt_q.dmem.cnt_wr;
+            MMADDR_PERF + 32'h14: perfcnt_rdata <= perfcnt_q.dmem.cnt_rd;
+            MMADDR_PERF + 32'h18: perfcnt_rdata <= perfcnt_q.stack_mem.cnt_wr;
+            MMADDR_PERF + 32'h1C: perfcnt_rdata <= perfcnt_q.stack_mem.cnt_rd;
+            default: perfcnt_rdata <= '0;
       endcase
-    end else perfcnt_rdata = '0;
+        end
+      end else perfcnt_rvalid = '0;
+    end
   end
 
 
@@ -262,11 +268,11 @@ read performance counters implementation
     periph.req    = core_data_req.req &
                          (core_data_req.addr >= PERI_ADDR) &
                          (core_data_req.addr < IMEM_ADDR) ;
-    periph.add    = core_data_req.addr;
-    periph.wen    = ~core_data_req.we;
-    periph.be     = core_data_req.be;
-    periph.data   = core_data_req.data;
-    periph.id     = '0;
+    periph.add = core_data_req.addr;
+    periph.wen = ~core_data_req.we;
+    periph.be = core_data_req.be;
+    periph.data = core_data_req.data;
+    periph.id = '0;
     //periph_r_valid = '0;
   end
 
@@ -320,7 +326,9 @@ read performance counters implementation
   assign core_data_rsp.gnt =  periph.req ?
                        periph.gnt : stack[0].req ?
                                     stack[0].gnt : tcdm[MP].req ?
-                                                   tcdm[MP].gnt : '1;
+                                                   tcdm[MP].gnt : mmio_req ?
+                                                                  mmio_gnt : perfcnt_req ?
+                                                                             perfcnt_gnt : '1;
 
   assign core_data_rsp.data = periph.r_valid   ? periph.r_data    :
                                         stack[0].r_valid ? stack[0].r_data  :
@@ -349,7 +357,8 @@ read performance counters implementation
   tb_tcdm_verilator #(
       .MP         (1),
       .MEMORY_SIZE(GMEM_SIZE),
-      .BASE_ADDR  (IMEM_ADDR)
+      .BASE_ADDR  (IMEM_ADDR),
+      .DELAY_CYCLES(2)
   ) i_dummy_imemory (
       .clk_i   (clk_i),
       .rst_ni  (rst_ni),
@@ -507,29 +516,44 @@ read performance counters implementation
   /*
 ** The semantics of the r_valid signal are not well defined with respect to the usual TCDM protocol. In PULP clusters, r_valid will be asserted also after write transactions, not only in reads. 
 ** https://hwpe-doc.readthedocs.io/en/latest/protocols.html#hwpe-mem
+** see also https://ibex-core.readthedocs.io/en/latest/03_reference/load_store_unit.html
 **/
 
-
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (~rst_ni) mmio_rvalid <= '0;
-    else
-      mmio_rvalid <= core_data_req.req & ( (core_data_req.addr >= MMIO_ADDR) && (core_data_req.addr < MMADDR_PERF) );
+  always_comb begin
+    mmio_req =  core_data_req.req && (core_data_req.addr >= MMIO_ADDR) && (core_data_req.addr < MMADDR_PERF) ;
+    mmio_gnt = mmio_req;
   end
 
-  always_ff @(posedge clk_i) begin
-    if (~rst_ni) cycle_counter <= '0;
-    else cycle_counter <= cycle_counter + 1;
-    if ((core_data_req.addr == MMADDR_EXIT) && core_data_req.req) begin
-      if (core_data_req.we) endSimulation(core_data_req.data);
-      else mmio_rdata <= cycle_counter;
-    end else 
 
-    if ((core_data_req.addr == MMADDR_PRINT) && (core_data_req.we & core_data_req.req)) begin
+
+  always_ff @(posedge clk_i) begin
+    if (~rst_ni) begin
+      cycle_counter <= '0;
+      mmio_rvalid   <= 0;
+    end else cycle_counter <= cycle_counter + 1;
+
+    if (mmio_gnt) begin
+      case (core_data_req.addr)
+        MMADDR_EXIT: begin
+      if (core_data_req.we) endSimulation(core_data_req.data);
+          else begin
+            mmio_rdata  <= cycle_counter + 1;
+            mmio_rvalid <= 1;
+          end
+
+        end
+        MMADDR_PRINT:
+        if (core_data_req.we) begin
       $write("%c", core_data_req.data);
-    end else 
-    if ((core_data_req.addr == MMADDR_PERF) && (core_data_req.we & core_data_req.req)) begin
-       $fwrite(fh,"t=%t @%h<-%h\n", $time, core_data_req.addr, core_data_req.data);
+          mmio_rvalid <= 1;
+        end
+        default: begin
+          mmio_rdata  <= '0;
+          mmio_rvalid <= 0;
     end
+      endcase
+    end else mmio_rvalid <= 0;
+
   end
 
 
