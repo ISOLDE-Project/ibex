@@ -137,4 +137,5 @@ inline uint32_t getTicks(){
 #define END_TIMING(value) \
     printf("Timing for %s: %u cycles\n", #value, getTicks() - initval_##value)
 
+ void printPerfCnt();
 #endif
