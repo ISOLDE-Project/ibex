@@ -32,7 +32,8 @@ module tb_tca_system (
   parameter bit DbgTriggerEn = 1'b0;
   parameter bit ICacheECC = 1'b0;
   parameter bit BranchPredictor = 1'b0;
-
+//
+  localparam int unsigned SLOW_MEM_DELAY = 4;
   // REDMULE parameters
   import redmule_pkg::*;
   localparam int unsigned PROB_STALL = 0;
@@ -100,12 +101,12 @@ MEMORY
 
   logic                core_sleep;
 
-  typedef struct packed {
+  typedef struct  {
     logic        req;
     logic [31:0] addr;
   } core_inst_req_t;
 
-  typedef struct packed {
+  typedef struct  {
     logic        gnt;
     logic        valid;
     logic [31:0] data;
@@ -343,7 +344,7 @@ read performance counters implementation
       .MP         (1),
       .MEMORY_SIZE(GMEM_SIZE),
       .BASE_ADDR  (IMEM_ADDR),
-      .DELAY_CYCLES(2)
+      .DELAY_CYCLES(SLOW_MEM_DELAY)
   ) i_dummy_imemory (
       .clk_i   (clk_i),
       .rst_ni  (rst_ni),

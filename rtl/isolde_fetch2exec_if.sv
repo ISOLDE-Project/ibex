@@ -1,5 +1,5 @@
-// Copyleft 2024
-
+// Copyleft 2024 ISOLDE
+// see https://ibex-core.readthedocs.io/en/latest/03_reference/load_store_unit.html, Protocol
 interface isolde_fetch2exec_if #(
     parameter int unsigned IMM32_OPS = 4
 ) (
@@ -10,8 +10,13 @@ interface isolde_fetch2exec_if #(
   logic exec_rst_ni;  // execute  block active-low reset signal
   logic isolde_decoder_enable;  // custom instr is decoded
   logic isolde_decoder_illegal_instr;  // unsupported custom instr encountered
-  logic isolde_decoder_ready;  //decoder ready
-  logic stall_isolde_decoder;  //stall decoder 
+
+  //
+  logic isolde_exec_req;  // The isolde decoder sets this high
+  logic isolde_exec_gnt;  // The exec_block then answers with isolde_exec_qnt set high as soon as it is ready to serve the request. 
+                          // This may happen in the same cycle as the request was sent or any number of cycles later.
+  logic isolde_exec_dne;  // The exec_bloc answers with isolde_exec_dne set high for exactly one cycle to signal the completion.
+                          // This may happen one or more cycles after the grant has been asserted. I
   //
   isolde_decoder_pkg::isolde_opcode_e isolde_opcode;  //decoded instruction
   logic [2:0] func3;  //instr[14-12]
