@@ -37,12 +37,10 @@ module isolde_decoder
   // FSM states
   typedef enum logic [2:0] {
     BOOT,
-    IDLE,
     FETCH_COMPUTE,
     FETCH_REST,     // Fetch the remaining words for multi-word instructions
     WAIT_EXEC_GNT,
-    DONE,
-    STALL
+    DONE
   } state_t;
 
   state_t idvli_state, idvli_next;
@@ -52,28 +50,30 @@ module isolde_decoder
 
   logic [2:0] vlen_instr_words_d, vlen_instr_words_q;  // Instruction length in words
   logic [2:0] read_ptr;
+  logic isolde_decoder_illegal_instr_d, isolde_decoder_illegal_instr_q;
 
   logic isolde_decoder_fsm_guard;
   assign isolde_decoder_fsm_guard = isolde_decoder_instr_valid_i;
   //
-  assign isolde_decoder_exec_bus.isolde_decoder_enable = isolde_decoder_enable_i;
+  // assign isolde_decoder_exec_bus.isolde_decoder_enable = isolde_decoder_enable_i;
   assign isolde_decoder_exec_bus.isolde_decoder_illegal_instr = isolde_decoder_illegal_instr_o;
 
-
+  assign isolde_decoder_illegal_instr_o = isolde_decoder_illegal_instr_q & isolde_decoder_illegal_instr_d;
 
   always_comb begin
     decode_isolde_opcode(isolde_decoder_instr_batch_i[0][6:0],  //opcode
                          isolde_decoder_instr_batch_i[0][14:12],  //nnn
                          isolde_decoder_instr_batch_i[0][31:25],  //func7
                          isolde_opcode_d, vlen_instr_words_d);
+    isolde_decoder_illegal_instr_d = (isolde_opcode_d == isolde_opcode_invalid) ? 1 : 0;
   end
 
   always_ff @(posedge clk_i, negedge rst_ni) begin
     if (!rst_ni) begin
       idvli_state <= BOOT;
       read_ptr <= 0;
-      isolde_decoder_illegal_instr_o <= 0;
       isolde_rf_bus.we_0 <= 1'b0;
+      isolde_decoder_illegal_instr_q <= 1;
       //isolde_decoder_busy_o <= 0;
     end else begin
 
@@ -84,27 +84,12 @@ module isolde_decoder
         if (isolde_decoder_fsm_guard) begin
           idvli_state <= idvli_next;
           case (idvli_next)
-            BOOT: begin
-              read_ptr <= read_ptr + 1;
-            end
-            IDLE: begin
-              isolde_decoder_illegal_instr_o <= 0;
-              isolde_rf_bus.we_0 <= 1'b0;
-              isolde_decoder_exec_bus.isolde_decoder_imm32_valid <= 4'b0000;
-            end
+
             FETCH_COMPUTE: begin
-              if (~isolde_decoder_enable_i) begin
-                isolde_decoder_illegal_instr_o <= 0;
-                isolde_rf_bus.we_0 <= 1'b0;
-                isolde_decoder_exec_bus.isolde_decoder_imm32_valid <= 4'b0000;
-                idvli_state <= IDLE;
-              end else if (isolde_opcode_invalid == isolde_opcode_d) begin
 
-                isolde_decoder_illegal_instr_o <= 1;
-                idvli_state <= BOOT;
-                read_ptr <= 3'h0;
-
-              end else begin
+              if (~isolde_decoder_illegal_instr_d) begin
+                isolde_decoder_illegal_instr_q        <= 0;
+                idvli_state                           <= FETCH_REST;
                 read_ptr                              <= 1;
                 rd                                    <= isolde_decoder_instr_batch_i[0][11:7];
                 isolde_opcode_q                       <= isolde_opcode_d;
@@ -116,7 +101,7 @@ module isolde_decoder
                 isolde_decoder_exec_bus.func3         <= isolde_decoder_instr_batch_i[0][14:12];
                 //isolde_decoder_exec_bus.rd            <= isolde_decoder_instr_batch_i[0][11:7];
                 if (1 == vlen_instr_words_d) begin
-                  idvli_state <= FETCH_REST;
+                  //isolde_decoder_exec_bus.isolde_decoder_stalled <= 1;
                   isolde_decoder_exec_bus.isolde_decoder_instr <= isolde_decoder_instr_batch_i[0];
                   if (isolde_opcode_d == isolde_opcode_R_type) begin
                     x_rf_bus.raddr_2 <= isolde_decoder_instr_batch_i[0][24:20];  //rs2
@@ -128,8 +113,12 @@ module isolde_decoder
                     x_rf_bus.raddr_0 <= isolde_decoder_instr_batch_i[0][19:15];  //rs1  
 
                   end
-                end
+                end  /*else isolde_decoder_exec_bus.isolde_decoder_stalled <= 0;*/
 
+              end else begin
+                isolde_decoder_illegal_instr_q                 <= 1;
+                read_ptr                                       <= 0;
+                isolde_decoder_exec_bus.isolde_decoder_stalled <= 0;
               end
             end
             FETCH_REST: begin
@@ -143,9 +132,16 @@ module isolde_decoder
           endcase
         end else begin  //if (isolde_decoder_fsm_guard)
           case (idvli_next)
-            WAIT_EXEC_GNT: begin
+            BOOT: begin
+              read_ptr <= read_ptr + 1;
+            end
+            FETCH_COMPUTE: begin
               read_ptr <= 0;
-              idvli_state <= isolde_decoder_exec_bus.isolde_exec_gnt ? DONE : WAIT_EXEC_GNT;
+              idvli_state <= isolde_decoder_exec_bus.isolde_exec_gnt ? DONE : FETCH_COMPUTE;
+            end
+            WAIT_EXEC_GNT: begin
+
+              idvli_state <= DONE;
             end
           endcase
         end
@@ -155,35 +151,42 @@ module isolde_decoder
 
   always_comb begin
 
+    idvli_next = idvli_state;
     case (idvli_state)
       BOOT: begin
         if (read_ptr == 3'h6) begin
-          idvli_next = isolde_decoder_instr_exec_i ? IDLE : BOOT;
+          idvli_next = FETCH_COMPUTE;
           isolde_decoder_busy_o = 0;
-        end else idvli_next = BOOT;
-      end
-      IDLE: begin
-        isolde_decoder_exec_bus.isolde_exec_req = 0;
-        idvli_next = isolde_decoder_enable_i ? FETCH_COMPUTE : IDLE;
-        isolde_decoder_busy_o = (idvli_next == FETCH_COMPUTE) ? 1 : 0;
+        end
       end
 
       FETCH_COMPUTE: begin
-        isolde_decoder_busy_o = 1;
-        idvli_next = FETCH_REST;
+        if (~isolde_decoder_illegal_instr_d)
+          isolde_decoder_exec_bus.isolde_decoder_stalled = (1 == vlen_instr_words_d) ? 1 : 0;
+        else isolde_decoder_exec_bus.isolde_decoder_stalled = 0;
+        isolde_decoder_exec_bus.isolde_exec_req = 0;
       end
 
       FETCH_REST: begin
+
+
         if (vlen_instr_words_q == read_ptr) begin
 
           isolde_decoder_exec_bus.isolde_exec_req = 1;
-
-          idvli_next = WAIT_EXEC_GNT;
+          isolde_decoder_busy_o = isolde_decoder_fsm_guard ? 0 : 1;
+          idvli_next = isolde_decoder_exec_bus.isolde_decoder_stalled? WAIT_EXEC_GNT:FETCH_COMPUTE;
+        end else begin
+          isolde_decoder_busy_o = 1;
+          isolde_decoder_exec_bus.isolde_exec_req = 0;
         end
+
       end
       DONE: begin
         isolde_decoder_exec_bus.isolde_exec_req = 0;
+        isolde_decoder_exec_bus.isolde_decoder_stalled = 0;
+
         isolde_decoder_busy_o = isolde_decoder_fsm_guard ? 0 : 1;
+
         idvli_next = FETCH_COMPUTE;
 
       end

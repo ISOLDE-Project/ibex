@@ -8,7 +8,7 @@ interface isolde_fetch2exec_if #(
     input logic rst_ni  // Active-low reset signal
 );
   logic exec_rst_ni;  // execute  block active-low reset signal
-  logic isolde_decoder_enable;  // custom instr is decoded
+  logic isolde_decoder_stalled;  
   logic isolde_decoder_illegal_instr;  // unsupported custom instr encountered
 
   //
