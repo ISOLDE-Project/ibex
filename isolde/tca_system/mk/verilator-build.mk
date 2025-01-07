@@ -36,7 +36,7 @@ VERI_FLAGS        +=
 veri-clean: 
 	rm -f *.flist
 	rm -fr log/$(VLT_TOP_MODULE) 
-	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist SIM_RESULTS=$(BIN_DIR) VLT_TOP_MODULE=$(VLT_TOP_MODULE) $@
+	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist SIM_RESULTS=$(BIN_DIR) VLT_TOP_MODULE=$(VLT_TOP_MODULE) VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS) $@
 	rm -fr $(FUSESOC_BUILD_ROOT) 
 
 verilate: $(BIN_DIR)/verilator_executable
@@ -78,6 +78,7 @@ $(BIN_DIR)/verilator_executable:  ibex_sim.flist manifest.flist
 											     PE_MANIFEST=${CURDIR}/manifest.flist    \
 	                                             SIM_RESULTS=$(BIN_DIR)                  \
 											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
+									   VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS)    \
 											  verilate      
 
 

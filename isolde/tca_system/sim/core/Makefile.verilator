@@ -38,6 +38,7 @@ VERI_CFLAGS        += -O2
 #ifeq ($(findstring +vcd,$(VERI_FLAGS)),+vcd)
 
 VLT_FLAGS    += -Wno-fatal
+VLT_FLAGS    += $(VLT_TOP_MODULE_PARAMS)
 VLT_CFLAGS   += -DTOPLEVEL_NAME=$(VLT_TOP_MODULE)
 VLT_CFLAGS   += -std=c++17 
 

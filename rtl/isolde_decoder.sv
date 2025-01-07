@@ -187,7 +187,7 @@ module isolde_decoder
 
         isolde_decoder_busy_o = isolde_decoder_fsm_guard ? 0 : 1;
 
-        idvli_next = FETCH_COMPUTE;
+        idvli_next = isolde_decoder_fsm_guard ?  FETCH_COMPUTE : DONE;
 
       end
 

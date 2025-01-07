@@ -33,7 +33,8 @@ module tb_tca_system (
   parameter bit ICacheECC = 1'b0;
   parameter bit BranchPredictor = 1'b0;
 //
-  localparam int unsigned SLOW_MEM_DELAY = 1;
+  //localparam int unsigned SLOW_MEM_DELAY = 0;
+  parameter int unsigned SLOW_MEM_DELAY = 0;
   // REDMULE parameters
   import redmule_pkg::*;
   localparam int unsigned PROB_STALL = 0;
