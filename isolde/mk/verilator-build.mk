@@ -12,20 +12,12 @@ include $(REDMULE_ROOT_DIR)/bender_synth.mk
 
 
 
-VLT_TOP_MODULE ?= tb_lca_system
 
 
-
-# Common output directories
-RUN_INDEX                ?= 0
-SIM_RESULTS              ?= simulation_results
-SIM_TEST_RESULTS         = $(SIM_RESULTS)/$(TEST)
-SIM_RUN_RESULTS          = $(SIM_TEST_RESULTS)/$(RUN_INDEX)
-SIM_TEST_PROGRAM_RESULTS = $(SIM_RUN_RESULTS)/test_program
 #####
-VERI_LOG_DIR      ?= $(mkfile_path)/log/$(VLT_TOP_MODULE)
+VERI_LOG_DIR      ?= $(mkfile_path)/log/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)
 SIM_TEST_INPUTS   ?= $(mkfile_path)/vsim
-BIN_DIR           = $(mkfile_path)/bin/$(VLT_TOP_MODULE)
+BIN_DIR           = $(mkfile_path)/bin/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)
 VERI_FLAGS        +=
 
 
@@ -36,10 +28,14 @@ VERI_FLAGS        +=
 veri-clean: 
 	rm -f *.flist
 	rm -fr log/$(VLT_TOP_MODULE) 
-	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist SIM_RESULTS=$(BIN_DIR) VLT_TOP_MODULE=$(VLT_TOP_MODULE) $@
+	make -C sim/core -f Makefile.verilator  	 SIM_RESULTS=$(BIN_DIR)                  \
+												   RUN_INDEX=$(IMEM_LATENCY)           \
+											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
+									   VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS)    \
+									 $@
 	rm -fr $(FUSESOC_BUILD_ROOT) 
 
-verilate: $(BIN_DIR)/verilator_executable
+#verilate: $(BIN_DIR)/verilator_executable
 
 ##
 
@@ -72,13 +68,18 @@ manifest.flist: Bender.yml
 	@$(BENDER) script verilator $(common_targs) $(VLT_BENDER)  >$@
 	touch $@
 
-$(BIN_DIR)/verilator_executable:  ibex_sim.flist manifest.flist
-	mkdir -p $(dir $@)
+#$(BIN_DIR)/verilator_executable:  ibex_sim.flist manifest.flist
+verilate:  ibex_sim.flist manifest.flist
+#	mkdir -p $(dir $@)
+	mkdir -p $(BIN_DIR)
 	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist     \
 											     PE_MANIFEST=${CURDIR}/manifest.flist    \
 	                                             SIM_RESULTS=$(BIN_DIR)                  \
+												   RUN_INDEX=$(IMEM_LATENCY)           \
 											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
+									   VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS)    \
 											  verilate      
+
 
 
 .PHONY: veri-run

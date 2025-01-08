@@ -30,14 +30,19 @@ CV_SW_CC             :=  gcc
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 
+###
+VLT_TOP_MODULE        ?= tb_lca_system
+IMEM_LATENCY          ?= 0
+VLT_TOP_MODULE_PARAMS := -GIMEM_LATENCY=$(IMEM_LATENCY)
 
-include mk/sw-build.mk
-include mk/verilator-build.mk
+
+include ../mk/sw-build.mk
+include ../mk/verilator-build.mk
 
 
 
-.PHONY: sim-inputs
-sim-inputs:
+.PHONY: sim-input
+sim-input:
 	$(MAKE)  TEST=redmule TEST_FILES=redmule.c TEST_SRC_DIR=$(REDMULE_ROOT_DIR)/sw test-build
 
 
@@ -73,7 +78,7 @@ $(TEST_BIN_DIR):
 $(test-program).hex: $(test-program).elf
 test-build: $(TEST_BIN_DIR) $(test-program).hex
 
-test-clean:
+test-clean: clean-bsp
 	rm -f $(test-program)*
 	rm -fr $(TEST_BIN_DIR) 
 	rm -fr $(SIM_BSP_RESULTS)

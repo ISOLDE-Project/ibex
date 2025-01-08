@@ -33,8 +33,8 @@ module tb_tca_system (
   parameter bit ICacheECC = 1'b0;
   parameter bit BranchPredictor = 1'b0;
 //
-  //localparam int unsigned SLOW_MEM_DELAY = 0;
-  parameter int unsigned SLOW_MEM_DELAY = 0;
+  //localparam int unsigned IMEM_LATENCY = 0;
+  parameter int unsigned IMEM_LATENCY = 0;
   // REDMULE parameters
   import redmule_pkg::*;
   localparam int unsigned PROB_STALL = 0;
@@ -345,7 +345,7 @@ read performance counters implementation
       .MP         (1),
       .MEMORY_SIZE(GMEM_SIZE),
       .BASE_ADDR  (IMEM_ADDR),
-      .DELAY_CYCLES(SLOW_MEM_DELAY)
+      .DELAY_CYCLES(IMEM_LATENCY)
   ) i_dummy_imemory (
       .clk_i   (clk_i),
       .rst_ni  (rst_ni),

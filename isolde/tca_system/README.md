@@ -101,5 +101,19 @@ Timing for REDMULE_TCA: 230 cycles
 [TB TCA] @ t=14138 - writes[stack] =        106
 [TB TCA] @ t=14138 - reads [stack] =        101
 ```
----  
+---
+# Simulating instruction memory latency
+Instruction memory latency is expressed in (core) cycles.  
+## build simulations
+```sh
+make IMEM_LATENCY=0 verilate
+make IMEM_LATENCY=17 verilate
+```
+## execute tests
+```sh
+make IMEM_LATENCY=0 test-clean  sim-input TEST_CFLAGS=-DCUSTOM_128B veri-run
+make IMEM_LATENCY=17 test-clean  sim-input TEST_CFLAGS=-DCUSTOM_128B veri-run
+```
+---
+---
 ---

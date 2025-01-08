@@ -32,11 +32,14 @@ num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 REDMULE_COMPLEX := 1
 export REDMULE_COMPLEX
 ###
-VLT_TOP_MODULE_PARAMS := -GSLOW_MEM_DELAY=$(SLOW_MEM_DELAY)
+VLT_TOP_MODULE      ?= tb_tca_system
+IMEM_LATENCY        ?= 0
+VLT_TOP_MODULE_PARAMS := -GIMEM_LATENCY=$(IMEM_LATENCY)
 
 
-include mk/sw-build.mk
-include mk/verilator-build.mk
+
+include ../mk/sw-build.mk
+include ../mk/verilator-build.mk
 
 
 

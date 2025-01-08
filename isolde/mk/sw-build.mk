@@ -48,10 +48,8 @@
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 
-PRJ_HOME      := $(shell git rev-parse --show-toplevel)/isolde/tca_system
-CORE_V_VERIF  := $(PRJ_HOME)
-TBSRC_HOME    := $(PRJ_HOME)/tb
-TBSRC_CORE    := $(TBSRC_HOME)/core
+
+CORE_V_VERIF  := $(mkfile_path)
 
 
 #
@@ -153,14 +151,14 @@ clean-bsp:
 	rm -rf $(SIM_BSP_RESULTS)
 
 clean-test-programs: clean-bsp
-	find $(PRJ_HOME)/../sw -name "*.o"       -delete
-	find  $(PRJ_HOME)/../sw -name "*.hex"     -delete
-	find  $(PRJ_HOME)/../sw -name "*.elf"     -delete
-	find  $(PRJ_HOME)/../sw -name "*.d"     -delete
-	find  $(PRJ_HOME)/../sw -name "*.map"     -delete
-	find  $(PRJ_HOME)/../sw -name "*.readelf" -delete
-	find  $(PRJ_HOME)/../sw -name "*.objdump" -delete
-	find  $(PRJ_HOME)/../sw -name "*.headers" -delete
-	find  $(PRJ_HOME)/../sw -name "corev_*.S" -delete
-	find  $(PRJ_HOME)/../sw -name "*.itb" -delete	
+	find $(CORE_V_VERIF)/../sw -name "*.o"       -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.hex"     -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.elf"     -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.d"     -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.map"     -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.readelf" -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.objdump" -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.headers" -delete
+	find  $(CORE_V_VERIF)/../sw -name "corev_*.S" -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.itb" -delete	
 
