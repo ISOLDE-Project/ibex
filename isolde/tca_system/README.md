@@ -51,7 +51,7 @@ Default test is **redmule_complex**.
 * **gcc** toolchain
 ```
 make golden
-make sim-inputs
+make sim-input
 ```
 * **llvm** toolchain
 *Not implemented*

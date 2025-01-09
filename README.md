@@ -8,6 +8,12 @@
 First time:   
 ```sh
 . ./setup.sh 
+```sh
+git checkout tmp/exp
+git submodule update --init
+cd isolde/tca_system/
+. ./eth.sh 
+bender update
 ```
 * install toolchain
 
