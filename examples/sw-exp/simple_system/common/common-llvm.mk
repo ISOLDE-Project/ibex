@@ -35,14 +35,14 @@ C_SRCS = $(filter %.c, $(SRCS))
 ASM_SRCS = $(filter %.S, $(SRCS))
 
 CC := $(LLVM_TOOLCHAIN)/clang
-LD := $(LLVM_TOOLCHAIN)/riscv32-unknown-elf-ld
-#LD := $(LLVM_TOOLCHAIN)/ld.lld
+#LD := $(LLVM_TOOLCHAIN)/riscv32-unknown-elf-ld
+LD := $(LLVM_TOOLCHAIN)/ld.lld
 #LD := $(GCC_TOOLCHAIN)/riscv32-unknown-elf-gcc
 
 
 #OBJCOPY := $(LLVM_TOOLCHAIN)/llvm-objcopy
-OBJDUMP := $(GCC_TOOLCHAIN)/riscv32-unknown-elf-objdump
-#OBJDUMP := $(LLVM_TOOLCHAIN)/llvm-objdump
+#OBJDUMP := $(GCC_TOOLCHAIN)/riscv32-unknown-elf-objdump
+OBJDUMP := $(LLVM_TOOLCHAIN)/llvm-objdump
 
 
 CRT ?= $(COMMON_DIR)/crt0.S
