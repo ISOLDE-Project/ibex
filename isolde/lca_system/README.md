@@ -26,13 +26,13 @@ make veri-clean verilate
 * **gcc** toolchain
 ```
 make golden
-make sim-inputs
+make  PE=redmule TEST=redmule test-clean test-build
 ```
 * **llvm** toolchain
 *Not implemented*
 ## execute test
 ```sh
-make TEST=redmule test-clean sim-inputs veri-run
+make  PE=redmule TEST=redmule test-clean test-build veri-run
 ```
 Output should be similar to this
 ```
@@ -44,8 +44,7 @@ Terminated test with 0 errors. See you!
 ```  
 # REDMULE testing
 ```sh
-make sim-inputs
-make TEST=redmule  veri-run
+make  PE=redmule TEST=redmule test-clean test-build veri-run
 ```
 # Regression
 ```sh

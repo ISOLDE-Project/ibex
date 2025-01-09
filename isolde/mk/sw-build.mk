@@ -91,13 +91,14 @@ RISCV_CFLAGS += -DIBEX
 RISCV_CFLAGS += $(TEST_CFLAGS)
 
 %.elf:
-	@echo "$(BANNER)"
-	@echo "* Compiling $@"
+	@echo "**** sw-build.mk compiling:"
+	@echo "**** $@"
+	@echo "**** TEST_FILES = $(TEST_FILES) "
 	@echo "$(BANNER)"
 	mkdir -p $(SIM_BSP_RESULTS)
 	cp $(BSP)/Makefile $(SIM_BSP_RESULTS)
 	make -C $(SIM_BSP_RESULTS) \
-		APP_FILES=$(TEST_FILES)    \
+		APP_FILES="$(TEST_FILES)"    \
 		VPATH=$(TEST_SRC_DIR):$(BSP) \
 		RISCV=$(RISCV) \
 		RISCV_PREFIX=$(RISCV_PREFIX) \
@@ -127,21 +128,7 @@ RISCV_CFLAGS += $(TEST_CFLAGS)
 		$*.elf > $*.objdump
 
 
-bsp:
-	@echo "$(BANNER)"
-	@echo "* Compiling the BSP"
-	@echo "$(BANNER)"
-	mkdir -p $(SIM_BSP_RESULTS)
-	cp $(BSP)/Makefile $(SIM_BSP_RESULTS)
-	make -C $(SIM_BSP_RESULTS) \
-		VPATH=$(BSP) \
-		RISCV=$(RISCV) \
-		RISCV_PREFIX=$(RISCV_PREFIX) \
-		RISCV_EXE_PREFIX=$(RISCV_EXE_PREFIX) \
-		RISCV_MARCH=$(RISCV_MARCH) \
-		RISCV_CC=$(RISCV_CC) \
-		RISCV_CFLAGS="$(RISCV_CFLAGS)" \
-		all
+
 
 
 
