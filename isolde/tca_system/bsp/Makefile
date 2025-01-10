@@ -1,6 +1,7 @@
 CV_SW_TOOLCHAIN  ?= /opt/riscv
 RISCV_EXE_PREFIX ?= $(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-
-RISCV_GCC        =  $(RISCV_EXE_PREFIX)gcc
+RISCV_CC        =  $(RISCV_EXE_PREFIX)$(RISCV_CC_SUFFIX)
+RISCV_LD        =  $(RISCV_EXE_PREFIX)$(RISCV_CC_SUFFIX)
 RISCV_AR         =  $(RISCV_EXE_PREFIX)ar
 OBJDUMP          =  $(RISCV_EXE_PREFIX)objdump
 
@@ -39,10 +40,10 @@ $(LIBCV-VERIF): $(OBJS)
 
 # Compilation rules
 %.o : %.c
-	$(RISCV_GCC) $(CFLAGS) -c $< -o $@
+	$(RISCV_CC) $(CFLAGS) -c $< -o $@
 
 %.o : %.S
-	$(RISCV_GCC) $(CFLAGS) -c $< -o $@
+	$(RISCV_CC) $(CFLAGS) -c $< -o $@
 
 # Clean up the generated files
 clean:
@@ -56,7 +57,7 @@ vars:
 	@echo "   ############################"
 	@echo "   CV_SW_TOOLCHAIN  = $(CV_SW_TOOLCHAIN)"       
 	@echo "   RISCV_EXE_PREFIX = $(RISCV_EXE_PREFIX)"
-	@echo "   RISCV_GCC        = $(RISCV_GCC)"
+	@echo "   RISCV_CC        = $(RISCV_CC)"
 	@echo "   RISCV_MARCH      = $(RISCV_MARCH)"    
 	     
 
@@ -69,11 +70,10 @@ compile: $(OBJS)
 #	mkdir -p $(SIM_TEST_PROGRAM_RESULTS)
 	@echo "*** linking $(OBJS) into $@"
 	@echo "$(BANNER)"
-	$(RISCV_EXE_PREFIX)$(RISCV_CC) \
+	$(RISCV_LD) \
 		$(CFLAGS) \
 		-o $@ \
 		$(OBJS) \
-		-T $(LD_FILE) \
-#	$(CC) $(CFLAGS) -T $(LINKER_SCRIPT) $(OBJS) -o $@ $(LIBS)
+		-T $(LD_FILE) 
 	$(OBJDUMP) -dh  $@ >$@.headers
 	@echo   $(CURDIR)/$@.headers

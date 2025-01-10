@@ -18,10 +18,22 @@ FUSESOC_PKG_NAME    := $(FUSESOC_PROJECT):$(FUSESOC_CORE):$(FUSESOC_SYSTEM)
 REDMULE_ROOT_DIR :=$(shell bender path redmule)
 ##
 
-CV_SW_TOOLCHAIN      :=  $(shell git rev-parse --show-toplevel)/install/riscv-gcc
-CV_SW_PREFIX         :=  riscv32-unknown-elf-
-CV_SW_MARCH          :=  rv32im_zicsr
-CV_SW_CC             :=  gcc 
+ifeq ($(COMPILER), gcc)
+	CV_SW_TOOLCHAIN      :=  $(shell git rev-parse --show-toplevel)/install/riscv-gcc
+	CV_SW_PREFIX         :=  riscv32-unknown-elf-
+	CV_SW_MARCH          :=  rv32im_zicsr
+	CV_SW_CC_SUFFIX      :=  gcc 
+
+else
+
+	CV_SW_TOOLCHAIN      :=  $(shell git rev-parse --show-toplevel)/install/riscv-llvm
+	CV_SW_TARGET         := riscv32
+	CV_SW_ARCH           := rv32g
+	CV_SW_RISCV_ABI      := ilp32
+#	CV_SW_PREFIX         :=  
+#	CV_SW_MARCH          :=  rv32im_zicsr
+	CV_SW_CC_SUFFIX      :=  clang
+endif
 
 
 
