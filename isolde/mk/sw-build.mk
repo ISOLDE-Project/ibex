@@ -56,9 +56,8 @@ CORE_V_VERIF  := $(mkfile_path)
 SCRIPTS_DIR     = $(REDMULE_ROOT_DIR)/scripts
 ###############################################################################
 ##
-RISCV            = $(CV_SW_TOOLCHAIN)
 RISCV_PREFIX     = $(CV_SW_PREFIX)
-RISCV_EXE_PREFIX = $(RISCV)/bin/$(RISCV_PREFIX)
+RISCV_EXE_PREFIX = $(CV_SW_TOOLCHAIN)/bin/$(RISCV_PREFIX)
 
 RISCV_MARCH      =  $(CV_SW_MARCH)
 RISCV_CC_SUFFIX  =  $(CV_SW_CC_SUFFIX)
@@ -100,11 +99,10 @@ RISCV_CFLAGS += $(TEST_CFLAGS)
 	make -C $(SIM_BSP_RESULTS) \
 		APP_FILES="$(TEST_FILES)"    \
 		VPATH=$(TEST_SRC_DIR):$(BSP) \
-		RISCV=$(RISCV) \
+		CV_SW_TOOLCHAIN=$(CV_SW_TOOLCHAIN) \
 		RISCV_PREFIX=$(RISCV_PREFIX) \
-		RISCV_EXE_PREFIX=$(RISCV_EXE_PREFIX) \
-		RISCV_MARCH=$(RISCV_MARCH) \
 		RISCV_CC_SUFFIX=$(RISCV_CC_SUFFIX) \
+		RISCV_MARCH=$(RISCV_MARCH) \
 		RISCV_CFLAGS="$(RISCV_CFLAGS)" \
 		LD_FILE=$(BSP)/link.ld \
 		$@
@@ -114,13 +112,13 @@ RISCV_CFLAGS += $(TEST_CFLAGS)
 	@echo "$(BANNER)"
 	@echo "* Generating $@, readelf and objdump files"
 	@echo "$(BANNER)"
-	$(RISCV_EXE_PREFIX)objcopy -O verilog \
+	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objcopy -O verilog \
 		$< \
 		$@
 	python $(SCRIPTS_DIR)/addr_offset.py  $@  $*-m.hex 0x00100000
 	python $(SCRIPTS_DIR)/addr_offset.py  $@  $*-d.hex 0x00100000
-	$(RISCV_EXE_PREFIX)readelf -a $< > $*.readelf
-	$(RISCV_EXE_PREFIX)objdump \
+	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-readelf -a $< > $*.readelf
+	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objdump   \
 		-fhSD \
 		-M no-aliases \
 		-M numeric \

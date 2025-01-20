@@ -1,9 +1,10 @@
 CV_SW_TOOLCHAIN  ?= /opt/riscv
-RISCV_EXE_PREFIX ?= $(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-
-RISCV_CC        =  $(RISCV_EXE_PREFIX)$(RISCV_CC_SUFFIX)
-RISCV_LD        =  $(RISCV_EXE_PREFIX)$(RISCV_CC_SUFFIX)
+RISCV_EXE_PREFIX =  $(CV_SW_TOOLCHAIN)/bin/$(RISCV_PREFIX)
+RISCV_CC         =  $(RISCV_EXE_PREFIX)$(RISCV_CC_SUFFIX)
+RISCV_LD         =  $(RISCV_EXE_PREFIX)$(RISCV_CC_SUFFIX)
 RISCV_AR         =  $(RISCV_EXE_PREFIX)ar
-OBJDUMP          =  $(RISCV_EXE_PREFIX)objdump
+#always use GNU binutils
+OBJDUMP          =  $(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objdump  
 
 LD_FILE ?=
 # Source files
@@ -61,11 +62,6 @@ vars:
 	@echo "   RISCV_MARCH      = $(RISCV_MARCH)"    
 	     
 
-
-compile: $(OBJS)
-	@echo  '*** compiled: ' $(SRCS)
-
-
 %.elf:  vars $(OBJS)
 #	mkdir -p $(SIM_TEST_PROGRAM_RESULTS)
 	@echo "*** linking $(OBJS) into $@"
@@ -76,4 +72,4 @@ compile: $(OBJS)
 		$(OBJS) \
 		-T $(LD_FILE) 
 	$(OBJDUMP) -dh  $@ >$@.headers
-	@echo   $(CURDIR)/$@.headers
+	@echo   $@.headers

@@ -61,7 +61,7 @@ vars:
 #	mkdir -p $(SIM_TEST_PROGRAM_RESULTS)
 	@echo "*** linking $(OBJS) into $@"
 	@echo "$(BANNER)"
-	$(RISCV_EXE_PREFIX)$(RISCV_CC) \
+	$(RISCV_GCC) \
 		$(CFLAGS) \
 		-o $@ \
 		$(OBJS) \

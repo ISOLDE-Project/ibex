@@ -21,7 +21,7 @@ make veri-clean clean-test-programs
 
 ## build the simulation and run the a test application
 ```
-make TEST=fibonacci veri-clean verilate clean-test test-app run-test2
+make  TEST=fibonacci test-clean test-build veri-run
 ``` 
 Output should be similar to this:  
 ```
@@ -60,8 +60,7 @@ make sim-input
 ## 128b custom instruction
 
 ```sh
-make  veri-clean verilate test-clean sim-input TEST_CFLAGS=-DCUSTOM_128B veri-run
-make  test-clean sim-input TEST_CFLAGS=-DCUSTOM_128B veri-run
+make PE=redmule TEST=redmule_complex_128b test-clean test-build veri-run
 ```
 Expected output:
 ```
@@ -82,7 +81,7 @@ Timing for REDMULE_TCA_VLI: 226 cycles
 ```
 ## 32b custom instruction
 ```sh
-make  test-clean sim-input TEST_CFLAGS=-DCUSTOM_32B veri-run
+make PE=redmule TEST=redmule_complex_32b test-clean test-build veri-run
 ```
 Expected output:
 ```
@@ -111,8 +110,7 @@ make IMEM_LATENCY=17 verilate
 ```
 ## execute tests
 ```sh
-make IMEM_LATENCY=0 test-clean  sim-input TEST_CFLAGS=-DCUSTOM_128B veri-run
-make IMEM_LATENCY=17 test-clean  sim-input TEST_CFLAGS=-DCUSTOM_128B veri-run
+make IMEM_LATENCY=4  PE=redmule TEST=redmule_complex_32b test-clean test-build veri-run
 ```
 ---
 ---
