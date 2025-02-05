@@ -1,3 +1,10 @@
+# ISOLDE
+```sh
+make clean build-hw
+make  clean-test test-app
+make run-test
+```
+
 # Ibex Simple System
 
 Simple System gives you an Ibex based system simulated by Verilator that can

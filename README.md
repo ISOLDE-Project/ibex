@@ -4,6 +4,8 @@
 </a>
 
 # ISOLDE
+This branch maintains the original, unmodified version of Ibex for running the [Dhrystone](./examples/sw/simple_system/dhrystone/dhrystone.c) benchmark.  
+For running the test, see [./examples/simple_system/README.md](examples/simple_system/README.md)  
 First time:   
 ```sh
 . ./setup.sh 

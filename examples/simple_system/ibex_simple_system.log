@@ -52,8 +52,8 @@ Str_1_Loc:           DHRYSTONE PROGRAM, 1'ST STRING
         should be:   DHRYSTONE PROGRAM, 1'ST STRING
 Str_2_Loc:           DHRYSTONE PROGRAM, 2'ND STRING
         should be:   DHRYSTONE PROGRAM, 2'ND STRING
-Cycles for one run through Dhrystone:         729
-                                              72920 cycles / 100 runs
+Cycles for one run through Dhrystone:         695
+                                              69533 cycles / 100 runs
 Dhrystones per 1000 cycle:                     1
 exit()
 ======

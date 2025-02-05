@@ -8,13 +8,13 @@ COMMON_SRCS = $(wildcard $(COMMON_DIR)/*.c)
 INCS := -I$(COMMON_DIR)
 
 
-TARGET      := riscv32
-ARCH        := rv32g
+#TARGET      := riscv32
+ARCH        := rv32im_zicsr
 RISCV_ABI   := ilp32
 
 RISCV_WARNINGS += -Wunused-variable -Wall -Wextra -Wno-unused-command-line-argument # -Werror
 
-LLVM_FLAGS     ?= --target=$(TARGET) -march=$(ARCH)  -menable-experimental-extensions -mabi=$(RISCV_ABI) -mno-relax 
+LLVM_FLAGS     ?= -march=$(ARCH)  -menable-experimental-extensions -mabi=$(RISCV_ABI) -mno-relax 
 RISCV_FLAGS    ?= $(LLVM_FLAGS) -mcmodel=medany  -O3 -ffast-math  -g $(RISCV_WARNINGS)
 RISCV_CCFLAGS  ?= $(RISCV_FLAGS) -ffunction-sections -fdata-sections  -std=gnu99 -nostdlib -nostartfiles
 RISCV_CXXFLAGS ?= $(RISCV_FLAGS) -ffunction-sections -fdata-sections
@@ -35,14 +35,14 @@ C_SRCS = $(filter %.c, $(SRCS))
 ASM_SRCS = $(filter %.S, $(SRCS))
 
 CC := $(LLVM_TOOLCHAIN)/clang
-LD := $(LLVM_TOOLCHAIN)/riscv32-unknown-elf-ld
+LD := $(LLVM_TOOLCHAIN)/clang
 #LD := $(LLVM_TOOLCHAIN)/ld.lld
 #LD := $(GCC_TOOLCHAIN)/riscv32-unknown-elf-gcc
 
 
 #OBJCOPY := $(LLVM_TOOLCHAIN)/llvm-objcopy
-OBJDUMP := $(GCC_TOOLCHAIN)/riscv32-unknown-elf-objdump
-#OBJDUMP := $(LLVM_TOOLCHAIN)/llvm-objdump
+#OBJDUMP := $(GCC_TOOLCHAIN)/riscv32-unknown-elf-objdump
+OBJDUMP := $(LLVM_TOOLCHAIN)/llvm-objdump
 
 
 CRT ?= $(COMMON_DIR)/crt0.S
@@ -64,7 +64,7 @@ all: $(OUTFILES)
 ifdef PROGRAM
 $(PROGRAM).elf: $(OBJS) $(LINKER_SCRIPT)
 #	$(LD) $(CFLAGS) -T $(LINKER_SCRIPT) $(OBJS) -o $@ $(LIBS)
-	$(LD) $(RISCV_LDFLAGS)  -Map $@.map -T $(LINKER_SCRIPT) $(OBJS) -o $@ $(LIBS)
+	$(LD) $(RISCV_LDFLAGS) -T $(LINKER_SCRIPT) $(OBJS) -o $@ $(LIBS) -lc
 	$(OBJDUMP) -dh  $@ >$@.headers
 	
 

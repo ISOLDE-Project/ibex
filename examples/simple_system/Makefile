@@ -1,5 +1,5 @@
 ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
-IBEX_CONFIG         ?=  small
+IBEX_CONFIG         ?=  isolde
 FUSESOC_CONFIG_OPTS := $(shell cd $(ROOT_DIR) && $(ROOT_DIR)/util/ibex_config.py $(IBEX_CONFIG) fusesoc_opts)
 TEST                ?= dhrystone
 test-program        ?= $(ROOT_DIR)/examples/sw/simple_system/$(TEST)/$(TEST).elf
@@ -56,30 +56,15 @@ run-test:
 	@echo ======================
 	@echo isolde_exec_block.log
 
-clean:
-#	rm -f $(test-program)
-	make -C $(dir $(test-program)) clean
-	rm -fr $(BUILD_DIR) logs
-	rm -f *.log *.csv
+.PHONY: clean-hw clean
 
 clean-hw:
 	rm -fr $(BUILD_DIR) logs
 
-
-
-
-veri-test: 
+clean: clean-hw
 	make -C $(dir $(test-program)) clean
-	make -C $(dir $(test-program)) 	
-	@rm -f ibex_simple_system.log
-	@rm -f trace_core_00000000.log
-	./$(BUILD_DIR)/sim-verilator/Vibex_simple_system -t --meminit=ram,$(test-program)
-	@echo
-	@echo ibex_simple_system.log
-	@echo ======================
-	@cat ibex_simple_system.log
-	@echo ======================
-	@echo isolde_exec_block.log
+	rm -f *.log *.csv
+
 
 clean-test-programs: 
 	find $(ROOT_DIR)/examples/sw/simple_system -name "*.o"       -delete

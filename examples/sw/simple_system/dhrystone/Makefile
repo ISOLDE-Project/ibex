@@ -12,9 +12,9 @@ PROGRAM_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 EXTRA_SRCS :=
 
 # Check the COMPILER variable passed via the command line
-ifeq ($(COMPILER), llvm)
-    include $(PROGRAM_DIR)/../bsp/common-llvm.mk
+ifeq ($(COMPILER), gcc)
+    include $(PROGRAM_DIR)/../bsp/common.mk    
 else
-    include $(PROGRAM_DIR)/../bsp/common.mk
+    include $(PROGRAM_DIR)/../bsp/common-llvm.mk
 endif
 
