@@ -70,6 +70,6 @@ vars:
 		$(CFLAGS) \
 		-o $@ \
 		$(OBJS) \
-		-T $(LD_FILE) 
+		-T $(LD_FILE) -lc
 	$(OBJDUMP) -dh  $@ >$@.headers
 	@echo   $@.headers

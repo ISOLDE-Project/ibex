@@ -20,6 +20,7 @@ make veri-clean clean-test-programs
 ## build the simulation and run the a test application
 ```sh
 make veri-clean verilate
+make  TEST=dhrystone test-clean test-build veri-run
 ``` 
 
 ## build test app

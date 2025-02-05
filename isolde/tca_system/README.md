@@ -20,6 +20,16 @@ make veri-clean clean-test-programs
 ```
 
 ## build the simulation and run the a test application
+```sh
+make verilate
+make  TEST=dhrystone test-clean test-build veri-run
+```
+with instruction memory latency:   
+```sh
+make IMEM_LATENCY=1   veri-clean verilate
+make IMEM_LATENCY=1  TEST=dhrystone test-clean test-build veri-run
+```
+Other tests:   
 ```
 make  TEST=fibonacci test-clean test-build veri-run
 ``` 
