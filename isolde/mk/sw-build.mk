@@ -43,10 +43,16 @@
 ###############################################################################
 ##
 ###############################################################################
-
+## redmule config
+REDMULE_ROOT_DIR :=$(shell bender path redmule)
 
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
+
+ifeq ($(PE), redmule)
+    TEST_SRC_DIR       = $(REDMULE_ROOT_DIR)/sw
+	TEST_FILES         = $(TEST).c
+endif
 
 
 CORE_V_VERIF  := $(mkfile_path)
@@ -147,3 +153,33 @@ clean-test-programs: clean-bsp
 	find  $(CORE_V_VERIF)/../sw -name "corev_*.S" -delete
 	find  $(CORE_V_VERIF)/../sw -name "*.itb" -delete	
 
+###ISOLDE specific
+
+golden:
+	make -C $(REDMULE_ROOT_DIR) $@
+
+
+
+.PHONY: test-build $(test-program) clean $(TEST_BIN_DIR)
+
+$(TEST_BIN_DIR):
+	mkdir -p $@
+
+
+$(test-program).hex: $(test-program).elf
+test-build: $(TEST_BIN_DIR) $(test-program).hex
+
+test-clean: clean-bsp
+	rm -f $(test-program)*
+	rm -fr $(TEST_BIN_DIR) 
+	rm -fr $(SIM_BSP_RESULTS)
+	-find $(TEST_SRC_DIR) -name "*.o"       -delete
+
+
+
+clean: veri-clean test-clean-programs
+	rm -fr $(BUILD_DIR) $(TEST_BIN_DIR) logs 
+	rm -f *.log *.csv
+
+clean-hw:
+	rm -fr $(BUILD_DIR) logs

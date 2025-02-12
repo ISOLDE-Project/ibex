@@ -10,11 +10,11 @@ in folder **isolde/lca_system**:
 in folder **isolde/lca_system**:  
 * get a clean slate:
 ```
-make veri-clean clean-test
+make redmule-update veri-clean verilate
 ```
 or
 ```
-make veri-clean clean-test-programs
+make IMEM_LATENCY=1  redmule-update veri-clean verilate
 ```
 
 ## build the simulation and run the a test application
