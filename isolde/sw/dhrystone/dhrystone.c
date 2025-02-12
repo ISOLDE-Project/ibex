@@ -15,9 +15,9 @@
  ****************************************************************************
  */
 //#include "stdio.h"
-#include "tinyprintf.h"
 #include <stdlib.h>
-#include "simple_system_common.h"
+#include "bsp/simple_system_common.h"
+#include "bsp/tinyprintf.h"
 
 /*
  ****************************************************************************

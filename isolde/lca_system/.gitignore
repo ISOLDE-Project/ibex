@@ -8,3 +8,4 @@ tmp/
 .bender/
 *.gtkw
 *.log
+*.txt

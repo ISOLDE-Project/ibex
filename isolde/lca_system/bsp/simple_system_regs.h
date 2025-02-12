@@ -1,4 +1,3 @@
-// Copyleft 2024 ISOLDE
 // Copyright lowRISC contributors.
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
@@ -12,7 +11,7 @@
 #define MMADDR_PRINT               0x80000004
 #define MMADDR_CYCLE_COUNTER       MMADDR_EXIT
 #define MMADDR_PERF_COUNTERS       0x80000008
-
+                                   
 
 
 

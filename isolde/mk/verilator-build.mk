@@ -1,4 +1,6 @@
-
+###############################################################################
+#
+# Copyleft  2024 ISOLDE
 
 #############
 # Verilator #
@@ -8,23 +10,14 @@ include $(REDMULE_ROOT_DIR)/bender_common.mk
 include $(REDMULE_ROOT_DIR)/bender_sim.mk
 include $(REDMULE_ROOT_DIR)/bender_synth.mk
 
-include mk/Common.mk
-
-VLT_TOP_MODULE ?= tb_lca_system
 
 
 
-# Common output directories
-RUN_INDEX                ?= 0
-SIM_RESULTS              ?= simulation_results
-SIM_TEST_RESULTS         = $(SIM_RESULTS)/$(TEST)
-SIM_RUN_RESULTS          = $(SIM_TEST_RESULTS)/$(RUN_INDEX)
-SIM_TEST_PROGRAM_RESULTS = $(SIM_RUN_RESULTS)/test_program
-SIM_BSP_RESULTS          = $(CORE_V_VERIF)/sw/build/bsp
+
 #####
-VERI_LOG_DIR      ?= $(mkfile_path)/log/$(VLT_TOP_MODULE)
+VERI_LOG_DIR      ?= $(mkfile_path)/log/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)
 SIM_TEST_INPUTS   ?= $(mkfile_path)/vsim
-BIN_DIR           = $(mkfile_path)/bin/$(VLT_TOP_MODULE)
+BIN_DIR           = $(mkfile_path)/bin/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)
 VERI_FLAGS        +=
 
 
@@ -35,10 +28,14 @@ VERI_FLAGS        +=
 veri-clean: 
 	rm -f *.flist
 	rm -fr log/$(VLT_TOP_MODULE) 
-	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist SIM_RESULTS=$(BIN_DIR) VLT_TOP_MODULE=$(VLT_TOP_MODULE) $@
+	make -C sim/core -f Makefile.verilator  	 SIM_RESULTS=$(BIN_DIR)                  \
+												   RUN_INDEX=$(IMEM_LATENCY)           \
+											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
+									   VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS)    \
+									 $@
 	rm -fr $(FUSESOC_BUILD_ROOT) 
 
-verilate: $(BIN_DIR)/verilator_executable
+#verilate: $(BIN_DIR)/verilator_executable
 
 ##
 
@@ -46,9 +43,9 @@ CORE_FILES := $(filter %.core,$(wildcard $(mkfile_path)/*))
 CORE_FILES += $(filter %.core,$(wildcard $(ROOT_DIR)/*))
 CORE_FILE_NAMES := $(notdir $(CORE_FILES))
 
-fusesoc_ignore: $(ROOT_DIR)/isolde/lca_system/.bender/FUSESOC_IGNORE $(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE
+fusesoc_ignore: $(ROOT_DIR)/isolde/tca_system/.bender/FUSESOC_IGNORE $(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE
 
-$(ROOT_DIR)/isolde/lca_system/.bender/FUSESOC_IGNORE:
+$(ROOT_DIR)/isolde/tca_system/.bender/FUSESOC_IGNORE:
 	@if [ ! -f $@ ]; then touch $@; fi
 
 $(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE:
@@ -71,15 +68,20 @@ manifest.flist: Bender.yml
 	@$(BENDER) script verilator $(common_targs) $(VLT_BENDER)  >$@
 	touch $@
 
-$(BIN_DIR)/verilator_executable:  ibex_sim.flist manifest.flist
-	mkdir -p $(dir $@)
+#$(BIN_DIR)/verilator_executable:  ibex_sim.flist manifest.flist
+verilate:  ibex_sim.flist manifest.flist
+#	mkdir -p $(dir $@)
+	mkdir -p $(BIN_DIR)
 	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist     \
 											     PE_MANIFEST=${CURDIR}/manifest.flist    \
 	                                             SIM_RESULTS=$(BIN_DIR)                  \
+												   RUN_INDEX=$(IMEM_LATENCY)           \
 											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
+									   VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS)    \
 											  verilate      
 
-	
+
+
 .PHONY: veri-run
 veri-run: $(BIN_DIR)/verilator_executable 
 	@echo "$(BANNER)"
@@ -98,6 +100,7 @@ veri-run: $(BIN_DIR)/verilator_executable
 	mv verilator_tb.vcd $(VERI_LOG_DIR)/$(TEST).vcd
 	mv rtl_debug_trace.log $(VERI_LOG_DIR)
 
+
 .PHONY: help
 help:
 	@echo "verilator related available targets:"
@@ -106,3 +109,9 @@ help:
 	@echo veri-clean                               -- gets a clean slate for simulation
 	@echo verilate VLT_TOP_MODULE=tb_top_verilator
 	
+bender-clean:
+	rm -fr ./.bender
+	rm Bender.lock
+
+redmule-update:	bender-clean
+	git submodule update --init && bender update 

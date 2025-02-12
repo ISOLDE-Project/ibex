@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# Copyleft  2024
+# Copyleft  2024 ISOLDE
 # Copyright 2020 OpenHW Group
 #
 # Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
@@ -43,27 +43,30 @@
 ###############################################################################
 ##
 ###############################################################################
-
+## redmule config
+REDMULE_ROOT_DIR :=$(shell bender path redmule)
 
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
 
-PRJ_HOME      := $(shell git rev-parse --show-toplevel)/isolde/lca_system
-CORE_V_VERIF  := $(PRJ_HOME)
-TBSRC_HOME    := $(PRJ_HOME)/tb
-TBSRC_CORE    := $(TBSRC_HOME)/core
+ifeq ($(PE), redmule)
+    TEST_SRC_DIR       = $(REDMULE_ROOT_DIR)/sw
+	TEST_FILES         = $(TEST).c
+endif
+
+
+CORE_V_VERIF  := $(mkfile_path)
 
 
 #
 SCRIPTS_DIR     = $(REDMULE_ROOT_DIR)/scripts
 ###############################################################################
 ##
-RISCV            = $(CV_SW_TOOLCHAIN)
 RISCV_PREFIX     = $(CV_SW_PREFIX)
-RISCV_EXE_PREFIX = $(RISCV)/bin/$(RISCV_PREFIX)
+RISCV_EXE_PREFIX = $(CV_SW_TOOLCHAIN)/bin/$(RISCV_PREFIX)
 
 RISCV_MARCH      =  $(CV_SW_MARCH)
-RISCV_CC         =  $(CV_SW_CC)
+RISCV_CC_SUFFIX  =  $(CV_SW_CC_SUFFIX)
 RISCV_CFLAGS     += 
 
 
@@ -80,32 +83,32 @@ LD_FILE 	= $(if $(wildcard $(TEST_RESULTS_LD)),$(TEST_RESULTS_LD),$(if $(wildcar
 
 
 BSP                                  = $(CORE_V_VERIF)/bsp
-
+SIM_BSP_RESULTS                      = $(CORE_V_VERIF)/sw/build/bsp
 
 RISCV_CFLAGS += -I $(CORE_V_VERIF)
-RISCV_CFLAGS += -I $(BSP)
+#RISCV_CFLAGS += -I $(BSP)
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)/inc
 RISCV_CFLAGS += -I $(TEST_SRC_DIR)/utils
 RISCV_CFLAGS += -DUSE_BSP
 #RISCV_CFLAGS += -DCV32E40X 
 RISCV_CFLAGS += -DIBEX 
-
+RISCV_CFLAGS += $(TEST_CFLAGS)
 
 %.elf:
-	@echo "$(BANNER)"
-	@echo "* Compiling $@"
+	@echo "**** sw-build.mk compiling:"
+	@echo "**** $@"
+	@echo "**** TEST_FILES = $(TEST_FILES) "
 	@echo "$(BANNER)"
 	mkdir -p $(SIM_BSP_RESULTS)
 	cp $(BSP)/Makefile $(SIM_BSP_RESULTS)
 	make -C $(SIM_BSP_RESULTS) \
-		APP_FILES=$(TEST_FILES)    \
+		APP_FILES="$(TEST_FILES)"    \
 		VPATH=$(TEST_SRC_DIR):$(BSP) \
-		RISCV=$(RISCV) \
+		CV_SW_TOOLCHAIN=$(CV_SW_TOOLCHAIN) \
 		RISCV_PREFIX=$(RISCV_PREFIX) \
-		RISCV_EXE_PREFIX=$(RISCV_EXE_PREFIX) \
+		RISCV_CC_SUFFIX=$(RISCV_CC_SUFFIX) \
 		RISCV_MARCH=$(RISCV_MARCH) \
-		RISCV_CC=$(RISCV_CC) \
 		RISCV_CFLAGS="$(RISCV_CFLAGS)" \
 		LD_FILE=$(BSP)/link.ld \
 		$@
@@ -115,13 +118,13 @@ RISCV_CFLAGS += -DIBEX
 	@echo "$(BANNER)"
 	@echo "* Generating $@, readelf and objdump files"
 	@echo "$(BANNER)"
-	$(RISCV_EXE_PREFIX)objcopy -O verilog \
+	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objcopy -O verilog \
 		$< \
 		$@
 	python $(SCRIPTS_DIR)/addr_offset.py  $@  $*-m.hex 0x00100000
 	python $(SCRIPTS_DIR)/addr_offset.py  $@  $*-d.hex 0x00100000
-	$(RISCV_EXE_PREFIX)readelf -a $< > $*.readelf
-	$(RISCV_EXE_PREFIX)objdump \
+	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-readelf -a $< > $*.readelf
+	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objdump   \
 		-fhSD \
 		-M no-aliases \
 		-M numeric \
@@ -129,21 +132,7 @@ RISCV_CFLAGS += -DIBEX
 		$*.elf > $*.objdump
 
 
-bsp:
-	@echo "$(BANNER)"
-	@echo "* Compiling the BSP"
-	@echo "$(BANNER)"
-	mkdir -p $(SIM_BSP_RESULTS)
-	cp $(BSP)/Makefile $(SIM_BSP_RESULTS)
-	make -C $(SIM_BSP_RESULTS) \
-		VPATH=$(BSP) \
-		RISCV=$(RISCV) \
-		RISCV_PREFIX=$(RISCV_PREFIX) \
-		RISCV_EXE_PREFIX=$(RISCV_EXE_PREFIX) \
-		RISCV_MARCH=$(RISCV_MARCH) \
-		RISCV_CC=$(RISCV_CC) \
-		RISCV_CFLAGS="$(RISCV_CFLAGS)" \
-		all
+
 
 
 
@@ -153,14 +142,44 @@ clean-bsp:
 	rm -rf $(SIM_BSP_RESULTS)
 
 clean-test-programs: clean-bsp
-	find $(PRJ_HOME)/../sw/simple_system -name "*.o"       -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.hex"     -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.elf"     -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.d"     -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.map"     -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.readelf" -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.objdump" -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.headers" -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "corev_*.S" -delete
-	find  $(PRJ_HOME)/../sw/simple_system -name "*.itb" -delete	
+	find $(CORE_V_VERIF)/../sw -name "*.o"       -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.hex"     -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.elf"     -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.d"     -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.map"     -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.readelf" -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.objdump" -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.headers" -delete
+	find  $(CORE_V_VERIF)/../sw -name "corev_*.S" -delete
+	find  $(CORE_V_VERIF)/../sw -name "*.itb" -delete	
 
+###ISOLDE specific
+
+golden:
+	make -C $(REDMULE_ROOT_DIR) $@
+
+
+
+.PHONY: test-build $(test-program) clean $(TEST_BIN_DIR)
+
+$(TEST_BIN_DIR):
+	mkdir -p $@
+
+
+$(test-program).hex: $(test-program).elf
+test-build: $(TEST_BIN_DIR) $(test-program).hex
+
+test-clean: clean-bsp
+	rm -f $(test-program)*
+	rm -fr $(TEST_BIN_DIR) 
+	rm -fr $(SIM_BSP_RESULTS)
+	-find $(TEST_SRC_DIR) -name "*.o"       -delete
+
+
+
+clean: veri-clean test-clean-programs
+	rm -fr $(BUILD_DIR) $(TEST_BIN_DIR) logs 
+	rm -f *.log *.csv
+
+clean-hw:
+	rm -fr $(BUILD_DIR) logs

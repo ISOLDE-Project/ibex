@@ -1,4 +1,4 @@
-# ISOLDE
+# ISOLDE -vanilla Ibex core integration
 
 First time:   
 ```sh
@@ -13,7 +13,7 @@ otherwise:
 ```sh
 . ./eth.sh 
 ```
-see also [isolde/simple_system/README.md](isolde/simple_system/README.md)
+see also [isolde/lca_system/README.md](isolde/lca_system/README.md)
 # Directory structure
 ```
 ├── ci

@@ -24,6 +24,8 @@ modelsim.ini
 vendor/riscv.tar.gz
 vendor/verilator/
 install/
+install
 sim.fst
 *.tar.gz
 *.headers
+

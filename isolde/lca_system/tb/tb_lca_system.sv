@@ -33,8 +33,8 @@ module tb_lca_system (
   parameter bit DbgTriggerEn = 1'b0;
   parameter bit ICacheECC = 1'b0;
   parameter bit BranchPredictor = 1'b0;
+  parameter int unsigned IMEM_LATENCY = 0;
   // parameters
-  localparam int unsigned PROB_STALL = 0;
   localparam int unsigned NC = 1;
   localparam int unsigned ID = 10;
   localparam int unsigned DW = redmule_pkg::DATA_W;
@@ -134,7 +134,7 @@ MEMORY
   core_data_req_t core_data_req;
   core_data_rsp_t core_data_rsp;
 
-  // performance counters FSM states
+// performance counters FSM states
   typedef enum logic [2:0] {
     IDLE,
     LATCH,
@@ -212,14 +212,14 @@ MEMORY
     perfcnt_req = rst_ni && core_data_req.req && (core_data_req.addr >= MMADDR_PERF);
     perfcnt_gnt = perfcnt_req;
     if (perfcnt_req && core_data_req.we && (core_data_req.addr == MMADDR_PERF)) begin
-      case (perfcnt_state)
-        IDLE: begin
-          perfcnt_next = LATCH;
-        end
-        WAIT: begin
-          perfcnt_next = DIFF;
-        end
-      endcase
+        case (perfcnt_state)
+          IDLE: begin
+            perfcnt_next = LATCH;
+          end
+          WAIT: begin
+            perfcnt_next = DIFF;
+          end
+        endcase
     end else begin
       case (perfcnt_state)
         LATCH: begin
@@ -235,7 +235,7 @@ MEMORY
     end
   end
 
-  /**
+/**
 read performance counters implementation
 **/
 
@@ -245,7 +245,7 @@ read performance counters implementation
       if (perfcnt_req) begin
         perfcnt_rvalid <= 1;
         if (~core_data_req.we) begin
-          case (core_data_req.addr)
+      case (core_data_req.addr)
             MMADDR_PERF: perfcnt_rdata <= perfcnt_q.id;
             MMADDR_PERF + 32'h4: perfcnt_rdata <= perfcnt_q.cycle_counter;
             MMADDR_PERF + 32'h8: perfcnt_rdata <= perfcnt_q.imem.cnt_wr;
@@ -255,7 +255,7 @@ read performance counters implementation
             MMADDR_PERF + 32'h18: perfcnt_rdata <= perfcnt_q.stack_mem.cnt_wr;
             MMADDR_PERF + 32'h1C: perfcnt_rdata <= perfcnt_q.stack_mem.cnt_rd;
             default: perfcnt_rdata <= '0;
-          endcase
+      endcase
         end
       end else perfcnt_rvalid = '0;
     end
@@ -357,7 +357,8 @@ read performance counters implementation
   tb_tcdm_verilator #(
       .MP         (1),
       .MEMORY_SIZE(GMEM_SIZE),
-      .BASE_ADDR  (IMEM_ADDR)
+      .BASE_ADDR  (IMEM_ADDR),
+      .DELAY_CYCLES(IMEM_LATENCY)
   ) i_dummy_imemory (
       .clk_i   (clk_i),
       .rst_ni  (rst_ni),
@@ -375,6 +376,8 @@ read performance counters implementation
       .enable_i(1'b1),
       .tcdm    (stack)
   );
+
+
 
 
   ibex_top_tracing #(
@@ -450,7 +453,8 @@ read performance counters implementation
       .alert_major_bus_o     (),
       .core_sleep_o          (core_sleep)
   );
-  redmule_isolde #(
+  
+ redmule_isolde #(
       .ID_WIDTH (ID),
       .N_CORES  (NC),
       .DW       (DW),  // TCDM port dimension (in bits
@@ -462,13 +466,13 @@ read performance counters implementation
       .fetch_enable_i(fetch_enable_i),
       .evt_o         (evt),
       .tcdm          (redmule_tcdm),
-      .periph        (periph)
+      .periph      (periph)
   );
 
 
 
 
-  // Declare the task with an input parameter for errors
+// Declare the task with an input parameter for errors
   task endSimulation(input int errors);
     if (errors != 0) begin
       $display("[TB LCA] @ t=%0t - Fail!", $time);
@@ -478,20 +482,16 @@ read performance counters implementation
       $display("[TB LCA] @ t=%0t - Success!", $time);
       $display("[TB LCA] @ t=%0t - errors=%08x", $time, errors);
     end
-    $fwrite(fh, "[TB LCA] @ t=%0t - writes[imemory] =%d\n", $time,
-            tb_lca_system.i_dummy_imemory.cnt_wr);
-    $fwrite(fh, "[TB LCA] @ t=%0t - reads [imemory] =%d\n", $time,
-            tb_lca_system.i_dummy_imemory.cnt_rd);
+     $fwrite(fh,"[TB LCA] @ t=%0t - writes[imemory] =%d\n", $time, tb_lca_system.i_dummy_imemory.cnt_wr);
+     $fwrite(fh,"[TB LCA] @ t=%0t - reads [imemory] =%d\n", $time, tb_lca_system.i_dummy_imemory.cnt_rd);
     //
-    $fwrite(fh, "[TB LCA] @ t=%0t - writes[dmemory] =%d\n", $time,
-            tb_lca_system.i_dummy_dmemory.cnt_wr);
-    $fwrite(fh, "[TB LCA] @ t=%0t - reads [dmemory] =%d\n", $time,
-            tb_lca_system.i_dummy_dmemory.cnt_rd);
+     $fwrite(fh,"[TB LCA] @ t=%0t - writes[dmemory] =%d\n", $time, tb_lca_system.i_dummy_dmemory.cnt_wr);
+     $fwrite(fh,"[TB LCA] @ t=%0t - reads [dmemory] =%d\n", $time, tb_lca_system.i_dummy_dmemory.cnt_rd);
     //
-    $fwrite(fh, "[TB LCA] @ t=%0t - writes[stack] =%d\n", $time,
-            tb_lca_system.i_dummy_stack_memory.cnt_wr);
-    $fwrite(fh, "[TB LCA] @ t=%0t - reads [stack] =%d\n", $time,
-            tb_lca_system.i_dummy_stack_memory.cnt_rd);
+     $fwrite(fh,"[TB LCA] @ t=%0t - writes[stack] =%d\n", $time,
+             tb_lca_system.i_dummy_stack_memory.cnt_wr);
+     $fwrite(fh,"[TB LCA] @ t=%0t - reads [stack] =%d\n", $time,
+             tb_lca_system.i_dummy_stack_memory.cnt_rd);
     $finish;
   endtask
 
@@ -517,7 +517,7 @@ read performance counters implementation
     if (mmio_gnt) begin
       case (core_data_req.addr)
         MMADDR_EXIT: begin
-          if (core_data_req.we) endSimulation(core_data_req.data);
+      if (core_data_req.we) endSimulation(core_data_req.data);
           else begin
             mmio_rdata  <= cycle_counter + 1;
             mmio_rvalid <= 1;
@@ -526,13 +526,13 @@ read performance counters implementation
         end
         MMADDR_PRINT:
         if (core_data_req.we) begin
-          $write("%c", core_data_req.data);
+      $write("%c", core_data_req.data);
           mmio_rvalid <= 1;
         end
         default: begin
           mmio_rdata  <= '0;
           mmio_rvalid <= 0;
-        end
+    end
       endcase
     end else mmio_rvalid <= 0;
 
