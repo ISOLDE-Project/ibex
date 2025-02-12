@@ -107,3 +107,10 @@ clean: veri-clean test-clean-programs
 clean-hw:
 	rm -fr $(BUILD_DIR) logs
 
+bender-clean:
+	rm -fr ./.bender
+	rm Bender.lock
+
+redmule-update:	bender-clean
+	git submodule update --init
+	bender update	

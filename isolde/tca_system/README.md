@@ -12,11 +12,8 @@ For a list of possible configurations, see [ibex_configs.yaml](../../ibex_config
 in folder **isolde/simple_system**:  
 * get a clean slate:
 ```
-make veri-clean clean-test
-```
-or
-```
-make veri-clean clean-test-programs
+make redmule-update veri-clean verilate 
+make clean-test-programs
 ```
 
 ## build the simulation and run the a test application
