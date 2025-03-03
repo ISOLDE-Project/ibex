@@ -54,6 +54,10 @@ ifeq ($(PE), redmule)
 	TEST_FILES         = $(TEST).c
 endif
 
+ifeq ($(PE), onnx)
+    TEST_SRC_DIR       = $(ROOT_DIR)/isolde/sw/onnx
+	TEST_FILES         = $(TEST).c
+endif
 
 CORE_V_VERIF  := $(mkfile_path)
 
