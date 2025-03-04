@@ -41,5 +41,7 @@ tmp/
 *.flist
 *.gtkw
 *.pdf
+*.svg
+
 
 
