@@ -47,7 +47,7 @@ module tb_lca_system (
   localparam logic [31:0] BASE_ADDR = 32'h1c000000;
   localparam logic [31:0] HWPE_ADDR_BASE_BIT = 20;
 
-  int fh,fh_csv;  //filehandles
+  int fh, fh_csv;  //filehandles
   //
   /* see bsp/link.ld
 MEMORY
@@ -64,14 +64,16 @@ MEMORY
   localparam logic [31:0] SMEM_ADDR = 32'h00140000;
   localparam int unsigned SMEM_SIZE = 32'h30000;
   localparam int unsigned GMEM_SIZE = SMEM_ADDR + SMEM_SIZE - IMEM_ADDR;
-  //  see reset vector in cv32e40p/bsp/crt0.S
+  //  see reset vector in bsp/crt0.S
   localparam logic [31:0] BOOT_ADDR = 32'h00100080;
   localparam logic [31:0] PERI_ADDR = 32'h00001000;
-  //see cv32e40p/bsp/simple_system_regs.h
+  //see bsp/simple_system_regs.h
   localparam logic [31:0] MMIO_ADDR = 32'h80000000;
   localparam logic [31:0] MMADDR_EXIT = MMIO_ADDR + 32'h0;
   localparam logic [31:0] MMADDR_PRINT = MMIO_ADDR + 32'h4;
-  localparam logic [31:0] MMADDR_PERF = MMIO_ADDR + 32'h8;
+  localparam logic [31:0] MMADDR_TTY = MMIO_ADDR + 32'h8;
+  localparam logic [31:0] MMADDR_PERF = MMIO_ADDR + 32'hC;
+
 
   // global signals
   string stim_instr, stim_data;
@@ -134,7 +136,7 @@ MEMORY
   core_data_req_t core_data_req;
   core_data_rsp_t core_data_rsp;
 
-// performance counters FSM states
+  // performance counters FSM states
   typedef enum logic [2:0] {
     IDLE,
     LATCH,
@@ -193,13 +195,13 @@ MEMORY
         end
         PRINT: begin
           //$display("PRINT @%t id=%d,cycles =%d\n", $time, perfcnt_q.id, perfcnt_q.cycle_counter);
-          $fwrite(fh_csv, "%d,%d,",    perfcnt_q.id, perfcnt_q.cycle_counter);
-          $fwrite(fh_csv, "%d,",       perfcnt_q.imem.cnt_rd);
-          $fwrite(fh_csv, "%d,",       perfcnt_q.dmem.cnt_wr);
-          $fwrite(fh_csv, "%d,",       perfcnt_q.dmem.cnt_rd);
-          $fwrite(fh_csv, "%d,",       perfcnt_q.stack_mem.cnt_wr);
-          $fwrite(fh_csv, "%d,",       perfcnt_q.stack_mem.cnt_rd);
-          $fwrite(fh_csv, "%d,LCA\n",  IMEM_LATENCY);
+          $fwrite(fh_csv, "%d,%d,", perfcnt_q.id, perfcnt_q.cycle_counter);
+          $fwrite(fh_csv, "%d,", perfcnt_q.imem.cnt_rd);
+          $fwrite(fh_csv, "%d,", perfcnt_q.dmem.cnt_wr);
+          $fwrite(fh_csv, "%d,", perfcnt_q.dmem.cnt_rd);
+          $fwrite(fh_csv, "%d,", perfcnt_q.stack_mem.cnt_wr);
+          $fwrite(fh_csv, "%d,", perfcnt_q.stack_mem.cnt_rd);
+          $fwrite(fh_csv, "%d,LCA\n", IMEM_LATENCY);
         end
       endcase
     end
@@ -211,14 +213,14 @@ MEMORY
     perfcnt_req = rst_ni && core_data_req.req && (core_data_req.addr >= MMADDR_PERF);
     perfcnt_gnt = perfcnt_req;
     if (perfcnt_req && core_data_req.we && (core_data_req.addr == MMADDR_PERF)) begin
-        case (perfcnt_state)
-          IDLE: begin
-            perfcnt_next = LATCH;
-          end
-          WAIT: begin
-            perfcnt_next = DIFF;
-          end
-        endcase
+      case (perfcnt_state)
+        IDLE: begin
+          perfcnt_next = LATCH;
+        end
+        WAIT: begin
+          perfcnt_next = DIFF;
+        end
+      endcase
     end else begin
       case (perfcnt_state)
         LATCH: begin
@@ -234,7 +236,7 @@ MEMORY
     end
   end
 
-/**
+  /**
 read performance counters implementation
 **/
 
@@ -244,7 +246,7 @@ read performance counters implementation
       if (perfcnt_req) begin
         perfcnt_rvalid <= 1;
         if (~core_data_req.we) begin
-      case (core_data_req.addr)
+          case (core_data_req.addr)
             MMADDR_PERF: perfcnt_rdata <= perfcnt_q.id;
             MMADDR_PERF + 32'h4: perfcnt_rdata <= perfcnt_q.cycle_counter;
             MMADDR_PERF + 32'h8: perfcnt_rdata <= perfcnt_q.imem.cnt_wr;
@@ -254,7 +256,7 @@ read performance counters implementation
             MMADDR_PERF + 32'h18: perfcnt_rdata <= perfcnt_q.stack_mem.cnt_wr;
             MMADDR_PERF + 32'h1C: perfcnt_rdata <= perfcnt_q.stack_mem.cnt_rd;
             default: perfcnt_rdata <= '0;
-      endcase
+          endcase
         end
       end else perfcnt_rvalid = '0;
     end
@@ -354,9 +356,9 @@ read performance counters implementation
 
 
   tb_tcdm_verilator #(
-      .MP         (1),
-      .MEMORY_SIZE(GMEM_SIZE),
-      .BASE_ADDR  (IMEM_ADDR),
+      .MP          (1),
+      .MEMORY_SIZE (GMEM_SIZE),
+      .BASE_ADDR   (IMEM_ADDR),
       .DELAY_CYCLES(IMEM_LATENCY)
   ) i_dummy_imemory (
       .clk_i   (clk_i),
@@ -471,7 +473,7 @@ read performance counters implementation
       .xif_mem_result_if     (core_xif.cpu_mem_result),
       .xif_result_if         (core_xif.cpu_result)
   );
- redmule_isolde #(
+  redmule_isolde #(
       .ID_WIDTH (ID),
       .N_CORES  (NC),
       .DW       (DW),  // TCDM port dimension (in bits
@@ -483,13 +485,13 @@ read performance counters implementation
       .fetch_enable_i(fetch_enable_i),
       .evt_o         (evt),
       .tcdm          (redmule_tcdm),
-      .periph      (periph)
+      .periph        (periph)
   );
 
 
 
 
-// Declare the task with an input parameter for errors
+  // Declare the task with an input parameter for errors
   task endSimulation(input int errors);
     if (errors != 0) begin
       $display("[TB LCA] @ t=%0t - Fail!", $time);
@@ -499,16 +501,20 @@ read performance counters implementation
       $display("[TB LCA] @ t=%0t - Success!", $time);
       $display("[TB LCA] @ t=%0t - errors=%08x", $time, errors);
     end
-     $fwrite(fh,"[TB LCA] @ t=%0t - writes[imemory] =%d\n", $time, tb_lca_system.i_dummy_imemory.cnt_wr);
-     $fwrite(fh,"[TB LCA] @ t=%0t - reads [imemory] =%d\n", $time, tb_lca_system.i_dummy_imemory.cnt_rd);
+    $fwrite(fh, "[TB LCA] @ t=%0t - writes[imemory] =%d\n", $time,
+            tb_lca_system.i_dummy_imemory.cnt_wr);
+    $fwrite(fh, "[TB LCA] @ t=%0t - reads [imemory] =%d\n", $time,
+            tb_lca_system.i_dummy_imemory.cnt_rd);
     //
-     $fwrite(fh,"[TB LCA] @ t=%0t - writes[dmemory] =%d\n", $time, tb_lca_system.i_dummy_dmemory.cnt_wr);
-     $fwrite(fh,"[TB LCA] @ t=%0t - reads [dmemory] =%d\n", $time, tb_lca_system.i_dummy_dmemory.cnt_rd);
+    $fwrite(fh, "[TB LCA] @ t=%0t - writes[dmemory] =%d\n", $time,
+            tb_lca_system.i_dummy_dmemory.cnt_wr);
+    $fwrite(fh, "[TB LCA] @ t=%0t - reads [dmemory] =%d\n", $time,
+            tb_lca_system.i_dummy_dmemory.cnt_rd);
     //
-     $fwrite(fh,"[TB LCA] @ t=%0t - writes[stack] =%d\n", $time,
-             tb_lca_system.i_dummy_stack_memory.cnt_wr);
-     $fwrite(fh,"[TB LCA] @ t=%0t - reads [stack] =%d\n", $time,
-             tb_lca_system.i_dummy_stack_memory.cnt_rd);
+    $fwrite(fh, "[TB LCA] @ t=%0t - writes[stack] =%d\n", $time,
+            tb_lca_system.i_dummy_stack_memory.cnt_wr);
+    $fwrite(fh, "[TB LCA] @ t=%0t - reads [stack] =%d\n", $time,
+            tb_lca_system.i_dummy_stack_memory.cnt_rd);
     $finish;
   endtask
 
@@ -534,7 +540,7 @@ read performance counters implementation
     if (mmio_gnt) begin
       case (core_data_req.addr)
         MMADDR_EXIT: begin
-      if (core_data_req.we) endSimulation(core_data_req.data);
+          if (core_data_req.we) endSimulation(core_data_req.data);
           else begin
             mmio_rdata  <= cycle_counter + 1;
             mmio_rvalid <= 1;
@@ -543,13 +549,19 @@ read performance counters implementation
         end
         MMADDR_PRINT:
         if (core_data_req.we) begin
-      $write("%c", core_data_req.data);
+          $write("%c", core_data_req.data);
+          mmio_rvalid <= 1;
+        end
+        MMADDR_TTY:
+        if (core_data_req.we) begin
+          $display("TTY @t=%0t: %h", $time, core_data_req.data);
+          //$write("%c", core_data_req.data);
           mmio_rvalid <= 1;
         end
         default: begin
           mmio_rdata  <= '0;
           mmio_rvalid <= 0;
-    end
+        end
       endcase
     end else mmio_rvalid <= 0;
 
@@ -561,7 +573,9 @@ read performance counters implementation
     int cnt_rd, cnt_wr;
     fh = $fopen("rtl_debug_trace.log", "w");
     fh_csv = $fopen("perfcnt.csv", "w");
-    $fwrite(fh_csv, "id,cycles,reads[imemory],writes[dmemory],reads[dmemory],writes[stack],reads[stack],latency,arch\n");
+    $fwrite(
+        fh_csv,
+        "id,cycles,reads[imemory],writes[dmemory],reads[dmemory],writes[stack],reads[stack],latency,arch\n");
     // Load instruction and data memory
     if (!$value$plusargs("STIM_INSTR=%s", stim_instr)) begin
       $display("No STIM_INSTR specified");

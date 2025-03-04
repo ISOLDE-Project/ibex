@@ -17,16 +17,18 @@ make  PE=onnx TEST=conv2d_test test-clean test-build veri-run
 float x[2];
 float w[2];
 float y[2];
+float b[2];
+
 int main() {
 
   volatile int errors = -1;
 
 
 
-  uint32_t x_addr = *(uint32_t *)&x;
-  uint32_t w_addr = *(uint32_t *)&w;
-  uint32_t y_addr = *(uint32_t *)&y;
-
+  uint32_t x_addr = (uint32_t )x;
+  uint32_t w_addr = (uint32_t )w;
+  uint32_t y_addr = (uint32_t )y;
+  uint32_t b_addr = (uint32_t )b;
 
 
   tfp_printf("[APP TCA onnx_conv2d] Starting test. Godspeed!\n");
@@ -35,7 +37,7 @@ int main() {
   asm volatile("addi t2, %0, 0" ::"r"(y_addr));
   asm volatile("addi t1, %0, 0" ::"r"(x_addr));
   asm volatile("addi t0, %0, 0" ::"r"(w_addr));
-  
+  asm volatile("addi s0, %0, 0" ::"r"(b_addr));
 
   asm volatile("ld4xi32 Q0, 1, 1, 1, 1");
   asm volatile("ld4xi32 Q1, 0, 0, 0, 0");
