@@ -34,20 +34,16 @@ int main() {
   tfp_printf("[APP TCA onnx_conv2d] Starting test. Godspeed!\n");
   
   START_PERFCNT(0x1)
-  asm volatile("addi t2, %0, 0" ::"r"(y_addr));
-  asm volatile("addi t1, %0, 0" ::"r"(x_addr));
-  asm volatile("addi t0, %0, 0" ::"r"(w_addr));
-  asm volatile("addi s0, %0, 0" ::"r"(b_addr));
+  asm volatile("addi t2, %0, 0" ::"r"(y_addr));   //x7
+  asm volatile("addi t1, %0, 0" ::"r"(x_addr));  //x6 
+  asm volatile("addi t0, %0, 0" ::"r"(w_addr));  //x5
+  asm volatile("addi t3, %0, 0" ::"r"(b_addr)); //x28
 
-  asm volatile("ld4xi32 Q0, 1, 1, 1, 1");
-  asm volatile("ld4xi32 Q1, 0, 0, 0, 0");
-  asm volatile("ld3xi32 Q2, 1, 3, 3");
-  asm volatile("ld4xi32 Q3, 1, 1, 28, 28");
-  asm volatile("onnx.conv2d.f32 t2, Q0, t1, Q3, t0, Q2, s0, Q1, Q0");
-
-  asm volatile("redmule.gemm t0,t1,t2,0x10,0xc,0x10");
-
-
+  asm volatile("ld4xi32 Q1, 1, 1, 1, 1");
+  asm volatile("ld4xi32 Q2, 1, 0, 1, 0");
+  asm volatile("ld3xi32 Q3, 1, 3, 3");
+  asm volatile("ld4xi32 Q4, 1, 1, 28, 28");
+  asm volatile("onnx.conv2d.f32 t2, Q0, t1, Q4, t0, Q3, t3, Q2, Q1");
   STOP_PERFCNT(0x1)
   // Wait for end of computation
   //asm volatile("wfi" ::: "memory");

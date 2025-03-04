@@ -29,6 +29,7 @@ sim.fst
 *.txt
 *.tar.gz
 logs*/
+log/
 *.log
 *.csv
 *.old*
