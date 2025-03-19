@@ -132,10 +132,27 @@ MEMORY
 
   //core_inst_req_t core_inst_req;
   // core_inst_rsp_t core_inst_rsp;
-  isolde_tcdm_if  tcdm_core_inst();
+  isolde_tcdm_if tcdm_core_inst ();
 
   core_data_req_t core_data_req;
   core_data_rsp_t core_data_rsp;
+
+  // --------
+  // AXI Typedefs
+  // --------
+  localparam int unsigned PhysicalAddrWidth = 32;
+  localparam int unsigned DataWidth = 32;
+  localparam int unsigned IdWidth = 1;
+  localparam int unsigned UserWidth = 1;
+  typedef logic [PhysicalAddrWidth-1:0] addr_t;
+  typedef logic [IdWidth-1:0] id_mst_t;
+  typedef logic [DataWidth-1:0] data_t;
+  typedef logic [DataWidth/8-1:0] strb_t;
+  typedef logic [UserWidth-1:0] user_t;
+
+  `AXI_TYPEDEF_ALL(axi_imem, addr_t, id_mst_t, data_t, strb_t, user_t)
+  axi_imem_req_t  axi_imem_req;
+  axi_imem_resp_t axi_imem_resp;
 
   // performance counters FSM states
   typedef enum logic [2:0] {
@@ -176,7 +193,7 @@ MEMORY
           perfcnt_d.cycle_counter <= cycle_counter;
           perfcnt_d.dmem.cnt_wr <= tb_lca_system.i_dummy_dmemory.cnt_wr;
           perfcnt_d.dmem.cnt_rd <= tb_lca_system.i_dummy_dmemory.cnt_rd;
-          perfcnt_d.imem.cnt_rd <= tb_lca_system.i_dummy_imemory.cnt_rd;
+          //perfcnt_d.imem.cnt_rd <= tb_lca_system.i_dummy_imemory.cnt_rd;
           perfcnt_d.stack_mem.cnt_wr <= tb_lca_system.i_dummy_stack_memory.cnt_wr;
           perfcnt_d.stack_mem.cnt_rd <= tb_lca_system.i_dummy_stack_memory.cnt_rd;
           //$display("LATCH @%t id=%d,cycle_counter=%d\n",$time, core_data_req.data,cycle_counter);
@@ -187,7 +204,7 @@ MEMORY
           perfcnt_q.dmem.cnt_wr <= (tb_lca_system.i_dummy_dmemory.cnt_wr - perfcnt_d.dmem.cnt_wr);
           perfcnt_q.dmem.cnt_rd <= (tb_lca_system.i_dummy_dmemory.cnt_rd - perfcnt_d.dmem.cnt_rd);
           //
-          perfcnt_q.imem.cnt_rd <= (tb_lca_system.i_dummy_imemory.cnt_rd - perfcnt_d.imem.cnt_rd);
+          //perfcnt_q.imem.cnt_rd <= (tb_lca_system.i_dummy_imemory.cnt_rd - perfcnt_d.imem.cnt_rd);
           //
           perfcnt_q.stack_mem.cnt_wr <= (tb_lca_system.i_dummy_stack_memory.cnt_wr-perfcnt_d.stack_mem.cnt_wr);
           perfcnt_q.stack_mem.cnt_rd <= (tb_lca_system.i_dummy_stack_memory.cnt_rd-perfcnt_d.stack_mem.cnt_rd);
@@ -345,6 +362,9 @@ read performance counters implementation
 
 
 
+
+
+
   tb_tcdm_verilator #(
       .MP         (MP + 1),
       .MEMORY_SIZE(GMEM_SIZE),
@@ -356,18 +376,40 @@ read performance counters implementation
       .tcdm    (tcdm[MP:0])
   );
 
+  isolde_tcdm_to_axi #(
+      .axi_req_t(axi_imem_req_t),
+      .axi_rsp_t(axi_imem_resp_t)
+  ) i_imem_to_axi (
+      .clk_i   (clk_i),
+      .rst_ni  (rst_ni),
+      .s_tcdm(tcdm_core_inst),
+      .slv_aw_cache_i(),
+      .slv_ar_cache_i(),
+      .axi_req_o(axi_imem_req),
+      .axi_rsp_i(axi_imem_resp)
 
-  tb_tcdm_verilator #(
-      .MP          (1),
-      .MEMORY_SIZE (GMEM_SIZE),
-      .BASE_ADDR   (IMEM_ADDR),
-      .DELAY_CYCLES(IMEM_LATENCY)
+  );
+  
+  isolde_axi_sim_mem#(
+    .axi_req_t(axi_imem_req_t),
+    .axi_rsp_t(axi_imem_resp_t)
   ) i_dummy_imemory (
       .clk_i   (clk_i),
       .rst_ni  (rst_ni),
-      .enable_i(1'b1),
-      .tcdm    (tcdm[MP+1:MP+1])
+      .axi_req_i(axi_imem_req),
+      .axi_rsp_o(axi_imem_resp)
   );
+  // tb_tcdm_verilator #(
+  //     .MP          (1),
+  //     .MEMORY_SIZE (GMEM_SIZE),
+  //     .BASE_ADDR   (IMEM_ADDR),
+  //     .DELAY_CYCLES(IMEM_LATENCY)
+  // ) i_dummy_imemory (
+  //     .clk_i   (clk_i),
+  //     .rst_ni  (rst_ni),
+  //     .enable_i(1'b1),
+  //     .tcdm    (tcdm[MP+1:MP+1])
+  // );
 
   tb_tcdm_verilator #(
       .MP         (1),
@@ -503,10 +545,10 @@ read performance counters implementation
       $display("[TB LCA] @ t=%0t - Success!", $time);
       $display("[TB LCA] @ t=%0t - errors=%08x", $time, errors);
     end
-    $fwrite(fh, "[TB LCA] @ t=%0t - writes[imemory] =%d\n", $time,
-            tb_lca_system.i_dummy_imemory.cnt_wr);
-    $fwrite(fh, "[TB LCA] @ t=%0t - reads [imemory] =%d\n", $time,
-            tb_lca_system.i_dummy_imemory.cnt_rd);
+   // $fwrite(fh, "[TB LCA] @ t=%0t - writes[imemory] =%d\n", $time,
+    //        tb_lca_system.i_dummy_imemory.cnt_wr);
+   // $fwrite(fh, "[TB LCA] @ t=%0t - reads [imemory] =%d\n", $time,
+   //         tb_lca_system.i_dummy_imemory.cnt_rd);
     //
     $fwrite(fh, "[TB LCA] @ t=%0t - writes[dmemory] =%d\n", $time,
             tb_lca_system.i_dummy_dmemory.cnt_wr);

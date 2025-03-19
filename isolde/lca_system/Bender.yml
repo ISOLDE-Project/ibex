@@ -8,10 +8,13 @@ package:
 
 dependencies:
   redmule: {path: ../../vendor/redmule }
+  axi:     { git: "https://github.com/pulp-platform/axi.git", version: 0.39.6 }
 
 sources:
   files:   
-
+    - rtl/isolde_tcdm_if.sv
+    - rtl/isolde_tcdm_to_axi.sv
     - target: redmule_test_hwpe
       files:
-        - tb/tb_lca_system.sv
+        - tb/tb_axi_lca_system.sv
+        - tb/tb_axi_mem.sv
