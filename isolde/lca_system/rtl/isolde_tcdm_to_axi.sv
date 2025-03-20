@@ -39,7 +39,7 @@ module isolde_tcdm_to_axi #(
     /// Asynchronous reset, active low.
     input  logic                rst_ni,
     /// Memory slave port request
-           isolde_tcdm_if.Slave s_tcdm,
+           isolde_tcdm_if.slave s_tcdm,
     /// AXI4 master port, slave aw cache signal
     input  axi_pkg::cache_t     slv_aw_cache_i,
     /// AXI4 master port, slave ar cache signal

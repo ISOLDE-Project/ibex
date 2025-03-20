@@ -68,7 +68,17 @@ manifest.flist: Bender.yml
 	@$(BENDER) script verilator $(common_targs) $(VLT_BENDER)  >$@
 	touch $@
 
-#$(BIN_DIR)/verilator_executable:  ibex_sim.flist manifest.flist
+#skip ibex files
+verilate-u-test:  
+	echo "$(mkfile_path)/tb/core/tb_top_verilator.cpp" >  ${CURDIR}/ibex_sim.flist
+	echo "--top-module $(VLT_TOP_MODULE)"   >> ${CURDIR}/ibex_sim.flist
+	$(BENDER) script verilator -t u_test -t rtl  >${CURDIR}/manifest.flist
+	mkdir -p $(BIN_DIR)
+	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist     \
+											     PE_MANIFEST=${CURDIR}/manifest.flist    \
+	                                             SIM_RESULTS=$(BIN_DIR)                  \
+												   RUN_INDEX=$(IMEM_LATENCY)           \
+											  verilate 
 verilate:  ibex_sim.flist manifest.flist
 #	mkdir -p $(dir $@)
 	mkdir -p $(BIN_DIR)
@@ -101,6 +111,20 @@ veri-run: $(BIN_DIR)/verilator_executable
 	mv rtl_debug_trace.log $(VERI_LOG_DIR)
 	mv perfcnt.csv $(VERI_LOG_DIR)/$(TEST).csv
 
+.PHONY: veri-run-u-test
+veri-run-u-test: $(BIN_DIR)/verilator_executable 
+	@echo "$(BANNER)"
+	@echo "* Running with Verilator: "
+	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
+	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/rtl_debug_trace.log"
+	@echo "*                              *.vcd: $(VERI_LOG_DIR)"
+	@echo "$(BANNER)"
+	mkdir -p $(VERI_LOG_DIR)
+	rm -f $(VERI_LOG_DIR)/verilator_tb.vcd
+	$(BIN_DIR)/verilator_executable  \
+		| tee $(VERI_LOG_DIR)/$(VLT_TOP_MODULE).log
+	mv verilator_tb.vcd $(VERI_LOG_DIR)/$(VLT_TOP_MODULE).vcd
+	
 
 
 .PHONY: help

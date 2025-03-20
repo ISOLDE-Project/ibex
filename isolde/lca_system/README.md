@@ -85,3 +85,9 @@ Dhrystones per 1000 cycle:                     1
 [TB LCA] @ t=272960 - errors=00000000
 - /ubuntu_20.04/home/ext/tristan-project/ibex.tca/isolde/lca_system/tb/tb_lca_system.sv:513: Verilog $finish
 ```
+
+# Unit tests
+
+```sh
+make  VLT_TOP_MODULE=tb_isolde_addr_shim veri-clean verilate-u-test veri-run-u-test
+```

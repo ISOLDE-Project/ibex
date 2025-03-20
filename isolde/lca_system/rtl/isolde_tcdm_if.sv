@@ -25,10 +25,10 @@ interface isolde_tcdm_if;
   tcdm_rsp_t rsp;
   // Master Side
   //***************************************
-  modport Master(output req, input rsp);
+  modport master(output req, input rsp);
 
   // Slave Side
   //***************************************
-  modport Slave(input req, output rsp);
+  modport slave(input req, output rsp);
 
 endinterface  // isolde_tcdm_if

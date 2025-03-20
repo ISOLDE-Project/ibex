@@ -14,7 +14,11 @@ sources:
   files:   
     - rtl/isolde_tcdm_if.sv
     - rtl/isolde_tcdm_to_axi.sv
+    - rtl/isolde_addr_shim.sv
     - target: redmule_test_hwpe
       files:
         - tb/tb_axi_lca_system.sv
-        - tb/tb_axi_mem.sv
+        - tb/tb_axi_mem.sv     
+    - target: u_test
+      files:
+        - tb/tb_isolde_addr_shim.sv
