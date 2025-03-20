@@ -15,8 +15,8 @@ module tb_isolde_addr_shim (
       .START_ADDR(32'h80),   // Set start address
       .END_ADDR  (32'hFF00)  // Set end address
   ) dut (
-      .tcdm_master(master_if),
-      .tcdm_slave (slave_if)
+      .tcdm_slave_i(master_if),
+      .tcdm_master_o (slave_if)
   );
 
   initial begin
