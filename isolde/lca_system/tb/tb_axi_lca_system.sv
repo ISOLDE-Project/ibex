@@ -296,16 +296,16 @@ read performance counters implementation
     //periph_r_valid = '0;
   end
 
-  always_comb begin : bind_instrs
-    tcdm[MP+1].req = tcdm_core_inst_shim.req.req;
-    tcdm[MP+1].add = tcdm_core_inst_shim.req.addr;
-    tcdm[MP+1].wen = 1'b1;
-    tcdm[MP+1].be = '0;
-    tcdm[MP+1].data = '0;
-    tcdm_core_inst_shim.rsp.gnt = tcdm[MP+1].gnt;
-    tcdm_core_inst_shim.rsp.valid = tcdm[MP+1].r_valid;
-    tcdm_core_inst_shim.rsp.data = tcdm[MP+1].r_data;
-  end
+  // always_comb begin : bind_instrs
+  //   tcdm[MP+1].req = tcdm_core_inst_shim.req.req;
+  //   tcdm[MP+1].add = tcdm_core_inst_shim.req.addr;
+  //   tcdm[MP+1].wen = 1'b1;
+  //   tcdm[MP+1].be = '0;
+  //   tcdm[MP+1].data = '0;
+  //   tcdm_core_inst_shim.rsp.gnt = tcdm[MP+1].gnt;
+  //   tcdm_core_inst_shim.rsp.valid = tcdm[MP+1].r_valid;
+  //   tcdm_core_inst_shim.rsp.data = tcdm[MP+1].r_data;
+  // end
 
 
   always_comb begin : bind_stack
@@ -384,41 +384,43 @@ read performance counters implementation
       .tcdm_slave_i (tcdm_core_inst),
       .tcdm_master_o(tcdm_core_inst_shim)
   );
-  // isolde_tcdm_to_axi #(
-  //     .axi_req_t(axi_imem_req_t),
-  //     .axi_rsp_t(axi_imem_resp_t)
-  // ) i_imem_to_axi (
-  //     .clk_i   (clk_i),
-  //     .rst_ni  (rst_ni),
-  //     .s_tcdm(tcdm_core_inst),
-  //     .slv_aw_cache_i(),
-  //     .slv_ar_cache_i(),
-  //     .axi_req_o(axi_imem_req),
-  //     .axi_rsp_i(axi_imem_resp)
+  
+  isolde_tcdm_to_axi #(
+      .axi_req_t(axi_imem_req_t),
+      .axi_rsp_t(axi_imem_resp_t)
+  ) i_imem_to_axi (
+      .clk_i   (clk_i),
+      .rst_ni  (rst_ni),
+      .s_tcdm(tcdm_core_inst_shim),
+      .slv_aw_cache_i(),
+      .slv_ar_cache_i(),
+      .axi_req_o(axi_imem_req),
+      .axi_rsp_i(axi_imem_resp)
 
-  // );
+  );
 
-  // isolde_axi_sim_mem #(
-  //     .axi_req_t(axi_imem_req_t),
-  //     .axi_rsp_t(axi_imem_resp_t)
-  // ) i_dummy_imemory (
-  //     .clk_i   (clk_i),
-  //     .rst_ni  (rst_ni),
-  //     .axi_req_i(axi_imem_req),
-  //     .axi_rsp_o(axi_imem_resp)
-  // );
-
-  tb_tcdm_verilator #(
-      .MP          (1),
-      .MEMORY_SIZE (GMEM_SIZE),
-      .BASE_ADDR   (0),
-      .DELAY_CYCLES(IMEM_LATENCY)
+  isolde_axi_sim_mem #(
+      .MEMORY_SIZE(GMEM_SIZE),
+      .axi_req_t(axi_imem_req_t),
+      .axi_rsp_t(axi_imem_resp_t)
   ) i_dummy_imemory (
       .clk_i   (clk_i),
       .rst_ni  (rst_ni),
-      .enable_i(1'b1),
-      .tcdm    (tcdm[MP+1:MP+1])
+      .axi_req_i(axi_imem_req),
+      .axi_rsp_o(axi_imem_resp)
   );
+
+  // tb_tcdm_verilator #(
+  //     .MP          (1),
+  //     .MEMORY_SIZE (GMEM_SIZE),
+  //     .BASE_ADDR   (0),
+  //     .DELAY_CYCLES(IMEM_LATENCY)
+  // ) i_dummy_imemory (
+  //     .clk_i   (clk_i),
+  //     .rst_ni  (rst_ni),
+  //     .enable_i(1'b1),
+  //     .tcdm    (tcdm[MP+1:MP+1])
+  // );
 
   tb_tcdm_verilator #(
       .MP         (1),

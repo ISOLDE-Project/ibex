@@ -20,13 +20,13 @@
 
 module isolde_tcdm_to_axi #(
     /// Memory request address width.
-    parameter int unsigned    MemAddrWidth = 32'd0,
+    parameter int unsigned    MemAddrWidth = 32'd32,
     /// AXI4-Lite address width.
-    parameter int unsigned    AxiAddrWidth = 32'd0,
+    parameter int unsigned    AxiAddrWidth = 32'd32,
     /// Data width in bit of the memory request data **and** the Axi4-Lite data channels.
-    parameter int unsigned    DataWidth    = 32'd0,
+    parameter int unsigned    DataWidth    = 32'd32,
     /// How many requests can be in flight at the same time. (Depth of the response mux FIFO).
-    parameter int unsigned    MaxRequests  = 32'd0,
+    parameter int unsigned    MaxRequests  = 32'd1,
     /// Protection signal the module should emit on the AXI4 transactions.
     parameter axi_pkg::prot_t AxiProt      = 3'b000,
     /// AXI4 request struct definition.

@@ -36,6 +36,8 @@ module isolde_axi_sim_mem #(
     parameter int unsigned UserWidth = 32'd0,
     /// Number of request ports
     parameter int unsigned NumPorts = 32'd1,
+    /// Size of the memory (default 1024 entries)
+    parameter MEMORY_SIZE = 1024,
     /// AXI4 request struct definition
     parameter type axi_req_t = logic,
     /// AXI4 response struct definition
@@ -116,7 +118,9 @@ module isolde_axi_sim_mem #(
   } monitor_t;
 
   monitor_t [NumPorts-1:0] mon_w, mon_r;
-  logic [7:0] memory[addr_t];
+
+  logic [7:0] memory[MEMORY_SIZE];
+
   axi_pkg::resp_t rerr[addr_t] = '{default: 2'b0};  // default: 'axi_pkg::RESP_OKAY'
   axi_pkg::resp_t werr[addr_t] = '{default: 2'b0};  // default: 'axi_pkg::RESP_OKAY'
   // - Verilator cannot determine the type of 'axi_pkg::RESP_OKAY' in this context.
@@ -127,6 +131,7 @@ module isolde_axi_sim_mem #(
 
   for (genvar i = 0; i < NumPorts; i++) begin
     initial begin
+      automatic data_t r_data;
       automatic ar_t ar_queue[$];
       automatic aw_t aw_queue[$];
       automatic b_t  b_queue [$];
@@ -240,7 +245,8 @@ module isolde_axi_sim_mem #(
             automatic axi_pkg::size_t size = ar_queue[0].size;
             automatic addr_t addr = axi_pkg::beat_addr(ar_queue[0].addr, size, len, burst, r_cnt);
             automatic r_t r_beat = '0;
-            automatic data_t r_data = 'x;  // compatibility reasons
+            ///* automatic */ data_t r_data = '0;  // compatibility reasons
+           r_data = '0; 
             r_beat.data = 'x;
             r_beat.id   = ar_queue[0].id;
             r_beat.resp = axi_pkg::RESP_OKAY;
@@ -254,19 +260,17 @@ module isolde_axi_sim_mem #(
                 i_byte++
             ) begin
               automatic addr_t byte_addr = (addr / StrbWidth) * StrbWidth + i_byte;
-              if (!memory.exists(byte_addr)) begin
-                if (WarnUninitialized) begin
-                  $warning("Access to non-initialized byte at address 0x%016x by ID 0x%x.",
-                           byte_addr, r_beat.id);
-                end
-                case (UninitializedData)
-                  "random": r_data[i_byte*8+:8] = $urandom;
-                  "ones":   r_data[i_byte*8+:8] = '1;
-                  "zeros":  r_data[i_byte*8+:8] = '0;
-                  default:  r_data[i_byte*8+:8] = 'x;
+              begin
+                //r_data[i_byte*8-:8] = memory[byte_addr];
+                case(i_byte)
+                    0:r_data[7:0] = memory[byte_addr];
+                    1:r_data[15:8] = memory[byte_addr];
+                    2: r_data[23:16] = memory[byte_addr];
+                    3: r_data[31:24] = memory[byte_addr];
                 endcase
-              end else begin
-                r_data[i_byte*8+:8] = memory[byte_addr];
+                $display("@ t=%0t - [%d]:  @%h::%h", $time, i_byte, byte_addr, memory[byte_addr]);
+                $display("@ t=%0t - r_data: %h", $time, r_data);
+
               end
               r_beat.resp = axi_pkg::resp_precedence(rerr[byte_addr], r_beat.resp);
               if (ClearErrOnAccess & axi_req_i[i].r_ready) begin
