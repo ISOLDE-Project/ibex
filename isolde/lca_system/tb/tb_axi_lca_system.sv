@@ -637,7 +637,7 @@ read performance counters implementation
       $finish;
     end else begin
       $display("[TESTBENCH] @ t=%0t: loading %0s into imemory", $time, stim_instr);
-      $readmemh(stim_instr, tb_lca_system.i_dummy_imemory.memory);
+      $readmemh(stim_instr, tb_lca_system.i_dummy_imemory.i_mem.memory);
     end
 
     if (!$value$plusargs("STIM_DATA=%s", stim_data)) begin
