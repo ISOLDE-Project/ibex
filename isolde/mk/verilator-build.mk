@@ -1,26 +1,23 @@
 ###############################################################################
 #
 # Copyleft  2024 ISOLDE
-
-
-
-ifeq ($(NO_TEE),1)
-  TEE_CMD := 
-else
-  TEE_CMD := | tee $(VERI_LOG_DIR)/$(TEST).log
-endif
-
+#
 
 #############
 # Verilator #
 #############
-
 
 #####
 VERI_LOG_DIR      ?= $(mkfile_path)/log/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)
 SIM_TEST_INPUTS   ?= $(mkfile_path)/vsim
 BIN_DIR           = $(mkfile_path)/bin/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)
 VERI_FLAGS        +=
+#####
+ifeq ($(NO_TEE),1)
+  TEE_CMD := 
+else
+  TEE_CMD := | tee $(VERI_LOG_DIR)/$(TEST).log
+endif
 
 
 
@@ -111,7 +108,7 @@ veri-run-u-test: $(BIN_DIR)/verilator_executable
 	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
 	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/rtl_debug_trace.log"
 	@echo "*                              *.vcd: $(VERI_LOG_DIR)"
-	@echo "$(BANNER)"
+	@echo "$(shell pwd)"
 	mkdir -p $(VERI_LOG_DIR)
 	rm -f $(VERI_LOG_DIR)/verilator_tb.vcd
 	$(BIN_DIR)/verilator_executable  \

@@ -62,6 +62,7 @@ vars:
 		$(CFLAGS) \
 		-o $@ \
 		$(OBJS) \
+		-Wl,-Map=$@.map \
 		-T $(LD_FILE) -lc
 	$(OBJDUMP) -dh  $@ >$@.headers
 	@echo   $@.headers

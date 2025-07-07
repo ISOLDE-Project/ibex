@@ -7,7 +7,7 @@
  * Top level for the log interconnect
  */
 
-import isolde_soc_package::*;
+//import isolde_soc_package::*;
 
 module isolde_log_interconnect
   import tcdm_interconnect_pkg::topo_e;
@@ -15,13 +15,16 @@ module isolde_log_interconnect
     parameter int unsigned N_SLAVES  = 1,
     parameter int unsigned N_MASTERS = 9
 ) (
-    input logic                 clk_i,
-    input logic                 rst_n,
-          isolde_tcdm_if.slave  s_cores[ N_SLAVES-1:0],
-          isolde_tcdm_if.master m_mems [N_MASTERS-1:0]
+    input  logic                       clk_i,
+    input  logic                       rst_ni,
+    input  isolde_tcdm_pkg::opaq_req_t cores_req_i[ N_SLAVES-1:0],
+    output isolde_tcdm_pkg::opaq_rsp_t cores_rsp_o[ N_SLAVES-1:0],
+    output isolde_tcdm_pkg::opaq_req_t mems_req_o [N_MASTERS-1:0],
+    input  isolde_tcdm_pkg::opaq_rsp_t mems_rsp_i [N_MASTERS-1:0]
+
 );
-  localparam int unsigned AWC = 32;  // Address Width Core
-  localparam int unsigned AWM = 32;  // Address Width Memory
+  localparam int unsigned AWC = 32;  // Address Width Cores
+  localparam int unsigned AWM = 12;  // Address Width TCDM Memory
   localparam int unsigned DW = 32;  // Data Width
   localparam int unsigned UW = 0;  // User Width, not used in this interconnect
   localparam int unsigned BW = 8;  // Byte Width
@@ -51,29 +54,40 @@ module isolde_log_interconnect
   // interface unrolling
   generate
     for (genvar i = 0; i < N_SLAVES; i++) begin : cores_unrolling
+      wire isolde_tcdm_pkg::req_t _s_core_req; 
+      assign _s_core_req = isolde_tcdm_pkg::from_opaq_req(cores_req_i[i]);
+      wire isolde_tcdm_pkg::rsp_t _s_core_rsp;
+      assign  cores_rsp_o[i] = isolde_tcdm_pkg::to_opaq_rsp(_s_core_rsp);
       //request
-      assign cores_req[i]         = s_cores[i].req.req;
-      assign cores_wen[i]         = ~s_cores[i].req.we;
-      assign cores_be[i]          = s_cores[i].req.be;
-      assign cores_add[i]         = s_cores[i].req.addr;
-      assign cores_wdata[i]       = s_cores[i].req.data;
+      assign cores_req[i]      = _s_core_req.req;
+      assign cores_wen[i]      = ~_s_core_req.we;
+      assign cores_be[i]       = _s_core_req.be;
+      assign cores_add[i]      = _s_core_req.addr;
+      assign cores_wdata[i]    = _s_core_req.data;
       //response
-      assign s_cores[i].rsp.gnt   = cores_gnt[i];
-      assign s_cores[i].rsp.valid = cores_r_valid[i];
-      assign s_cores[i].rsp.err   = '0;
-      assign s_cores[i].rsp.data  = cores_r_rdata[i];
+      assign _s_core_rsp.gnt   = cores_gnt[i];
+      assign _s_core_rsp.valid = cores_r_valid[i];
+      assign _s_core_rsp.err   = '0;
+      assign _s_core_rsp.data  = cores_r_rdata[i];
     end  // cores_unrolling
+  endgenerate
 
-    for (genvar i = 0; i < N_MASTERS; i++) begin : mems_unrolling
-      assign m_mems[i].req.req  = mems_req[i];
-      assign m_mems[i].req.we   = ~mems_wen[i];
-      assign m_mems[i].req.be   = mems_be[i];
-      assign m_mems[i].req.addr = mems_add[i];
-      assign m_mems[i].req.data = mems_wdata[i];
+  generate
+    for (genvar jj = 0; jj < N_MASTERS; jj++) begin
+      wire isolde_tcdm_pkg::req_t _s_mem_req;
+      assign mems_req_o[jj] =isolde_tcdm_pkg::to_opaq_req(_s_mem_req);
+      wire isolde_tcdm_pkg::rsp_t _s_mem_rsp;
+      assign _s_mem_rsp = isolde_tcdm_pkg::from_opaq_rsp(mems_rsp_i[jj]);
+      //request
+      assign _s_mem_req.req   = mems_req[jj];
+      assign _s_mem_req.we    = ~mems_wen[jj];
+      assign _s_mem_req.be    = mems_be[jj];
+      assign _s_mem_req.addr  = mems_add[jj];
+      assign _s_mem_req.data  = mems_wdata[jj];
       //response
-      assign mems_gnt[i]        = m_mems[i].rsp.gnt;
-      assign mems_r_valid[i]    = m_mems[i].rsp.valid;
-      assign mems_r_rdata[i]    = m_mems[i].rsp.data;
+      assign mems_gnt[jj]     = _s_mem_rsp.gnt;
+      assign mems_r_valid[jj] = _s_mem_rsp.valid;
+      assign mems_r_rdata[jj] = _s_mem_rsp.data;
 
 
     end  // mems_unrolling
@@ -81,7 +95,7 @@ module isolde_log_interconnect
 
   // uses XBAR_TCDM from cluster_interconnect
   tcdm_interconnect #(
-      .NumIn       (N_CH0 + N_CH1),
+      .NumIn       (N_SLAVES),
       .NumOut      (N_MASTERS),
       .AddrWidth   (AWC),
       .DataWidth   (DW + UW),

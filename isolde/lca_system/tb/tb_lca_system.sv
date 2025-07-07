@@ -74,8 +74,8 @@ module tb_lca_system (
   // parameters
   localparam int unsigned NC = 1;
   localparam int unsigned ID = 10;
-  localparam int unsigned DW = redmule_pkg::DATA_W;
-  localparam int unsigned MP = DW / 32;
+  localparam int unsigned HCI_DW = redmule_pkg::DATA_W;
+  localparam int unsigned MP = HCI_DW / 32;
   localparam int unsigned MEMORY_SIZE = 32'h30000;
   localparam int unsigned STACK_MEMORY_SIZE = 32'h30000;
   localparam int unsigned PULP_XPULP = 1;
@@ -166,6 +166,7 @@ MEMORY
   //
 
   hwpe_stream_intf_tcdm tcdm[MP:0] (.clk(clk_i));
+    isolde_tcdm_if m_mems [MP:0]();
 
   isolde_tcdm_if tcdm_core_data ();
   isolde_tcdm_if tcdm_data_dm ();
@@ -199,12 +200,10 @@ MEMORY
     end
   end
 
-  logic [NC-1:0][ 1:0] evt;
-  logic [MP-1:0]       tcdm_gnt;
-  logic [MP-1:0][31:0] tcdm_r_data;
-  logic [MP-1:0]       tcdm_r_valid;
+  logic [NC-1:0][1:0] evt;
 
-  logic                core_sleep;
+
+  logic               core_sleep;
   logic fifo_full, fifo_empty;
   logic push_id_fifo, pop_id_fifo;
   rule_idx_t selected_idx, rsp_idx;
@@ -305,7 +304,7 @@ MEMORY
     endcase
   end
 
-  hci_core_intf #(.DW(DW)) redmule_tcdm (.clk(clk_i));
+  hci_core_intf #(.DW(HCI_DW)) redmule_tcdm (.clk(clk_i));
   hwpe_ctrl_intf_periph #(.ID_WIDTH(ID)) periph (.clk(clk_i));
 
   always_comb begin : bind_periph
@@ -317,29 +316,19 @@ MEMORY
     //periph_r_valid = '0;
   end
 
+  isolde_hci_interconnect #(
+      .HCI_DW(HCI_DW)
+  ) i_hci_interconnect (
+      .clk_i,
+      .rst_ni,
+      .s_hci_core(redmule_tcdm),
+      .m_tcdm(tcdm[MP-1:0]),
+      .m_mems(m_mems)
+  );
 
-
-  for (genvar ii = 0; ii < MP; ii++) begin : tcdm_binding
-    assign tcdm[ii].req     = redmule_tcdm.req;
-    assign tcdm[ii].add     = redmule_tcdm.add + ii * 4;
-    assign tcdm[ii].wen     = redmule_tcdm.wen;
-    assign tcdm[ii].be      = redmule_tcdm.be[(ii+1)*4-1:ii*4];
-    assign tcdm[ii].data    = redmule_tcdm.data[(ii+1)*32-1:ii*32];
-    assign tcdm_gnt[ii]     = tcdm[ii].gnt;
-    assign tcdm_r_valid[ii] = tcdm[ii].r_valid;
-    assign tcdm_r_data[ii]  = tcdm[ii].r_data;
-  end
-
-  assign redmule_tcdm.gnt = &tcdm_gnt;
-  assign redmule_tcdm.r_data = {tcdm_r_data};
-  assign redmule_tcdm.r_valid = &tcdm_r_valid;
-  assign redmule_tcdm.r_opc = '0;
-  assign redmule_tcdm.r_user = '0;
-
-
-  assign tcdm[MP].add = tcdm_core_data.req.addr;
-  assign tcdm[MP].wen = ~tcdm_core_data.req.we;
-  assign tcdm[MP].be = tcdm_core_data.req.be;
+  assign tcdm[MP].add  = tcdm_core_data.req.addr;
+  assign tcdm[MP].wen  = ~tcdm_core_data.req.we;
+  assign tcdm[MP].be   = tcdm_core_data.req.be;
   assign tcdm[MP].data = tcdm_core_data.req.data;
 
 
@@ -489,7 +478,7 @@ MEMORY
   redmule_isolde #(
       .ID_WIDTH (ID),
       .N_CORES  (NC),
-      .DW       (DW),  // TCDM port dimension (in bits
+      .DW       (HCI_DW),  // TCDM port dimension (in bits
       .AddrWidth(32)
   ) i_dut (
       .clk_i         (clk_i),
