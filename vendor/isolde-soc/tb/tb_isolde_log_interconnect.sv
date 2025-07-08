@@ -7,57 +7,59 @@ module tb_isolde_log_interconnect (
 
 );
 
-  localparam int unsigned N_MASTERS = 2;
+  localparam int unsigned N_CORES = 1;
+  localparam int unsigned N_TCDM_BANKS = 2;
 
-  isolde_tcdm_if core_if[1] ();
-
-
-
-  isolde_tcdm_pkg::opaq_req_t cores_req[0:0];
-  isolde_tcdm_pkg::opaq_rsp_t cores_rsp[0:0];
-  isolde_tcdm_pkg::opaq_req_t mems_req [1:0];
-  isolde_tcdm_pkg::opaq_rsp_t mems_rsp [1:0];
+  // Interfaces
+  isolde_tcdm_if core_if[N_CORES-1:0] ();
 
 
-  assign core_if[0].rsp = isolde_tcdm_pkg::from_opaq_rsp(cores_rsp[0]);
-  assign cores_req[0]   = isolde_tcdm_pkg::to_opaq_req(core_if[0].req);
+  // DUT connections
+  isolde_tcdm_pkg::req_t cores_req[N_CORES-1:0];
+  isolde_tcdm_pkg::rsp_t cores_rsp[N_CORES-1:0];
+  isolde_tcdm_pkg::req_t mems_req[N_TCDM_BANKS-1:0];
+  isolde_tcdm_pkg::rsp_t mems_rsp[N_TCDM_BANKS-1:0];
+
+  // === Interface connections ===
+  assign core_if[0].rsp = cores_rsp[0];
+  assign cores_req[0]   = core_if[0].req;
 
 
+  // === Memory banks ===
+  generate
+    for (genvar i = 0; i < N_TCDM_BANKS; i++) begin : gen_mem
+      tb_sram_mem #(
+          .ID(i)
+      ) i_bank (
+          .clk_i,
+          .rst_ni,
+          .req_i(mems_req[i]),
+          .rsp_o(mems_rsp[i])
+      );
+    end
+  endgenerate
 
-  //   for (genvar i = 0; i < N_MASTERS; i++) begin : tcdm_bank
-
-  //     tb_sram_mem #(
-  //         .ID(i)
-  //     ) i_bank (
-  //         .clk_i,
-  //         .rst_ni,
-  //         .req_i(mems_req[i]),
-  //         .rsp_o(mems_rsp[i])
-  //     );
-
-  //   end
-
-  tb_sram_mem #(
-      .ID(0)
-  ) i_bank_0 (
-      .clk_i,
-      .rst_ni,
-      .req_i(mems_req[0]),
-      .rsp_o(mems_rsp[0])
-  );
-  tb_sram_mem #(
-      .ID(1)
-  ) i_bank_1 (
-      .clk_i,
-      .rst_ni,
-      .req_i(mems_req[1]),
-      .rsp_o(mems_rsp[1])
-  );
+  //   tb_sram_mem #(
+  //       .ID(0)
+  //   ) i_bank_0 (
+  //       .clk_i,
+  //       .rst_ni,
+  //       .req_i(mems_req[0]),
+  //       .rsp_o(mems_rsp[0])
+  //   );
+  //   tb_sram_mem #(
+  //       .ID(1)
+  //   ) i_bank_1 (
+  //       .clk_i,
+  //       .rst_ni,
+  //       .req_i(mems_req[1]),
+  //       .rsp_o(mems_rsp[1])
+  //   );
 
   //DUT
   isolde_log_interconnect #(
-      .N_SLAVES (1),
-      .N_MASTERS(2)
+      .N_SLAVES (N_CORES),
+      .N_MASTERS(N_TCDM_BANKS)
   ) dut (
       .clk_i,
       .rst_ni,
@@ -67,34 +69,68 @@ module tb_isolde_log_interconnect (
       .mems_rsp_i (mems_rsp)
   );
 
+
+  task automatic core_req(int unsigned core_id, input logic [31:0] addr, input logic [31:0] data,
+                          input logic write_enable);
+    begin
+      cores_req[core_id].req  = 1;
+      cores_req[core_id].we   = write_enable;
+      cores_req[core_id].addr = addr;
+      cores_req[core_id].data = data;
+      @(posedge clk_i);
+      cores_req[0].req = 0;
+      wait (cores_rsp[core_id].valid);
+    end
+  endtask
+
+  // Read task with check
+  task automatic read_and_check(int unsigned core_id, input logic [31:0] addr,
+                                input logic [31:0] expected);
+    logic [31:0] read_data;
+    begin
+      core_req(core_id, addr, 32'h0BAD_F00D, 1'b0);  // Read request
+      read_data = cores_rsp[core_id].data;
+
+      if (read_data !== expected) begin
+        $error("[Time %0t] ❌ Read mismatch at address %h: expected %h, got %h", $time, addr,
+               expected, read_data);
+      end else begin
+        $display("[Time %0t] ✅ Read success at address %h: value = %h", $time, addr, read_data);
+      end
+    end
+  endtask
+
+
+  
+  logic [31:0]
+  test_addrs[4] = '{32'h0000_000C, 32'h0000_0010, 32'h0000_0014, 32'h0000_0018};
+
+  
+  logic [31:0]
+  test_data[4] = '{32'hDEAD_BEEF, 32'hCAFE_F00D, 32'hCAFE_DEEA, 32'h1234_5678};
   // Input signal generation
   //https://github.com/verilator/verilator/issues/5210
   //*
   //if you need <= assignment in initial block, change the block into allways, otherways it will be treated as =, blocking assigment.
   //*
+  // === Test sequence ===
   initial begin
-    $readmemh("tb/a.hex", tb_isolde_log_interconnect.i_bank_0.memory);
-    $readmemh("tb/b.hex", tb_isolde_log_interconnect.i_bank_1.memory);
-    //always begin
-    do @(posedge clk_i); while (!fetch_enable_i);
-    core_if[0].req.req  = 1;
-    core_if[0].req.we   = 0;
-    core_if[0].req.addr = 32'h1000_0000;
-    core_if[0].req.data = 32'hDEAD_C0DE;
+    $readmemh("tb/a.hex", tb_isolde_log_interconnect.gen_mem[0].i_bank.memory);
+    $readmemh("tb/b.hex", tb_isolde_log_interconnect.gen_mem[1].i_bank.memory);
+
+
+    // Wait for fetch_enable_i  
+    wait (fetch_enable_i);
     @(posedge clk_i);
-    core_if[0].req.req = 0;
-    //do@(posedge clk_i) ;while(!mems_if[0].rsp.valid);
-    repeat (10) @(posedge clk_i);
-    core_if[0].req.req  = 1;
-    core_if[0].req.addr = 32'h1000_0004;
-    @(posedge clk_i);
-    core_if[0].req.req = 0;
-    repeat (10) @(posedge clk_i);
-    core_if[0].req.req  = 1;
-    core_if[0].req.addr = 32'h1000_0008;
-    @(posedge clk_i);
-    core_if[0].req.req = 0;
-    repeat (10) @(posedge clk_i);
+    //read preloaded values
+    read_and_check(0, 32'h00000000, 32'hAA_AA_AA_AA);
+    read_and_check(0, 32'h00000004, 32'hBB_BB_BB_BB);
+    read_and_check(0, 32'h00000008, 32'hAB_AA_AA_AA);
+    //write & read
+    foreach (test_addrs[i]) begin
+      core_req(0, test_addrs[i], test_data[i], 1'b1);  // Write request
+      read_and_check(0, test_addrs[i], test_data[i]);
+    end
 
     //   // === End test ===
     @(posedge clk_i);
