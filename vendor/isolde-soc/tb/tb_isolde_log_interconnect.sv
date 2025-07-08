@@ -75,10 +75,13 @@ module tb_isolde_log_interconnect (
     begin
       cores_req[core_id].req  = 1;
       cores_req[core_id].we   = write_enable;
+      cores_req[core_id].be = write_enable?4'b1111:4'b0000;
       cores_req[core_id].addr = addr;
       cores_req[core_id].data = data;
       @(posedge clk_i);
       cores_req[0].req = 0;
+      cores_req[core_id].we = 0;
+      cores_req[core_id].be = 4'b0000;
       wait (cores_rsp[core_id].valid);
     end
   endtask

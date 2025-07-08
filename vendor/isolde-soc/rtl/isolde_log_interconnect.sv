@@ -10,6 +10,7 @@
     Offset bits  (A[1:0]) = 00 → aligned on 4 bytes boundary
     Bank bits    selects the bank, e.g for 4 banks (A[3:2]) = 00 → Bank 0, 01 → Bank 1, 10 → Bank 2, 11 → Bank 3
     Row bits     remaining bits → Row address within the bank
+ *   
  * Top level for the log interconnect
  */
 
