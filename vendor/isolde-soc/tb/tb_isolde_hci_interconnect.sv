@@ -17,7 +17,7 @@ module tb_isolde_hci_interconnect (
   // DUT connections
   hci_core_intf #(.DW(HCI_DW)) hci_core_hwe (.clk(clk_i));
   isolde_tcdm_if tcdm_core ();
-  isolde_tcdm_if tcdm_mems [N_TCDM_BANKS-1:0]();
+  isolde_tcdm_if tcdm_mems[N_TCDM_BANKS-1:0] ();
 
 
   // === Memory banks ===
@@ -51,6 +51,24 @@ module tb_isolde_hci_interconnect (
       .m_tcdm_mems(tcdm_mems)
   );
 
+  task automatic hci_core_transaction(input logic [31:0] addr, input logic [HCI_DW-1:0] data,
+                                      output logic [HCI_DW-1:0] r_data, input logic write_enable);
+    begin
+      hci_core_hwe.req  = 1;
+      hci_core_hwe.wen  = write_enable ? 0 : 1;
+      hci_core_hwe.be   = write_enable ? 8'hFF : 8'h00;
+      hci_core_hwe.add  = addr;
+      hci_core_hwe.data = data;
+      @(posedge clk_i);
+      hci_core_hwe.req = 0;
+      hci_core_hwe.wen = 1;
+      hci_core_hwe.be  = 8'h00;
+      //repeat (3) @(posedge clk_i);
+      wait (hci_core_hwe.r_valid);
+      r_data = hci_core_hwe.r_data;
+      @(posedge clk_i);
+    end
+  endtask
 
   task automatic tcdm_core_transaction(input logic [31:0] addr, input logic [31:0] data,
                                        output logic [31:0] r_data, input logic write_enable);
@@ -67,6 +85,20 @@ module tb_isolde_hci_interconnect (
       wait (tcdm_core.rsp.valid);
       //do @(posedge clk_i); while (!tcdm_core.rsp.valid);
       r_data = tcdm_core.rsp.data;
+    end
+  endtask
+
+  // Read task with check
+  task automatic check_r_wide_data(input logic [HCI_DW-1:0] actual,
+                                   input logic [HCI_DW-1:0] expected);
+
+    begin
+
+      if (actual !== expected) begin
+        $error("[Time %0t] ❌ mismatch, expected %h, got %h", $time, expected, actual);
+      end else begin
+        $display(" check_r_wide_data ✅ ");
+      end
     end
   endtask
 
@@ -98,10 +130,12 @@ module tb_isolde_hci_interconnect (
   endtask
 
 
-  logic [31:0] test_addrs[4] = '{32'h0000_000C, 32'h0000_0010, 32'h0000_0014, 32'h0000_0018};
+  logic [31:0] test_addrs[4] = '{32'h0000_0000, 32'h0000_0004, 32'h0000_0008, 32'h0000_000c};
 
 
-  logic [31:0] test_data [4] = '{32'hDEAD_BEEF, 32'hCAFE_F00D, 32'hCAFE_DEEA, 32'h1234_5678};
+  logic [31:0] test_data[4] = '{32'hDEAD_BEEF, 32'hCAFE_F00D, 32'hCAFE_DEEA, 32'h1234_5678};
+  //
+  logic [HCI_DW-1:0] r_wide_data;
   // Input signal generation
   //https://github.com/verilator/verilator/issues/5210
   //*
@@ -123,9 +157,30 @@ module tb_isolde_hci_interconnect (
     //write & read
     foreach (test_addrs[i]) begin
       write(test_addrs[i], test_data[i]);  // Write request
-      read_and_check( test_addrs[i], test_data[i]);
+      read_and_check(test_addrs[i], test_data[i]);
     end
 
+    //
+    hci_core_transaction(32'h0000_0000, 64'hDEAD_BEEF_FACE_00FF, r_wide_data,
+                         1'b0);  // read request
+    check_r_wide_data(r_wide_data, {test_data[1], test_data[0]});
+    hci_core_transaction(32'h0000_0008, 64'hDEAD_BEEF_FACE_00FF, r_wide_data,
+                         1'b0);  // read request
+    check_r_wide_data(r_wide_data, {test_data[3], test_data[2]});
+    hci_core_transaction(32'h0000_0010, 64'hDEAD_BEEF_FACE_00FF, r_wide_data,
+                         1'b0);  // read request
+    check_r_wide_data(r_wide_data, 64'hCACA_C0DE_00BE_E000);
+
+    //
+        hci_core_transaction(32'h0000_0018, 64'hF00D_BEEF_0BAD_0FEE, r_wide_data,
+                         1'b1);  // write request
+    check_r_wide_data(r_wide_data, 64'hF00D_BEEF_0BAD_0FEE);
+    hci_core_transaction(32'h0000_0018, 64'hDEAD_BEEF_FACE_00FF, r_wide_data,
+                         1'b0);  // read request
+    check_r_wide_data(r_wide_data, 64'hF00D_BEEF_0BAD_0FEE);
+    //
+    read_and_check(32'h0000_0018, 32'h0BAD_0FEE);
+    read_and_check(32'h0000_001C, 32'hF00D_BEEF);
     //   // === End test ===
     @(posedge clk_i);
     $display("[Time %0t] ✅ Test complete", $time);
