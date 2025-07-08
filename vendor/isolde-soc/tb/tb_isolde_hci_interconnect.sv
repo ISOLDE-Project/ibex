@@ -1,0 +1,134 @@
+`timescale 1ns / 1ps
+
+module tb_isolde_hci_interconnect (
+    input logic clk_i,
+    input logic rst_ni,
+    input logic fetch_enable_i
+
+);
+
+  localparam int unsigned N_TCDM_BANKS = 2;
+  localparam int unsigned HCI_DW = N_TCDM_BANKS * 32;
+
+
+
+
+
+  // DUT connections
+  hci_core_intf #(.DW(HCI_DW)) hci_core_hwe (.clk(clk_i));
+  isolde_tcdm_if tcdm_core ();
+  isolde_tcdm_if tcdm_mems [N_TCDM_BANKS-1:0]();
+
+
+  // === Memory banks ===
+  generate
+    for (genvar i = 0; i < N_TCDM_BANKS; i++) begin : gen_mem
+      wire isolde_tcdm_pkg::req_t mem_req;
+      wire isolde_tcdm_pkg::rsp_t mem_rsp;
+      assign mem_req = tcdm_mems[i].req;
+      assign tcdm_mems[i].rsp = mem_rsp;
+      // Instantiate memory bank
+      tb_sram_mem #(
+          .ID(i)
+      ) i_bank (
+          .clk_i,
+          .rst_ni,
+          .req_i(mem_req),
+          .rsp_o(mem_rsp)
+      );
+    end
+  endgenerate
+
+
+  //DUT
+  isolde_hci_interconnect #(
+      .HCI_DW(HCI_DW)
+  ) dut (
+      .clk_i,
+      .rst_ni,
+      .s_hci_core (hci_core_hwe),
+      .s_tcdm_core(tcdm_core),
+      .m_tcdm_mems(tcdm_mems)
+  );
+
+
+  task automatic tcdm_core_transaction(input logic [31:0] addr, input logic [31:0] data,
+                                       output logic [31:0] r_data, input logic write_enable);
+    begin
+      tcdm_core.req.req  = 1;
+      tcdm_core.req.we   = write_enable;
+      tcdm_core.req.be   = write_enable ? 4'b1111 : 4'b0000;
+      tcdm_core.req.addr = addr;
+      tcdm_core.req.data = data;
+      @(posedge clk_i);
+      tcdm_core.req.req = 0;
+      tcdm_core.req.we  = 0;
+      tcdm_core.req.be  = 4'b0000;
+      wait (tcdm_core.rsp.valid);
+      //do @(posedge clk_i); while (!tcdm_core.rsp.valid);
+      r_data = tcdm_core.rsp.data;
+    end
+  endtask
+
+  // Read task with check
+  task automatic read_and_check(input logic [31:0] addr, input logic [31:0] expected);
+    logic [31:0] read_data;
+    begin
+      tcdm_core_transaction(addr, 32'h0BAD_F00D, read_data, 1'b0);  // Read request
+      if (read_data !== expected) begin
+        $error("[Time %0t] ❌ Read mismatch at address %h: expected %h, got %h", $time, addr,
+               expected, read_data);
+      end else begin
+        $display("[Time %0t] ✅ Read success at address %h: value = %h", $time, addr, read_data);
+      end
+    end
+  endtask
+
+  task automatic write(input logic [31:0] addr, input logic [31:0] wdata);
+    logic [31:0] read_data;
+    begin
+      tcdm_core_transaction(addr, wdata, read_data, 1'b1);  // write request
+      if (read_data !== wdata) begin
+        $error("[Time %0t] ❌ Write failed at address %h: expected %h, got %h", $time, addr,
+               wdata, read_data);
+      end else begin
+        $display("[Time %0t] ✅ Write success at address %h: value = %h", $time, addr, wdata);
+      end
+    end
+  endtask
+
+
+  logic [31:0] test_addrs[4] = '{32'h0000_000C, 32'h0000_0010, 32'h0000_0014, 32'h0000_0018};
+
+
+  logic [31:0] test_data [4] = '{32'hDEAD_BEEF, 32'hCAFE_F00D, 32'hCAFE_DEEA, 32'h1234_5678};
+  // Input signal generation
+  //https://github.com/verilator/verilator/issues/5210
+  //*
+  //if you need <= assignment in initial block, change the block into allways, otherways it will be treated as =, blocking assigment.
+  //*
+  // === Test sequence ===
+  initial begin
+    $readmemh("tb/a.hex", tb_isolde_hci_interconnect.gen_mem[0].i_bank.memory);
+    $readmemh("tb/b.hex", tb_isolde_hci_interconnect.gen_mem[1].i_bank.memory);
+
+
+    // Wait for fetch_enable_i  
+    wait (fetch_enable_i);
+    @(posedge clk_i);
+    //read preloaded values
+    read_and_check(32'h0000_0000, 32'hAA_AA_AA_AA);
+    read_and_check(32'h0000_0004, 32'hBB_BB_BB_BB);
+    read_and_check(32'h0000_0008, 32'hAB_AA_AA_AA);
+    //write & read
+    foreach (test_addrs[i]) begin
+      write(test_addrs[i], test_data[i]);  // Write request
+      read_and_check( test_addrs[i], test_data[i]);
+    end
+
+    //   // === End test ===
+    @(posedge clk_i);
+    $display("[Time %0t] ✅ Test complete", $time);
+    $finish;
+  end
+endmodule

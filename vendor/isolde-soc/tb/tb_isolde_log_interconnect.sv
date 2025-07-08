@@ -10,8 +10,7 @@ module tb_isolde_log_interconnect (
   localparam int unsigned N_CORES = 1;
   localparam int unsigned N_TCDM_BANKS = 2;
 
-  // Interfaces
-  isolde_tcdm_if core_if[N_CORES-1:0] ();
+
 
 
   // DUT connections
@@ -20,9 +19,7 @@ module tb_isolde_log_interconnect (
   isolde_tcdm_pkg::req_t mems_req[N_TCDM_BANKS-1:0];
   isolde_tcdm_pkg::rsp_t mems_rsp[N_TCDM_BANKS-1:0];
 
-  // === Interface connections ===
-  assign core_if[0].rsp = cores_rsp[0];
-  assign cores_req[0]   = core_if[0].req;
+
 
 
   // === Memory banks ===
@@ -39,22 +36,6 @@ module tb_isolde_log_interconnect (
     end
   endgenerate
 
-  //   tb_sram_mem #(
-  //       .ID(0)
-  //   ) i_bank_0 (
-  //       .clk_i,
-  //       .rst_ni,
-  //       .req_i(mems_req[0]),
-  //       .rsp_o(mems_rsp[0])
-  //   );
-  //   tb_sram_mem #(
-  //       .ID(1)
-  //   ) i_bank_1 (
-  //       .clk_i,
-  //       .rst_ni,
-  //       .req_i(mems_req[1]),
-  //       .rsp_o(mems_rsp[1])
-  //   );
 
   //DUT
   isolde_log_interconnect #(
@@ -75,13 +56,13 @@ module tb_isolde_log_interconnect (
     begin
       cores_req[core_id].req  = 1;
       cores_req[core_id].we   = write_enable;
-      cores_req[core_id].be = write_enable?4'b1111:4'b0000;
+      cores_req[core_id].be   = write_enable ? 4'b1111 : 4'b0000;
       cores_req[core_id].addr = addr;
       cores_req[core_id].data = data;
       @(posedge clk_i);
-      cores_req[0].req = 0;
-      cores_req[core_id].we = 0;
-      cores_req[core_id].be = 4'b0000;
+      cores_req[core_id].req = 0;
+      cores_req[core_id].we  = 0;
+      cores_req[core_id].be  = 4'b0000;
       wait (cores_rsp[core_id].valid);
     end
   endtask
@@ -104,13 +85,11 @@ module tb_isolde_log_interconnect (
   endtask
 
 
-  
-  logic [31:0]
-  test_addrs[4] = '{32'h0000_000C, 32'h0000_0010, 32'h0000_0014, 32'h0000_0018};
 
-  
-  logic [31:0]
-  test_data[4] = '{32'hDEAD_BEEF, 32'hCAFE_F00D, 32'hCAFE_DEEA, 32'h1234_5678};
+  logic [31:0] test_addrs[4] = '{32'h0000_000C, 32'h0000_0010, 32'h0000_0014, 32'h0000_0018};
+
+
+  logic [31:0] test_data [4] = '{32'hDEAD_BEEF, 32'hCAFE_F00D, 32'hCAFE_DEEA, 32'h1234_5678};
   // Input signal generation
   //https://github.com/verilator/verilator/issues/5210
   //*

@@ -38,3 +38,4 @@ sources:
         - tb/tb_isolde_mux_tcdm.sv
         - tb/tb_isolde_template.sv
         - tb/tb_isolde_log_interconnect.sv
+        - tb/tb_isolde_hci_interconnect.sv
