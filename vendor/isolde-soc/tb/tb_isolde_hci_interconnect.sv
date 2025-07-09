@@ -59,7 +59,7 @@ module tb_isolde_hci_interconnect (
       hci_core_hwe.be   = write_enable ? 8'hFF : 8'h00;
       hci_core_hwe.add  = addr;
       hci_core_hwe.data = data;
-      @(posedge clk_i);
+      do @(posedge clk_i);while(!hci_core_hwe.gnt);
       hci_core_hwe.req = 0;
       hci_core_hwe.wen = 1;
       hci_core_hwe.be  = 8'h00;
@@ -78,7 +78,7 @@ module tb_isolde_hci_interconnect (
       tcdm_core.req.be   = write_enable ? 4'b1111 : 4'b0000;
       tcdm_core.req.addr = addr;
       tcdm_core.req.data = data;
-      @(posedge clk_i);
+      do @(posedge clk_i); while(!tcdm_core.rsp.gnt);
       tcdm_core.req.req = 0;
       tcdm_core.req.we  = 0;
       tcdm_core.req.be  = 4'b0000;

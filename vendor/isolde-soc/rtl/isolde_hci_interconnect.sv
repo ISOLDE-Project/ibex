@@ -1,8 +1,10 @@
 // Copyleft ISOLDE 2025
 
-/* 
- * this is inspired from Heterogeneous Cluster Interconnect (HCI), https://github.com/pulp-platform/hci
+/*
+ * Inspired by Heterogeneous Cluster Interconnect (HCI)
+ * See: https://github.com/pulp-platform/hci
  * 
+ * The core master connected to s_tcdm_core has higher prio over the hardware engine(hwe)
  */
 
 module isolde_hci_interconnect #(
@@ -10,15 +12,15 @@ module isolde_hci_interconnect #(
     //
     parameter int unsigned N_TCDM_BANKS = HCI_DW / 32  // Number of Memory banks
 ) (
-    input logic clk_i,  // Clock input, positive edge triggered
-    input logic rst_ni,  // Asynchronous reset, active low
-    hci_core_intf.slave s_hci_core,
-    isolde_tcdm_if.slave s_tcdm_core,
-    isolde_tcdm_if.master m_tcdm_mems[N_TCDM_BANKS-1:0]
+    input logic clk_i,                                          // Clock input, positive edge triggered
+    input logic rst_ni,                                         // Asynchronous reset, active low
+    hci_core_intf.slave s_hci_core,                             // hwe slave interface
+    isolde_tcdm_if.slave s_tcdm_core,                           // core slave interface, higher prio
+    isolde_tcdm_if.master m_tcdm_mems[N_TCDM_BANKS-1:0]         // memory bank masters
 
 );
 
-  isolde_tcdm_pkg::req_t                          cores_req    [  N_TCDM_BANKS:0];
+  isolde_tcdm_pkg::req_t                          cores_req    [  N_TCDM_BANKS:0];  // One extra for s_tcdm_core
   isolde_tcdm_pkg::rsp_t                          cores_rsp    [  N_TCDM_BANKS:0];
   //
   isolde_tcdm_pkg::req_t                          mems_req     [N_TCDM_BANKS-1:0];
@@ -30,10 +32,10 @@ module isolde_hci_interconnect #(
 
 
   // === HCI binding ===
-  for (genvar ii = 0; ii < N_TCDM_BANKS + 1; ii++) begin : hci_binding
+  for (genvar ii = 0; ii < N_TCDM_BANKS ; ii++) begin : hci_binding
 
     ///
-    assign cores_req[ii].req  = s_hci_core.req;
+    assign cores_req[ii].req  = s_tcdm_core.req.req ? 0: s_hci_core.req;
     assign cores_req[ii].addr = s_hci_core.add + ii * 4;
     assign cores_req[ii].we   = ~s_hci_core.wen;
     assign cores_req[ii].be   = s_hci_core.be[(ii+1)*4-1:ii*4];
