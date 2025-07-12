@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module tb_isolde_hci_interconnect (
+module tb_isolde_tcdm_interconnect (
     input logic clk_i,
     input logic rst_ni,
     input logic fetch_enable_i
@@ -17,35 +17,38 @@ module tb_isolde_hci_interconnect (
   // DUT connections
   hci_core_intf #(.DW(HCI_DW)) hci_core_hwe (.clk(clk_i));
   isolde_tcdm_if tcdm_core ();
-
-  // === Multi-port Memory  ===
-
-  wire isolde_tcdm_pkg::req_t mem_req[N_TCDM_BANKS:0];
-  wire isolde_tcdm_pkg::rsp_t mem_rsp[N_TCDM_BANKS:0];
+  isolde_tcdm_if tcdm_mems[N_TCDM_BANKS-1:0] ();
 
 
-  // Instantiate multiport memory 
-  tb_sram_mem #(
-      .ID(0),
-      .N_PORTS(N_TCDM_BANKS + 1)
-  ) i_sram_mp (
-      .clk_i,
-      .rst_ni,
-      .req_i(mem_req),
-      .rsp_o(mem_rsp)
-  );
+  // === Memory banks ===
+  generate
+    for (genvar i = 0; i < N_TCDM_BANKS; i++) begin : gen_mem
+      wire isolde_tcdm_pkg::req_t mem_req[0:0];
+      wire isolde_tcdm_pkg::rsp_t mem_rsp[0:0];
+      assign mem_req[0] = tcdm_mems[i].req;
+      assign tcdm_mems[i].rsp = mem_rsp[0];
+      // Instantiate memory bank
+      tb_sram_mem #(
+          .ID(i)
+      ) i_bank (
+          .clk_i,
+          .rst_ni,
+          .req_i(mem_req),
+          .rsp_o(mem_rsp)
+      );
+    end
+  endgenerate
 
 
   //DUT
-  isolde_hci_interconnect #(
+  isolde_tcdm_interconnect #(
       .HCI_DW(HCI_DW)
   ) dut (
       .clk_i,
       .rst_ni,
       .s_hci_core (hci_core_hwe),
       .s_tcdm_core(tcdm_core),
-      .mem_req_o  (mem_req),
-      .mem_rsp_i  (mem_rsp)
+      .m_tcdm_mems(tcdm_mems)
   );
 
   task automatic hci_core_transaction(input logic [31:0] addr, input logic [HCI_DW-1:0] data,
@@ -56,7 +59,7 @@ module tb_isolde_hci_interconnect (
       hci_core_hwe.be   = write_enable ? 8'hFF : 8'h00;
       hci_core_hwe.add  = addr;
       hci_core_hwe.data = data;
-      do @(posedge clk_i); while (!hci_core_hwe.gnt);
+      do @(posedge clk_i);while(!hci_core_hwe.gnt);
       hci_core_hwe.req = 0;
       hci_core_hwe.wen = 1;
       hci_core_hwe.be  = 8'h00;
@@ -75,7 +78,7 @@ module tb_isolde_hci_interconnect (
       tcdm_core.req.be   = write_enable ? 4'b1111 : 4'b0000;
       tcdm_core.req.addr = addr;
       tcdm_core.req.data = data;
-      do @(posedge clk_i); while (!tcdm_core.rsp.gnt);
+      do @(posedge clk_i); while(!tcdm_core.rsp.gnt);
       tcdm_core.req.req = 0;
       tcdm_core.req.we  = 0;
       tcdm_core.req.be  = 4'b0000;
@@ -140,8 +143,8 @@ module tb_isolde_hci_interconnect (
   //*
   // === Test sequence ===
   initial begin
-    $readmemh("tb/ab.hex", tb_isolde_hci_interconnect.i_sram_mp.memory);
-
+    $readmemh("tb/a.hex", tb_isolde_tcdm_interconnect.gen_mem[0].i_bank.memory);
+    $readmemh("tb/b.hex", tb_isolde_tcdm_interconnect.gen_mem[1].i_bank.memory);
 
 
     // Wait for fetch_enable_i  
@@ -169,7 +172,7 @@ module tb_isolde_hci_interconnect (
     check_r_wide_data(r_wide_data, 64'hCACA_C0DE_00BE_E000);
 
     //
-    hci_core_transaction(32'h0000_0018, 64'hF00D_BEEF_0BAD_0FEE, r_wide_data,
+        hci_core_transaction(32'h0000_0018, 64'hF00D_BEEF_0BAD_0FEE, r_wide_data,
                          1'b1);  // write request
     check_r_wide_data(r_wide_data, 64'hF00D_BEEF_0BAD_0FEE);
     hci_core_transaction(32'h0000_0018, 64'hDEAD_BEEF_FACE_00FF, r_wide_data,

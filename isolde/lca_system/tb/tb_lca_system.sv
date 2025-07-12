@@ -149,28 +149,42 @@ MEMORY
 
   // global signals
   string stim_instr, stim_data;
-  logic                          test_mode;
+  logic test_mode;
   //
-  logic                          redmule_busy;
+  logic redmule_busy;
 
-  logic [rv_dm_pkg::NrHarts-1:0] debug_req;
-  localparam bit JTAG_BOOT = 1;
-  localparam int unsigned OPENOCD_PORT = 9999;
-  localparam CLUSTER_ID = 6'd0;
-  localparam CORE_ID = 4'd0;
 
-  localparam CORE_MHARTID = {21'b0, CLUSTER_ID, 1'b0, CORE_ID};
-  localparam NrHarts = 1;
-  localparam logic [NrHarts-1:0] SELECTABLE_HARTS = 1 << CORE_MHARTID;
-  localparam HARTINFO = {8'h0, 4'h2, 3'b0, 1'b1, dm::DataCount, dm::DataAddr};
+
   //
 
-  hwpe_stream_intf_tcdm tcdm[MP:0] (.clk(clk_i));
-    isolde_tcdm_if m_mems [MP:0]();
+  //hwpe_ctrl_intf_periph #(.ID_WIDTH(ID)) periph (.clk(clk_i));
+  /**
+  * Bug in Verilator?! 
+  * Verilator 5.036 2025-04-27 rev v5.036
+  %Error-UNSUPPORTED: /home/dan/ibex/isolde/lca_system/.bender/git/checkouts/hwpe-stream-8301a9eab8e707b9/rtl/tcdm/hwpe_stream_tcdm_fifo_store.sv:82:32: Unsupported: Interfaced port on top level module
+   82 |   hwpe_stream_intf_tcdm.slave  tcdm_slave,
+      |                                ^~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=5.036
+  %Error: /home/dan/ibex/isolde/lca_system/.bender/git/checkouts/hwpe-stream-8301a9eab8e707b9/rtl/tcdm/hwpe_stream_tcdm_fifo_store.sv:82:3: Parent instance's interface is not found: 'hwpe_stream_intf_tcdm'
+* FIX: declare a dummy hwpe_stream_intf_tcdm variable
+*/
+  hwpe_stream_intf_tcdm dummy_intf (
+      .clk(clk_i)
+  );  // dummy interface for hwpe_stream_tcdm_fifo_store
+
+
+  hci_core_intf #(.DW(HCI_DW)) redmule_hci (.clk(clk_i));
+
+
+  // === Multi-port Memory connections ===
+  isolde_tcdm_pkg::req_t mem_req[MP:0];
+  isolde_tcdm_pkg::rsp_t mem_rsp[MP:0];
 
   isolde_tcdm_if tcdm_core_data ();
   isolde_tcdm_if tcdm_data_dm ();
   isolde_tcdm_if tcdm_data_dm_mux ();
+  isolde_tcdm_if tcdm_spm_narrow ();  // narrow scratchpad memory interface
+  isolde_tcdm_if redmule_ctrl ();  // HWE peripheral  interface
 
   isolde_tcdm_if tcdm_stack ();
   isolde_tcdm_if tcdm_stack_shim ();
@@ -261,8 +275,8 @@ MEMORY
 
 
     case (selected_idx)
-      PERIPH_IDX: periph.req = tcdm_core_data.req.req;
-      DATA_IDX:   tcdm[MP].req = tcdm_core_data.req.req;
+      PERIPH_IDX: redmule_ctrl.req = tcdm_core_data.req;
+      DATA_IDX:   tcdm_spm_narrow.req = tcdm_core_data.req;
       STACK_IDX: begin  //bind_stack
         tcdm_stack.req = tcdm_core_data.req;
       end
@@ -280,8 +294,8 @@ MEMORY
     tcdm_core_data.rsp.gnt = '0;
     if (tcdm_core_data.req.req) begin
       case (selected_idx)
-        PERIPH_IDX: tcdm_core_data.rsp.gnt = periph.gnt;
-        DATA_IDX: tcdm_core_data.rsp.gnt = tcdm[MP].gnt;
+        PERIPH_IDX: tcdm_core_data.rsp.gnt = redmule_ctrl.rsp.gnt;
+        DATA_IDX: tcdm_core_data.rsp.gnt = tcdm_spm_narrow.rsp.gnt;
         STACK_IDX: tcdm_core_data.rsp.gnt = tcdm_stack.rsp.gnt;
         MMIO_IDX: tcdm_core_data.rsp.gnt = tcdm_perfCountersSim.rsp.gnt;
         DEBUG_IDX: tcdm_core_data.rsp.gnt = tcdm_data_dm.rsp.gnt;
@@ -290,13 +304,13 @@ MEMORY
     end
   end
 
-  assign tcdm_core_data.rsp.valid = periph.r_valid | tcdm_stack.rsp.valid | tcdm_data_dm.rsp.valid | tcdm[MP].r_valid | tcdm_perfCountersSim.rsp.valid;
+  assign tcdm_core_data.rsp.valid = redmule_ctrl.rsp.valid | tcdm_stack.rsp.valid | tcdm_data_dm.rsp.valid | tcdm_spm_narrow.rsp.valid | tcdm_perfCountersSim.rsp.valid;
 
   always_comb begin
 
     case (rsp_idx)
-      PERIPH_IDX: tcdm_core_data.rsp.data = periph.r_data;
-      DATA_IDX: tcdm_core_data.rsp.data = tcdm[MP].r_data;
+      PERIPH_IDX: tcdm_core_data.rsp.data = redmule_ctrl.rsp.data;
+      DATA_IDX: tcdm_core_data.rsp.data = tcdm_spm_narrow.rsp.data;
       STACK_IDX: tcdm_core_data.rsp.data = tcdm_stack.rsp.data;
       MMIO_IDX: tcdm_core_data.rsp.data = tcdm_perfCountersSim.rsp.data;
       DEBUG_IDX: tcdm_core_data.rsp.data = tcdm_data_dm.rsp.data;
@@ -304,43 +318,32 @@ MEMORY
     endcase
   end
 
-  hci_core_intf #(.DW(HCI_DW)) redmule_tcdm (.clk(clk_i));
-  hwpe_ctrl_intf_periph #(.ID_WIDTH(ID)) periph (.clk(clk_i));
 
-  always_comb begin : bind_periph
-    periph.add  = tcdm_core_data.req.addr;
-    periph.wen  = ~tcdm_core_data.req.we;
-    periph.be   = tcdm_core_data.req.be;
-    periph.data = tcdm_core_data.req.data;
-    periph.id   = '0;
-    //periph_r_valid = '0;
-  end
+
 
   isolde_hci_interconnect #(
       .HCI_DW(HCI_DW)
   ) i_hci_interconnect (
       .clk_i,
       .rst_ni,
-      .s_hci_core(redmule_tcdm),
-      .m_tcdm(tcdm[MP-1:0]),
-      .m_mems(m_mems)
+      .s_hci_core (redmule_hci),
+      .s_tcdm_core(tcdm_spm_narrow),
+      .mem_req_o  (mem_req),
+      .mem_rsp_i  (mem_rsp)
+
   );
 
-  assign tcdm[MP].add  = tcdm_core_data.req.addr;
-  assign tcdm[MP].wen  = ~tcdm_core_data.req.we;
-  assign tcdm[MP].be   = tcdm_core_data.req.be;
-  assign tcdm[MP].data = tcdm_core_data.req.data;
 
-
-  tb_tcdm_verilator #(
-      .MP         (MP + 1),
+  tb_sram_mem #(
+      .ID(0),
+      .N_PORTS(MP + 1),
       .MEMORY_SIZE(GMEM_SIZE),
-      .BASE_ADDR  (IMEM_ADDR)
+      .BASE_ADDR(IMEM_ADDR)
   ) i_dummy_dmemory (
-      .clk_i   (clk_i),
-      .rst_ni  (rst_ni),
-      .enable_i(1'b1),
-      .tcdm    (tcdm[MP:0])
+      .clk_i (clk_i),
+      .rst_ni(rst_ni),
+      .req_i (mem_req),
+      .rsp_o (mem_rsp)
   );
 
 
@@ -475,7 +478,7 @@ MEMORY
       .xif_mem_result_if     (core_xif.cpu_mem_result),
       .xif_result_if         (core_xif.cpu_result)
   );
-  redmule_isolde #(
+  isolde_redmule_top #(
       .ID_WIDTH (ID),
       .N_CORES  (NC),
       .DW       (HCI_DW),  // TCDM port dimension (in bits
@@ -486,8 +489,8 @@ MEMORY
       .test_mode_i   (test_mode),
       .fetch_enable_i(fetch_enable_i),
       .evt_o         (evt),
-      .tcdm          (redmule_tcdm),
-      .periph        (periph)
+      .m_hci_core    (redmule_hci),
+      .s_tcdm_ctrl   (redmule_ctrl)
   );
 
   // Declare the task with an input parameter for errors

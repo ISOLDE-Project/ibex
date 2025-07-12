@@ -58,6 +58,11 @@ include ../mk/vivado.mk
 
 
 	
-
+.PHONY: bender-clean
+bender-clean:
+	@echo "Cleaning Bender project..."
+	rm -rf .bender
+	rm -rf  Bender.lock
+	@echo "Bender project cleaned."
 
 		
