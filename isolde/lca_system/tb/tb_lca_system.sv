@@ -52,6 +52,7 @@ module tb_lca_system (
 
 );
   import redmule_pkg::*;
+  import isolde_tcdm_pkg::*;
   //ibex parameters
   parameter bit SecureIbex = 1'b0;
   parameter bit ICacheScramble = 1'b0;
@@ -83,20 +84,7 @@ module tb_lca_system (
   localparam int unsigned PULP_ZFINX = 0;
 
 
-  localparam int unsigned RuleAddrWidth = 32;
-  typedef logic [RuleAddrWidth-1:0] rule_addr_t;
 
-  typedef enum logic [3:0] {
-    INVALID,
-    PERIPH_IDX,
-    DATA_IDX,
-    STACK_IDX,
-    MMIO_IDX,
-    PERF_IDX,
-    INSTR_IDX,
-    DEBUG_IDX,   //debugger module index
-    LAST_IDX
-  } rule_idx_t;
 
   localparam rule_addr_t BASE_ADDR = 32'h1c000000;
   localparam rule_addr_t HWPE_ADDR_BASE_BIT = 20;
@@ -129,21 +117,17 @@ MEMORY
   localparam rule_addr_t DEBUG_ADDR = 32'h1A11_0000;
   localparam int unsigned DEBUG_SIZE = 32'h0000_1000;
 
-  typedef struct packed {
-    rule_idx_t  idx;
-    rule_addr_t start_addr;
-    rule_addr_t end_addr;
-  } tb_rule_t;
+
 
   localparam int unsigned NoRules = 5;
   localparam int unsigned NoIndices = LAST_IDX;
   // 
-  localparam tb_rule_t [NoRules-1:0] addr_map = '{
-      '{idx: PERIPH_IDX, start_addr: PERI_ADDR, end_addr: IMEM_ADDR},
-      '{idx: DATA_IDX, start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
-      '{idx: STACK_IDX, start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
-      '{idx: MMIO_IDX, start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
-      '{idx: DEBUG_IDX, start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
+  localparam addr_range_t [NoRules-1:0] addr_map = '{
+      '{ start_addr: PERI_ADDR, end_addr: IMEM_ADDR},
+      '{ start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
+      '{ start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
+      '{ start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
+      '{ start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
   };
 
 
@@ -182,7 +166,7 @@ MEMORY
 
   isolde_tcdm_if tcdm_core_data ();
   isolde_tcdm_if tcdm_data_dm ();
-  isolde_tcdm_if tcdm_data_dm_mux ();
+ 
   isolde_tcdm_if tcdm_spm_narrow ();  // narrow scratchpad memory interface
   isolde_tcdm_if redmule_ctrl ();  // HWE peripheral  interface
 
@@ -218,107 +202,7 @@ MEMORY
 
 
   logic               core_sleep;
-  logic fifo_full, fifo_empty;
-  logic push_id_fifo, pop_id_fifo;
-  rule_idx_t selected_idx, rsp_idx;
-
-
-  assign push_id_fifo = ~fifo_full & tcdm_core_data.rsp.gnt;
-  assign pop_id_fifo  = ~fifo_empty & tcdm_core_data.rsp.valid;
-
-  always_ff @(posedge clk_i, negedge rst_ni)
-    if (!rst_ni) begin
-      rsp_idx <= INVALID;
-    end
-
-
-  addr_decode #(
-      .NoIndices(NoIndices),    // number indices in rules
-      .NoRules  (NoRules),      // total number of rules
-      .addr_t   (rule_addr_t),  // address type
-      .rule_t   (tb_rule_t)     // has to be overridden, see above!
-  ) i_addr_decode_dut (
-      .addr_i(tcdm_core_data.req.addr),  // address to decode
-      .addr_map_i(addr_map),  // address map: rule with the highest position wins
-      .idx_o(selected_idx),  // decoded index
-      .dec_valid_o(),  // decode is valid
-      .dec_error_o(),  // decode is not valid
-      // Default index mapping enable
-      .en_default_idx_i(1'b1),  // enable default port mapping
-      .default_idx_i(INVALID)  // default port index
-  );
-
-
-
-
-
-  // Remember selected master for correct forwarding of read data/acknowledge.
-  fifo_v3 #(
-      .DATA_WIDTH(4),
-      .DEPTH(4)
-  ) i_id_fifo (
-      .clk_i,
-      .rst_ni,
-      .flush_i(1'b0),
-      .testmode_i(1'b0),
-      .full_o(fifo_full),
-      .empty_o(fifo_empty),
-      .usage_o(),
-      // Onehot mask.
-      .data_i(selected_idx),
-      .push_i(push_id_fifo),
-      .data_o(rsp_idx),
-      .pop_i(pop_id_fifo)
-  );
-
-  always_comb begin
-
-
-    case (selected_idx)
-      PERIPH_IDX: redmule_ctrl.req = tcdm_core_data.req;
-      DATA_IDX:   tcdm_spm_narrow.req = tcdm_core_data.req;
-      STACK_IDX: begin  //bind_stack
-        tcdm_stack.req = tcdm_core_data.req;
-      end
-      MMIO_IDX:   tcdm_perfCountersSim.req = tcdm_core_data.req;
-      DEBUG_IDX: begin  //bind_debug module
-        tcdm_data_dm.req = tcdm_core_data.req;
-      end
-
-    endcase
-
-
-  end
-
-  always_comb begin
-    tcdm_core_data.rsp.gnt = '0;
-    if (tcdm_core_data.req.req) begin
-      case (selected_idx)
-        PERIPH_IDX: tcdm_core_data.rsp.gnt = redmule_ctrl.rsp.gnt;
-        DATA_IDX: tcdm_core_data.rsp.gnt = tcdm_spm_narrow.rsp.gnt;
-        STACK_IDX: tcdm_core_data.rsp.gnt = tcdm_stack.rsp.gnt;
-        MMIO_IDX: tcdm_core_data.rsp.gnt = tcdm_perfCountersSim.rsp.gnt;
-        DEBUG_IDX: tcdm_core_data.rsp.gnt = tcdm_data_dm.rsp.gnt;
-        default: tcdm_core_data.rsp.gnt = '0;
-      endcase
-    end
-  end
-
-  assign tcdm_core_data.rsp.valid = redmule_ctrl.rsp.valid | tcdm_stack.rsp.valid | tcdm_data_dm.rsp.valid | tcdm_spm_narrow.rsp.valid | tcdm_perfCountersSim.rsp.valid;
-
-  always_comb begin
-
-    case (rsp_idx)
-      PERIPH_IDX: tcdm_core_data.rsp.data = redmule_ctrl.rsp.data;
-      DATA_IDX: tcdm_core_data.rsp.data = tcdm_spm_narrow.rsp.data;
-      STACK_IDX: tcdm_core_data.rsp.data = tcdm_stack.rsp.data;
-      MMIO_IDX: tcdm_core_data.rsp.data = tcdm_perfCountersSim.rsp.data;
-      DEBUG_IDX: tcdm_core_data.rsp.data = tcdm_data_dm.rsp.data;
-      default: tcdm_core_data.rsp.data = '0;
-    endcase
-  end
-
-
+  
 
 
   isolde_hci_interconnect #(
