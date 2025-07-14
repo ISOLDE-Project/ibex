@@ -108,7 +108,7 @@ MEMORY
   localparam int unsigned GMEM_SIZE = SMEM_ADDR + SMEM_SIZE - IMEM_ADDR;
   //  see reset vector in cv32e40p/bsp/crt0.S
   localparam rule_addr_t BOOT_ADDR = 32'h00100080;
-  localparam rule_addr_t PERI_ADDR = 32'h00001000;
+  localparam rule_addr_t PERIPH_ADDR = 32'h00001000;
   //see cv32e40p/bsp/simple_system_regs.h
   localparam rule_addr_t MMIO_ADDR = 32'h8000_0000;
   localparam rule_addr_t MMIO_ADDR_END = 32'h8000_0080;
@@ -119,15 +119,22 @@ MEMORY
 
 
 
-  localparam int unsigned NoRules = 5;
-  localparam int unsigned NoIndices = LAST_IDX;
+  typedef enum {
+
+    PERIPH_IDX,
+    DATA_IDX,
+    STACK_IDX,
+    MMIO_IDX,
+    LAST_IDX
+  } data_map_idx_t;
+
+  localparam int unsigned NoRules = LAST_IDX;
   // 
-  localparam addr_range_t [NoRules-1:0] addr_map = '{
-      '{ start_addr: PERI_ADDR, end_addr: IMEM_ADDR},
-      '{ start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
-      '{ start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
-      '{ start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
-      '{ start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
+  localparam addr_range_t addr_map[NoRules] = '{
+      '{start_addr: PERIPH_ADDR, end_addr: IMEM_ADDR},
+      '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
+      '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
+      '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END}
   };
 
 
@@ -137,7 +144,8 @@ MEMORY
   //
   logic redmule_busy;
 
-
+  logic sim_exit;
+  MemStatisticsCallback mem_stats_cb;
 
   //
 
@@ -164,9 +172,10 @@ MEMORY
   isolde_tcdm_pkg::req_t mem_req[MP:0];
   isolde_tcdm_pkg::rsp_t mem_rsp[MP:0];
 
+  // === SoC connections ===
   isolde_tcdm_if tcdm_core_data ();
   isolde_tcdm_if tcdm_data_dm ();
- 
+
   isolde_tcdm_if tcdm_spm_narrow ();  // narrow scratchpad memory interface
   isolde_tcdm_if redmule_ctrl ();  // HWE peripheral  interface
 
@@ -178,9 +187,23 @@ MEMORY
 
   //
   isolde_tcdm_if tcdm_perfCountersSim ();
-  logic sim_exit;
+  isolde_tcdm_pkg::req_t noc_reqs[LAST_IDX];
+  isolde_tcdm_pkg::rsp_t noc_rsps[LAST_IDX];
 
-  MemStatisticsCallback mem_stats_cb;
+  assign tcdm_perfCountersSim.req = noc_reqs[MMIO_IDX];
+  assign noc_rsps[MMIO_IDX] = tcdm_perfCountersSim.rsp;
+
+  isolde_router #(
+      .N_RULES(NoRules),
+      .ADDR_RANGES(addr_map)
+  ) i_isolde_router (
+      .clk_i,
+      .rst_ni,
+      .tcdm_slave_i(tcdm_core_data),
+      .req_o       (noc_reqs),
+      .rsp_i       (noc_rsps)
+  );
+
   perfCounters #(
       .MMIO_ADDR(MMIO_ADDR)
   ) i_perfcnt (
@@ -202,8 +225,10 @@ MEMORY
 
 
   logic               core_sleep;
-  
 
+
+  assign tcdm_spm_narrow.req = noc_reqs[DATA_IDX];
+  assign noc_rsps[DATA_IDX]  = tcdm_spm_narrow.rsp;
 
   isolde_hci_interconnect #(
       .HCI_DW(HCI_DW)
@@ -249,6 +274,9 @@ MEMORY
       .tcdm_slave_i(tcdm_imem_shim)
   );
 
+
+  assign tcdm_stack.req = noc_reqs[STACK_IDX];
+  assign noc_rsps[STACK_IDX] = tcdm_stack.rsp;
 
   isolde_addr_shim #(
       .START_ADDR(SMEM_ADDR),  // Set start address
@@ -362,6 +390,11 @@ MEMORY
       .xif_mem_result_if     (core_xif.cpu_mem_result),
       .xif_result_if         (core_xif.cpu_result)
   );
+
+
+  assign redmule_ctrl.req = noc_reqs[PERIPH_IDX];
+  assign noc_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
+
   isolde_redmule_top #(
       .ID_WIDTH (ID),
       .N_CORES  (NC),

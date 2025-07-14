@@ -1,43 +1,62 @@
 // Copyleft 2024 ISOLDE
 
-module isolde_router #(
-    parameter int N_RULES = -1
-  
+module isolde_router
+//import isolde_tcdm_pkg::*;
+#(
+    parameter int N_RULES = -1,
+    parameter isolde_tcdm_pkg::addr_range_t ADDR_RANGES[N_RULES]
+
 ) (
     input logic clk_i,
     input logic rst_ni,
-    input isolde_tcdm_pkg::addr_range_t  addr_range_i[N_RULES-1:0],
-    input  isolde_tcdm_if.slave  tcdm_slave_i,
-    output isolde_tcdm_if.master tcdm_master_o[N_RULES-1:0] 
+    input isolde_tcdm_if.slave tcdm_slave_i,
+    output isolde_tcdm_pkg::req_t req_o[N_RULES],
+    input isolde_tcdm_pkg::rsp_t rsp_i[N_RULES]
+
 );
 
-  localparam int unsigned IDXWidth = $clog2(N_RULES+1); 
+
+  localparam int unsigned IDXWidth = $clog2(N_RULES + 2);  // +2 for INVALID and LAST_IDX
   typedef logic [IDXWidth-1:0] rule_idx_t;
-
-
-  isolde_tcdm_pkg::tb_rule_t addr_map [N_RULES-1:0];
-
-always_comb begin
-  for (int i=0; i < N_RULES; i++) begin
-    addr_map[i].idx        = rule_idx_t'(i+1);
-    addr_map[i].start_addr = addr_range_i[i].start_addr;
-    addr_map[i].end_addr   = addr_range_i[i].end_addr;
-  end
-end
-
-
   localparam rule_idx_t INVALID = rule_idx_t'(0);
-  localparam rule_idx_t LAST_IDX = rule_idx_t'(N_RULES);
+
+
+  localparam isolde_tcdm_pkg::tb_rule_t [0:N_RULES-1] addr_map = gen_addr_map(ADDR_RANGES);
+  localparam rule_idx_t LAST_IDX = addr_map[N_RULES-1].idx+1;  // Last index is the next after the last rule index
   localparam int unsigned NoIndices = LAST_IDX;
 
 
-logic fifo_full, fifo_empty;
+  function automatic isolde_tcdm_pkg::tb_rule_t [0:N_RULES-1] gen_addr_map(
+      input isolde_tcdm_pkg::addr_range_t ranges[N_RULES]);
+    isolde_tcdm_pkg::tb_rule_t [0:N_RULES-1] result;
+    for (int i = 0; i < N_RULES; i++) begin
+      result[i].idx        = rule_idx_t'(i + 1);
+      result[i].start_addr = ranges[i].start_addr;
+      result[i].end_addr   = ranges[i].end_addr;
+    end
+    return result;
+  endfunction
+
+
+  // Response valid is OR of all submodule valids
+  logic [N_RULES-1:0] rsp_valid_vec;
+  logic [N_RULES-1:0] rsp_gnt_vec;
+
+
+  generate
+    for (genvar i = 0; i < N_RULES; i++) begin
+      assign rsp_valid_vec[i] = rsp_i[i].valid;
+      assign rsp_gnt_vec[i]   = rsp_i[i].gnt;
+    end
+  endgenerate
+
+  logic fifo_full, fifo_empty;
   logic push_id_fifo, pop_id_fifo;
-  rule_idx_t selected_idx, rsp_idx;
+  rule_idx_t selected_idx, req_idx, rsp_idx;
 
 
-  assign push_id_fifo = ~fifo_full & tcdm_slave_i.rsp.gnt;
-  assign pop_id_fifo  = ~fifo_empty & tcdm_slave_i.rsp.valid;
+  assign push_id_fifo = |rsp_gnt_vec;
+  assign pop_id_fifo  = |rsp_valid_vec;
 
   always_ff @(posedge clk_i, negedge rst_ni)
     if (!rst_ni) begin
@@ -46,8 +65,8 @@ logic fifo_full, fifo_empty;
 
 
   addr_decode #(
-      .NoIndices(NoIndices),    // number indices in rules
-      .NoRules  (N_RULES),      // total number of rules
+      .NoIndices(NoIndices),                     // number indices in rules
+      .NoRules  (N_RULES),                       // total number of rules
       .addr_t   (isolde_tcdm_pkg::rule_addr_t),  // address type
       .rule_t   (isolde_tcdm_pkg::tb_rule_t)     // has to be overridden, see above!
   ) i_addr_decode_dut (
@@ -60,10 +79,6 @@ logic fifo_full, fifo_empty;
       .en_default_idx_i(1'b1),  // enable default port mapping
       .default_idx_i(INVALID)  // default port index
   );
-
-
-
-
 
   // Remember selected master for correct forwarding of read data/acknowledge.
   fifo_v3 #(
@@ -85,55 +100,43 @@ logic fifo_full, fifo_empty;
   );
 
 
+  assign req_idx = selected_idx;
 
-  always_comb begin
+
+  always_comb begin : bind_req
     for (int i = 0; i < N_RULES; i++) begin
-        tcdm_master_o[i].req = '0;
+      req_o[i] = '0;
+      if (req_idx == rule_idx_t'(i + 1)) begin
+        req_o[i] = tcdm_slave_i.req;
+      end
     end
-    if (selected_idx != INVALID ) begin
-      tcdm_master_o[selected_idx-1].req = tcdm_slave_i.req;
-    end
+    //end
   end
 
 
   always_comb begin
-    tcdm_slave_i.rsp.gnt = '0;
-    if (tcdm_slave_i.req.req) begin
-      if (selected_idx != INVALID) begin
-        tcdm_slave_i.rsp.gnt = tcdm_master_o[selected_idx-1].rsp.gnt;
+
+    tcdm_slave_i.rsp.gnt   = |rsp_gnt_vec;
+    tcdm_slave_i.rsp.valid = |rsp_valid_vec;
+    tcdm_slave_i.rsp.err   = '0;
+    tcdm_slave_i.rsp.data  = '0;
+    for (int i = 0; i < N_RULES; i++) begin
+      if (req_idx == rule_idx_t'(i + 1)) begin
+        tcdm_slave_i.rsp.data = rsp_i[i].data;
       end
     end
   end
 
- always_comb begin
-    if(rsp_idx != INVALID ) begin
-      tcdm_slave_i.rsp.data = tcdm_master_o[rsp_idx-1].rsp.data;
-    end
-  end
-
-    
-
-
-     // Response valid is OR of all submodule valids
-logic [N_RULES-1:0] rsp_valid_vec;
-generate
-  for (genvar i=0; i < N_RULES; i++) begin
-    assign rsp_valid_vec[i] = tcdm_master_o[i].rsp.valid;
-  end
-endgenerate
-assign tcdm_slave_i.valid = |rsp_valid_vec;
-
- 
 
 
 
   // Compile-time assertion of N_RULES > 0
   // Excluded from synthesis 
-  `ifndef SYNTHESIS
+`ifndef SYNTHESIS
   initial begin
     assert (N_RULES > 0)
-      else $fatal("[isolde_demux_tcdm] ERROR: N_RULES parameter must be > 0 (got %0d)", N_RULES);
+    else $fatal("[isolde_demux_tcdm] ERROR: N_RULES parameter must be > 0 (got %0d)", N_RULES);
   end
-  `endif
-  endmodule
+`endif
+endmodule
 
