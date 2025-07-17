@@ -41,7 +41,7 @@ class MyCallback extends MemStatisticsCallback;
     /**
   ** avoid spaces in the string
   **/
-    return "LCA";
+    return "LCA_SPM";
   endfunction
 endclass
 
@@ -82,7 +82,7 @@ module tb_lca_system (
   localparam int unsigned PULP_XPULP = 1;
   localparam int unsigned FPU = 0;
   localparam int unsigned PULP_ZFINX = 0;
-
+  localparam int unsigned N_TCDM_BANKS = HCI_DW / 32;
 
 
 
@@ -116,8 +116,13 @@ MEMORY
   //debugger module
   localparam rule_addr_t DEBUG_ADDR = 32'h1A11_0000;
   localparam int unsigned DEBUG_SIZE = 32'h0000_1000;
+  //spm narrow port start
+  localparam rule_addr_t SPM_NARROW_ADDR = 32'h8000_1000;
+  localparam int unsigned SPM_NARROW_SIZE = 32'h0000_1000;  //64kB
 
-
+  /********************************************************/
+  /**          Router configuratiion                     **/
+  /*******************************************************/
 
   typedef enum {
 
@@ -125,6 +130,7 @@ MEMORY
     DATA_IDX,
     STACK_IDX,
     MMIO_IDX,
+    SPM_IDX,
     LAST_IDX
   } data_map_idx_t;
 
@@ -134,20 +140,26 @@ MEMORY
       '{start_addr: PERIPH_ADDR, end_addr: IMEM_ADDR},
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
-      '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END}
+      '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
+      '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + SPM_NARROW_SIZE}
   };
 
 
   // global signals
   string stim_instr, stim_data;
-  logic test_mode;
+  logic                               test_mode;
   //
-  logic redmule_busy;
+  logic                               redmule_busy;
 
-  logic sim_exit;
-  MemStatisticsCallback mem_stats_cb;
+  logic                               sim_exit;
+  MemStatisticsCallback               mem_stats_cb;
 
-  //
+  logic                 [NC-1:0][1:0] evt;
+  logic                               core_sleep;
+
+  /********************************************************/
+  /**           VERILATOR BUG                            **/
+  /*******************************************************/
 
   //hwpe_ctrl_intf_periph #(.ID_WIDTH(ID)) periph (.clk(clk_i));
   /**
@@ -165,32 +177,47 @@ MEMORY
   );  // dummy interface for hwpe_stream_tcdm_fifo_store
 
 
+  /********************************************************/
+  /**           Interface Definitions                   **/
+  /*******************************************************/
+
   hci_core_intf #(.DW(HCI_DW)) redmule_hci (.clk(clk_i));
 
 
-  // === Multi-port Memory connections ===
-  isolde_tcdm_pkg::req_t mem_req[MP:0];
-  isolde_tcdm_pkg::rsp_t mem_rsp[MP:0];
+  // ===  Memory banks  connections ===
+  isolde_tcdm_pkg::req_t mem_req[N_TCDM_BANKS-1:0];
+  isolde_tcdm_pkg::rsp_t mem_rsp[N_TCDM_BANKS-1:0];
 
-  // === SoC connections ===
+  // === Data port ===
   isolde_tcdm_if tcdm_core_data ();
-  
+  isolde_tcdm_if tcdm_dmemory ();
+  isolde_tcdm_if tcdm_dmemory_shim ();
   isolde_tcdm_if tcdm_spm_narrow ();  // narrow scratchpad memory interface
+
+  // === hardware accelerator HWE port ===
+
   isolde_tcdm_if redmule_ctrl ();  // HWE peripheral  interface
 
+  // === stack memory port ===
   isolde_tcdm_if tcdm_stack ();
   isolde_tcdm_if tcdm_stack_shim ();
 
+  // === instruction memory port ===
   isolde_tcdm_if tcdm_core_inst ();
   isolde_tcdm_if tcdm_imem_shim ();
 
-  //
+  // === Performermance counters & simulation control===
   isolde_tcdm_if tcdm_perfCountersSim ();
+
+  // === Network on Chio NoC interfaces ===
   isolde_tcdm_pkg::req_t noc_reqs[LAST_IDX];
   isolde_tcdm_pkg::rsp_t noc_rsps[LAST_IDX];
 
-  assign tcdm_perfCountersSim.req = noc_reqs[MMIO_IDX];
-  assign noc_rsps[MMIO_IDX] = tcdm_perfCountersSim.rsp;
+
+
+  /********************************************************/
+  /**           Router                                  **/
+  /*******************************************************/
 
   isolde_router #(
       .N_RULES(NoRules),
@@ -202,6 +229,13 @@ MEMORY
       .req_o       (noc_reqs),
       .rsp_i       (noc_rsps)
   );
+
+  /********************************************************/
+  /**           Performance counters                     **/
+  /*******************************************************/
+
+  assign tcdm_perfCountersSim.req = noc_reqs[MMIO_IDX];
+  assign noc_rsps[MMIO_IDX] = tcdm_perfCountersSim.rsp;
 
   perfCounters #(
       .MMIO_ADDR(MMIO_ADDR)
@@ -220,40 +254,68 @@ MEMORY
     end
   end
 
-  logic [NC-1:0][1:0] evt;
 
+  /********************************************************/
+  /**     TCDM                                           **/
+  /*******************************************************/
 
-  logic               core_sleep;
+  assign tcdm_spm_narrow.req = noc_reqs[SPM_IDX];
+  assign noc_rsps[SPM_IDX]   = tcdm_spm_narrow.rsp;
 
+  // === Memory banks ===
+  generate
+    for (genvar i = 0; i < N_TCDM_BANKS; i++) begin : gen_mem
+      // Instantiate memory bank
+      tb_sram_mem #(
+          .ID(i)
+      ) i_bank (
+          .clk_i,
+          .rst_ni,
+          .req_i(mem_req[i:i]),
+          .rsp_o(mem_rsp[i:i])
+      );
+    end
+  endgenerate
 
-  assign tcdm_spm_narrow.req = noc_reqs[DATA_IDX];
-  assign noc_rsps[DATA_IDX]  = tcdm_spm_narrow.rsp;
-
-  isolde_hci_interconnect #(
+  isolde_tcdm_interconnect #(
       .HCI_DW(HCI_DW)
-  ) i_hci_interconnect (
+  ) dut (
       .clk_i,
       .rst_ni,
       .s_hci_core (redmule_hci),
       .s_tcdm_core(tcdm_spm_narrow),
       .mem_req_o  (mem_req),
       .mem_rsp_i  (mem_rsp)
-
   );
 
+  /********************************************************/
+  /**     Data memory                                    **/
+  /*******************************************************/
 
-  tb_sram_mem #(
-      .ID(0),
-      .N_PORTS(MP + 1),
+  assign tcdm_dmemory.req   = noc_reqs[DATA_IDX];
+  assign noc_rsps[DATA_IDX] = tcdm_dmemory.rsp;
+
+  //   isolde_addr_shim #(
+  //       .START_ADDR(DMEM_ADDR),  // Set start address
+  //       .END_ADDR(DMEM_ADDR + DMEM_SIZE)  // Set end address
+  //   ) i_dmem_shim (
+  //       .tcdm_slave_i (tcdm_dmemory),
+  //       .tcdm_master_o(tcdm_dmemory_shim)
+  //   );
+
+  tb_tcdm_mem #(
       .MEMORY_SIZE(GMEM_SIZE),
-      .BASE_ADDR(IMEM_ADDR)
+      .BASE_ADDR  (IMEM_ADDR)
   ) i_dummy_dmemory (
-      .clk_i (clk_i),
-      .rst_ni(rst_ni),
-      .req_i (mem_req),
-      .rsp_o (mem_rsp)
+      .clk_i,
+      .rst_ni,
+      //.tcdm_slave_i(tcdm_dmemory_shim)
+      .tcdm_slave_i(tcdm_dmemory)
   );
 
+  /********************************************************/
+  /**     Instruction memory                             **/
+  /*******************************************************/
 
   isolde_addr_shim #(
       .START_ADDR(IMEM_ADDR),  // Set start address
@@ -273,6 +335,10 @@ MEMORY
       .tcdm_slave_i(tcdm_imem_shim)
   );
 
+
+  /********************************************************/
+  /**     Stack memory                                   **/
+  /*******************************************************/
 
   assign tcdm_stack.req = noc_reqs[STACK_IDX];
   assign noc_rsps[STACK_IDX] = tcdm_stack.rsp;
@@ -294,6 +360,12 @@ MEMORY
       .tcdm_slave_i(tcdm_stack_shim)
   );
 
+
+
+  /********************************************************/
+  /**     CV-X-IF                                        **/
+  /*******************************************************/
+
   isolde_cv_x_if #(
       .X_NUM_RS   (isolde_cv_x_if_pkg::X_NUM_RS),
       .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
@@ -308,6 +380,10 @@ MEMORY
       clk_i,
       core_xif
   );
+
+  /********************************************************/
+  /**     IBEX core                                     **/
+  /*******************************************************/
 
   ibex_top_tracing #(
       .SecureIbex      (SecureIbex),
@@ -390,6 +466,9 @@ MEMORY
       .xif_result_if         (core_xif.cpu_result)
   );
 
+  /********************************************************/
+  /**     Hardware Engine HWE                            **/
+  /*******************************************************/
 
   assign redmule_ctrl.req = noc_reqs[PERIPH_IDX];
   assign noc_rsps[PERIPH_IDX] = redmule_ctrl.rsp;

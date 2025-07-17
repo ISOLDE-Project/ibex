@@ -21,7 +21,9 @@ sources:
    - target: all(tb_dm ,redmule_hwpe ,rtl ,redmule_test_hwpe)
      files:
         - tb/tb_dm.sv
-   - target: redmule_test_hwpe
+   - target: all(vanilla_lca,redmule_test_hwpe, rtl, redmule_hwpe)
      files:
        - tb/tb_lca_system.sv 
-  
+   - target: all (tb_spm, redmule_hwpe, rtl, redmule_test_hwpe)
+     files:
+       - tb/tb_spm.sv

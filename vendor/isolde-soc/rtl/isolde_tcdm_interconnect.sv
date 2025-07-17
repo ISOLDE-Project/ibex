@@ -14,26 +14,18 @@ module isolde_tcdm_interconnect #(
 ) (
     input logic clk_i,  // Clock input, positive edge triggered
     input logic rst_ni,  // Asynchronous reset, active low
-    hci_core_intf.slave s_hci_core,  // hwe slave interface
-    isolde_tcdm_if.slave s_tcdm_core,  // core slave interface, higher prio
-    isolde_tcdm_if.master m_tcdm_mems[N_TCDM_BANKS-1:0]  // memory bank masters
+    input hci_core_intf.slave s_hci_core,  // hwe slave interface
+    input isolde_tcdm_if.slave s_tcdm_core,  // core slave interface, higher prio
+    output isolde_tcdm_pkg::req_t mem_req_o[N_TCDM_BANKS-1:0],
+    input isolde_tcdm_pkg::rsp_t mem_rsp_i[N_TCDM_BANKS-1:0]
+
+
 
 );
 
   isolde_tcdm_pkg::req_t cores_req[  N_TCDM_BANKS:0];  // One extra for s_tcdm_core
   isolde_tcdm_pkg::rsp_t cores_rsp[  N_TCDM_BANKS:0];
   //
-  isolde_tcdm_pkg::req_t mems_req [N_TCDM_BANKS-1:0];
-  isolde_tcdm_pkg::rsp_t mems_rsp [N_TCDM_BANKS-1:0];
-
-
-
-  // === TCDM banks binding ===
-
-  for (genvar i = 0; i < N_TCDM_BANKS; i++) begin : gen_tcdm_banks
-    assign m_tcdm_mems[i].req = mems_req[i];
-    assign mems_rsp[i] = m_tcdm_mems[i].rsp;
-  end
 
   isolde_hci_interconnect #(
       .HCI_DW
@@ -54,8 +46,8 @@ module isolde_tcdm_interconnect #(
       .rst_ni,
       .cores_req_i(cores_req),
       .cores_rsp_o(cores_rsp),
-      .mems_req_o (mems_req),
-      .mems_rsp_i (mems_rsp)
+      .mems_req_o (mem_req_o),
+      .mems_rsp_i (mem_rsp_i)
   );
 
 endmodule

@@ -53,28 +53,11 @@ package isolde_tcdm_pkg;
   localparam int unsigned RuleAddrWidth = 32;
   typedef logic [RuleAddrWidth-1:0] rule_addr_t;
 
-  typedef enum logic [3:0] {
-    INVALID,
-    PERIPH_IDX,
-    DATA_IDX,
-    STACK_IDX,
-    MMIO_IDX,
-    PERF_IDX,
-    INSTR_IDX,
-    DEBUG_IDX,   //debugger module index
-    SPM_IDX, //index of narrow data port for the scratchpad memory 
-    LAST_IDX
-  } rule_idx_t;
 
   typedef struct packed {
     rule_addr_t start_addr;
     rule_addr_t end_addr;
   } addr_range_t;
 
-  typedef struct packed {
-    rule_idx_t  idx;
-    rule_addr_t start_addr;
-    rule_addr_t end_addr;
-  } tb_rule_t;
 
 endpackage

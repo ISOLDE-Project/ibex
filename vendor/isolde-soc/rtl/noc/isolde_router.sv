@@ -20,17 +20,31 @@ module isolde_router
   typedef logic [IDXWidth-1:0] rule_idx_t;
   localparam rule_idx_t INVALID = rule_idx_t'(0);
 
+  typedef struct packed {
+    rule_idx_t idx;
+    isolde_tcdm_pkg::rule_addr_t start_addr;
+    isolde_tcdm_pkg::rule_addr_t end_addr;
+  } tb_rule_t;
 
-  localparam isolde_tcdm_pkg::tb_rule_t [0:N_RULES-1] addr_map = gen_addr_map(ADDR_RANGES);
+  localparam tb_rule_t [0:N_RULES-1] addr_map = gen_addr_map(ADDR_RANGES);
   localparam rule_idx_t LAST_IDX = addr_map[N_RULES-1].idx+1;  // Last index is the next after the last rule index
   localparam int unsigned NoIndices = LAST_IDX;
 
 
-  function automatic isolde_tcdm_pkg::tb_rule_t [0:N_RULES-1] gen_addr_map(
+
+
+  /*
+*  Converts from 0-based index to 1-based index 
+*/
+  function automatic rule_idx_t mk_one_based_index(rule_idx_t i);
+    return (i + 1);
+  endfunction
+
+  function automatic tb_rule_t [0:N_RULES-1] gen_addr_map(
       input isolde_tcdm_pkg::addr_range_t ranges[N_RULES]);
-    isolde_tcdm_pkg::tb_rule_t [0:N_RULES-1] result;
+    tb_rule_t [0:N_RULES-1] result;
     for (int i = 0; i < N_RULES; i++) begin
-      result[i].idx        = rule_idx_t'(i + 1);
+      result[i].idx        = mk_one_based_index(i);
       result[i].start_addr = ranges[i].start_addr;
       result[i].end_addr   = ranges[i].end_addr;
     end
@@ -68,7 +82,7 @@ module isolde_router
       .NoIndices(NoIndices),                     // number indices in rules
       .NoRules  (N_RULES),                       // total number of rules
       .addr_t   (isolde_tcdm_pkg::rule_addr_t),  // address type
-      .rule_t   (isolde_tcdm_pkg::tb_rule_t)     // has to be overridden, see above!
+      .rule_t   (tb_rule_t)                      // has to be overridden, see above!
   ) i_addr_decode_dut (
       .addr_i(tcdm_slave_i.req.addr),  // address to decode
       .addr_map_i(addr_map),  // address map: rule with the highest position wins
@@ -106,7 +120,7 @@ module isolde_router
   always_comb begin : bind_req
     for (int i = 0; i < N_RULES; i++) begin
       req_o[i] = '0;
-      if (req_idx == rule_idx_t'(i + 1)) begin
+      if (req_idx == mk_one_based_index(i)) begin
         req_o[i] = tcdm_slave_i.req;
       end
     end
@@ -121,7 +135,7 @@ module isolde_router
     tcdm_slave_i.rsp.err   = '0;
     tcdm_slave_i.rsp.data  = '0;
     for (int i = 0; i < N_RULES; i++) begin
-      if (req_idx == rule_idx_t'(i + 1)) begin
+      if (req_idx == mk_one_based_index(i)) begin
         tcdm_slave_i.rsp.data = rsp_i[i].data;
       end
     end
