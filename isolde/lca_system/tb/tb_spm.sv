@@ -262,6 +262,8 @@ MEMORY
   assign tcdm_spm_narrow.req = noc_reqs[SPM_IDX];
   assign noc_rsps[SPM_IDX]   = tcdm_spm_narrow.rsp;
 
+  isolde_tcdm_if tcdm_inter_dma ();
+
   // === Memory banks ===
   generate
     for (genvar i = 0; i < N_TCDM_BANKS; i++) begin : gen_mem
@@ -276,6 +278,14 @@ MEMORY
       );
     end
   endgenerate
+
+  isolde_addr_shim #(
+      .START_ADDR(SPM_NARROW_ADDR),  // Set start address
+      .END_ADDR(SPM_NARROW_ADDR + SPM_NARROW_SIZE)  // Set end address
+  ) i_tcdm_inter_dma_shim (
+      .tcdm_slave_i (tcdm_spm_narrow),
+      .tcdm_master_o(tcdm_inter_dma)
+  );
 
   isolde_tcdm_interconnect #(
       .HCI_DW(HCI_DW)
