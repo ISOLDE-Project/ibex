@@ -289,11 +289,11 @@ MEMORY
 
   isolde_tcdm_interconnect #(
       .HCI_DW(HCI_DW)
-  ) dut (
+  ) i_tcdm_interconnect (
       .clk_i,
       .rst_ni,
       .s_hci_core (redmule_hci),
-      .s_tcdm_core(tcdm_spm_narrow),
+      .s_tcdm_core(tcdm_inter_dma),
       .mem_req_o  (mem_req),
       .mem_rsp_i  (mem_rsp)
   );
@@ -488,7 +488,7 @@ MEMORY
       .N_CORES  (NC),
       .DW       (HCI_DW),  // TCDM port dimension (in bits
       .AddrWidth(32)
-  ) i_dut (
+  ) i_redmule_top (
       .clk_i         (clk_i),
       .rst_ni        (rst_ni),
       .test_mode_i   (test_mode),

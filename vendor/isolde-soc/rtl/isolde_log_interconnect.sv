@@ -23,14 +23,15 @@ module isolde_log_interconnect
     parameter int unsigned N_MASTERS = 9,
     parameter int unsigned TCDM_AW   = isolde_tcdm_pkg::TCDM_AW  // Address Width TCDM Memory
 ) (
-    input  logic                       clk_i,
-    input  logic                       rst_ni,
+    input  logic                  clk_i,
+    input  logic                  rst_ni,
     input  isolde_tcdm_pkg::req_t cores_req_i[ N_SLAVES-1:0],
     output isolde_tcdm_pkg::rsp_t cores_rsp_o[ N_SLAVES-1:0],
     output isolde_tcdm_pkg::req_t mems_req_o [N_MASTERS-1:0],
     input  isolde_tcdm_pkg::rsp_t mems_rsp_i [N_MASTERS-1:0]
 
 );
+  //localparam int unsigned NumOutLog2 = $clog2(N_MASTERS);
   localparam int unsigned AWC = isolde_tcdm_pkg::CORE_AW;  // Address Width Cor
   localparam int unsigned DW = isolde_tcdm_pkg::CORE_DW;  // Data Width
   localparam int unsigned ByteOffWidth = $clog2(DW - 1) - 3;  // Byte Offset Width
@@ -91,7 +92,8 @@ module isolde_log_interconnect
       assign _s_mem_req.we                  = ~mems_wen[jj];
       assign _s_mem_req.be                  = mems_be[jj];
       // add_i[j][ByteOffWidth+NumOutLog2+AddrMemWidth-1:ByteOffWidth+NumOutLog2], wdata_i[j]};
-      assign _s_mem_req.addr[TCDM_AW-1:0]   = (mems_add[jj]) << ByteOffWidth;
+      assign _s_mem_req.addr[1:0]           = '0;
+      assign _s_mem_req.addr[TCDM_AW-1:2]   = mems_add[jj];
       assign _s_mem_req.addr[AWC-1:TCDM_AW] = '0;  // zero padding for address width
       assign _s_mem_req.data                = mems_wdata[jj];
       //response
@@ -109,7 +111,7 @@ module isolde_log_interconnect
       .NumOut      (N_MASTERS),
       .AddrWidth   (AWC),
       .DataWidth   (DW + UW),
-      .ByteOffWidth(ByteOffWidth),         // determine byte offset from real data width
+      .ByteOffWidth(ByteOffWidth),               // determine byte offset from real data width
       .AddrMemWidth(TCDM_AW),
       .WriteRespOn (1),
       .RespLat     (1),

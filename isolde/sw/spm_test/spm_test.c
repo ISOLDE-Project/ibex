@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
     printf("***  \n");
     uint32_t spm_addr=0x0;
     uint32_t* src = (uint32_t *)golden;
-    uint32_t elems =  18;//sizeof(golden) / sizeof(golden[0]);
+    uint32_t elems =  16;//sizeof(golden) / sizeof(golden[0]);
 
     uint32_t *dst = read_data;
     // Copy the golden data to SPM

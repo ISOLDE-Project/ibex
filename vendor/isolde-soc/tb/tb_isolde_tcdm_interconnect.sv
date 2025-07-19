@@ -19,8 +19,8 @@ module tb_isolde_tcdm_interconnect (
   isolde_tcdm_if tcdm_core ();
 
   // ===  Memory banks  connections ===
-  isolde_tcdm_pkg::req_t  mem_req[N_TCDM_BANKS-1:0];
-  isolde_tcdm_pkg::rsp_t  mem_rsp[N_TCDM_BANKS-1:0];
+  isolde_tcdm_pkg::req_t mem_req[N_TCDM_BANKS-1:0];
+  isolde_tcdm_pkg::rsp_t mem_rsp[N_TCDM_BANKS-1:0];
 
 
   // === Memory banks ===
@@ -47,8 +47,8 @@ module tb_isolde_tcdm_interconnect (
       .rst_ni,
       .s_hci_core (hci_core_hwe),
       .s_tcdm_core(tcdm_core),
-      .mem_req_o (mem_req),
-      .mem_rsp_i (mem_rsp)
+      .mem_req_o  (mem_req),
+      .mem_rsp_i  (mem_rsp)
   );
 
   task automatic hci_core_transaction(input logic [31:0] addr, input logic [HCI_DW-1:0] data,
@@ -130,10 +130,30 @@ module tb_isolde_tcdm_interconnect (
   endtask
 
 
-  logic [31:0] test_addrs[4] = '{32'h0000_0000, 32'h0000_0004, 32'h0000_0008, 32'h0000_000c};
+  logic [31:0] test_addrs[9] = '{
+      32'h0000_0000,
+      32'h0000_0004,
+      32'h0000_0008,
+      32'h0000_000c,
+      32'h0000_0010,
+      32'h0000_0014,
+      32'h0000_0018,
+      32'h0000_0020,
+      32'h0000_0024
+  };
 
 
-  logic [31:0] test_data[4] = '{32'hDEAD_BEEF, 32'hCAFE_F00D, 32'hCAFE_DEEA, 32'h1234_5678};
+  logic [31:0] test_data[9] = '{
+      32'hDEAD_BEEF,
+      32'hCAFE_F00D,
+      32'hCAFE_DEEA,
+      32'h1234_5678,
+      32'h1_5678,
+      32'h2_6789,
+      32'h3_789A,
+      32'h4_89AB,
+      32'h5_9ABC
+  };
   //
   logic [HCI_DW-1:0] r_wide_data;
   // Input signal generation
@@ -169,7 +189,7 @@ module tb_isolde_tcdm_interconnect (
     check_r_wide_data(r_wide_data, {test_data[3], test_data[2]});
     hci_core_transaction(32'h0000_0010, 64'hDEAD_BEEF_FACE_00FF, r_wide_data,
                          1'b0);  // read request
-    check_r_wide_data(r_wide_data, 64'hCACA_C0DE_00BE_E000);
+    check_r_wide_data(r_wide_data, {test_data[5], test_data[4]});
 
     //
     hci_core_transaction(32'h0000_0018, 64'hF00D_BEEF_0BAD_0FEE, r_wide_data,
