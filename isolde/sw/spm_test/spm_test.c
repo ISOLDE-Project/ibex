@@ -19,46 +19,36 @@
 #define BANK_MASK           0x3C   // Bits [5:2]
 #define BANK_SHIFT          2
 #define BANK_OFFSET_SHIFT   6      // Bits [31:6]
-#define NUM_BANKS           9
+
+const uint32_t NUM_BANKS=9;
+const uint32_t BANK_DATA_WIDTH=32;
+const uint32_t WIDE_ADDR_ALIGNMENT = (NUM_BANKS-1)*(BANK_DATA_WIDTH/4); 
 
 
-void decode_spm_address(uint32_t addr,uint32_t* bank_index, uint32_t* bank_offset ) {
-    if (addr & WORD_ALIGN_MASK) {
-        printf("Warning: Address is not word-aligned (bits [1:0] must be 0)\n");
-    }
-
-    // Extract bank select bits [5:2]
-    uint32_t raw_bank = (addr & BANK_MASK) >> BANK_SHIFT;
-
-    // Extract offset in the bank (bits [31:6])
-    uint32_t base_bank_offset = addr >> BANK_OFFSET_SHIFT;
-
-    // Determine how many full rows were crossed
-    uint32_t bank_row = raw_bank / NUM_BANKS;
-
-    // Final decoded values
-  
-        *bank_index = raw_bank % NUM_BANKS;
-        *bank_offset = base_bank_offset + bank_row;
-
-}
-
-
-// Builds an address given bank index (0..9) and bank offset (rows down)
-uint32_t encode_spm_address(uint32_t bank_index, uint32_t bank_offset) {
+uint32_t make_spm_address(uint32_t addr) {
  
-    // Encode:
-    uint32_t addr = 0;
-    addr |= (bank_offset << BANK_OFFSET_SHIFT);      // bits [31:6]
-    addr |= (bank_index << BANK_SHIFT);                // bits [5:2]
-    addr &= ~WORD_ALIGN_MASK;                        // enforce [1:0] = 00
+    //Decode
+        // Extract bank select bits [5:2]
+    uint32_t raw_bank = (addr & BANK_MASK) >> BANK_SHIFT; 
+        // adjust it to the available NUM_BANKS
+    uint32_t bank_index = raw_bank  % NUM_BANKS;
 
-    return addr;
+        // Extract offset within the bank (bits [31:6])
+    uint32_t base_bank_offset = addr >> BANK_OFFSET_SHIFT;
+        // Determine how many full rows were crossed(32 bits wide)
+    uint32_t bank_row = (addr/WIDE_ADDR_ALIGNMENT)+(raw_bank / NUM_BANKS);
+       //  Adjust the offset
+    uint32_t bank_offset = base_bank_offset + bank_row;
+
+    // Encode:
+    uint32_t res = 0;
+    res |= (bank_offset << BANK_OFFSET_SHIFT);      // bits [31:6]
+    res |= (bank_index << BANK_SHIFT);                // bits [5:2]
+    
+    return res;
 }
 
-#define NUM_BANKS 10
-#define WORD_SIZE 4  // bytes
-#define BANK_STRIDE (NUM_BANKS * WORD_SIZE)
+
 /** 
 *  Copies data from a source array to SPM at a specified address
 *  The function checks for these conditions and exits with an error message if they are not met 
@@ -67,7 +57,7 @@ uint32_t encode_spm_address(uint32_t bank_index, uint32_t bank_offset) {
 *     - must be word-aligned (i.e., divisible by 4)
 *     - must be within the range [0, SPM_NARROW_SIZE)
 *   - src is the source array to copy from 
-*   - elems is the number of elements to copy, each element is 4 bytes
+*   - elems is the number of elements to copy, each element is 4 bytes wide
 */
 void to_spm(uint32_t addr, uint32_t *src, uint32_t elems) {
     if (addr & 0x3) {
@@ -75,10 +65,9 @@ void to_spm(uint32_t addr, uint32_t *src, uint32_t elems) {
         _Exit(0xbadc0de);
     }
 
+    volatile uint32_t *spm_addr;
     for (uint32_t i = 0; i < elems; ++i) {
-        uint32_t bank_index, bank_offset;
-        decode_spm_address(addr + 4*i , &bank_index, &bank_offset);
-        volatile uint32_t *spm_addr = (uint32_t *)(SPM_NARROW_ADDR + encode_spm_address(bank_index, bank_offset));
+        spm_addr = (uint32_t *)(SPM_NARROW_ADDR + make_spm_address(addr + 4*i));
         *spm_addr = src[i];
     }
 }
@@ -92,7 +81,7 @@ void to_spm(uint32_t addr, uint32_t *src, uint32_t elems) {
 *     - must be word-aligned (i.e., divisible by 4)
 *     - must be within the range [0, SPM_NARROW_SIZE)
 *   - dst is the destination array to copy to
-*   - elems is the number of elements to copy, each element is 4 bytes      
+*   - elems is the number of elements to copy, each element is 4 bytes wide     
  */
 void from_spm(uint32_t addr, uint32_t *dst, uint32_t elems) {
     if (addr & 0x3) {
@@ -100,10 +89,9 @@ void from_spm(uint32_t addr, uint32_t *dst, uint32_t elems) {
         _Exit(0xbadc0de);
     }
 
+    volatile uint32_t *spm_addr;
     for (uint32_t i = 0; i < elems; ++i) {
-        uint32_t bank_index, bank_offset;
-        decode_spm_address(addr + 4*i , &bank_index, &bank_offset);
-        volatile uint32_t *spm_addr = (uint32_t *)(SPM_NARROW_ADDR + encode_spm_address(bank_index, bank_offset));
+        spm_addr = (uint32_t *)(SPM_NARROW_ADDR + make_spm_address(addr + 4*i));
         dst[i] = *spm_addr;
     }
 }
@@ -114,9 +102,10 @@ int main(int argc, char *argv[]) {
     printf("***  \n");
     printf("***  Hello World from ISOLDE!\n");
     printf("***  \n");
-    uint32_t spm_addr=0x0;
+    uint32_t wide_data_row=3; //just a test position, aligned with WIDE_ADDR_ALIGNMENT
+    uint32_t spm_addr=wide_data_row*WIDE_ADDR_ALIGNMENT;
     uint32_t* src = (uint32_t *)golden;
-    uint32_t elems =  16;//sizeof(golden) / sizeof(golden[0]);
+    uint32_t elems =  sizeof(golden) / sizeof(golden[0]);
 
     uint32_t *dst = read_data;
     // Copy the golden data to SPM
