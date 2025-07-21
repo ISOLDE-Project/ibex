@@ -497,6 +497,14 @@ MEMORY
       .m_hci_core    (redmule_hci),
       .s_tcdm_ctrl   (redmule_ctrl)
   );
+  isolde_hci_monitor #(
+      .NAME("spm_hci_monitor")
+  ) i_hci_monitor (
+      .clk_i,
+      .rst_ni,
+      .hci_core(redmule_hci)
+  );
+  /********************************************************/
 
   // Declare the task with an input parameter for errors
   task endSimulation(input int errors);

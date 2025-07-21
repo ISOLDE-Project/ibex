@@ -42,6 +42,16 @@ module tb_sram_mem #(
         if (rst_ni && req_i[i].req) rsp_o[i].gnt = (delay_counter[i] == 0) ? req_i[i].req : 0;
         else rsp_o[i].gnt = 0;
 
+        // Assert that address is within valid range
+        assert (req_i[i].addr >= BASE_ADDR)
+        else
+          $fatal(
+              "ERROR: req_i[%0d].addr (0x%08h) is below BASE_ADDR (0x%08h)",
+              i,
+              req_i[i].addr,
+              BASE_ADDR
+          );
+
         case (misalignment[i])
           2'b00: begin
             index[i] = (req_i[i].addr - BASE_ADDR);
@@ -81,7 +91,8 @@ module tb_sram_mem #(
               //loop back
               rsp_o[i].data  <= req_i[i].data;
               rsp_o[i].valid <= 1'b1;
-              $fwrite(fh_csv, "%t,%d,%h,%08h,%08h\n",$time,i,req_i[i].we,req_i[i].addr,req_i[i].data);
+              $fwrite(fh_csv, "%t,%d,%h,%08h,%08h\n", $time, i, req_i[i].we, req_i[i].addr,
+                      req_i[i].data);
             end else begin  //read
 
               cnt_rd += 1;
@@ -91,10 +102,9 @@ module tb_sram_mem #(
               rsp_o[i].data[31:24] <= memory[index[i]+3];
 
               rsp_o[i].valid <= 1'b1;
-              $fwrite(fh_csv, "%t,%d,%h,%08h,%08h\n",$time,i,req_i[i].we,req_i[i].addr,{memory[index[i]+3],
-                                                                 memory[index[i]+2],
-                                                                 memory[index[i]+1],
-                                                                 memory[index[i]]});
+              $fwrite(fh_csv, "%t,%d,%h,%08h,%08h\n", $time, i, req_i[i].we, req_i[i].addr, {
+                      memory[index[i]+3], memory[index[i]+2], memory[index[i]+1], memory[index[i]]
+                      });
             end
           end else begin  //~rsp_o.gnt
             delay_counter[i] <= req_i[i].req ? delay_counter[i] - 1 : DELAY_CYCLES;
@@ -107,19 +117,17 @@ module tb_sram_mem #(
     end  // gen_mem_port
   endgenerate
 
-  int          fh_csv;  //filehandle
-string mem_filename;
+  int    fh_csv;  //filehandle
+  string mem_filename;
 
-initial begin
-  mem_filename = $sformatf("sram_id%0d.csv", ID);
+  initial begin
+    mem_filename = $sformatf("sram_id%0d.csv", ID);
     fh_csv = $fopen(mem_filename, "w");
     if (fh_csv == 0) begin
-      $display("ERROR: Could not open %s for writing",mem_filename);
+      $display("ERROR: Could not open %s for writing", mem_filename);
       $finish;
     end else begin
-      $fwrite(
-          fh_csv,
-          "time,mem_port,we,addr,data\n");
+      $fwrite(fh_csv, "time,mem_port,we,addr,data\n");
     end
   end
 

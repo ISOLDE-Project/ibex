@@ -7,72 +7,54 @@
 // #include <stdio.h>
 #include <bsp/simple_system_common.h>
 #include <bsp/simple_system_regs.h>
+#include <bsp/spm.h>
 #include <bsp/tinyprintf.h>
-#include <stdlib.h>
 
+// #include "redmule_utils.h"
+#include "archi_redmule.h"
 #include "golden.h"
+#include "hal_redmule.h"
 #include "w_input.h"
 #include "x_input.h"
 #include "y_input.h"
 
+void test_hwe(uint32_t x, uint32_t w, uint32_t y) {
+  volatile int errors = 0;
 
+  const uint32_t cfg_reg0 = ((K_SIZE << 16) | (M_SIZE << 0));
+  const uint32_t cfg_reg1 = (N_SIZE << 0);
+  const uint32_t arith_reg = (GEMM << 10) | (1 << 7);
+  // START_TIMING(REDMULE_LCA);
 
+  printf("[SPM LCA ] Starting test. Godspeed!\n");
+  START_PERFCNT(0x1)
+  HWPE_WRITE((unsigned int)x, REDMULE_REG_OFFS + REDMULE_REG_X_PTR);
+  HWPE_WRITE((unsigned int)w, REDMULE_REG_OFFS + REDMULE_REG_W_PTR);
+  HWPE_WRITE((unsigned int)y, REDMULE_REG_OFFS + REDMULE_REG_Z_PTR);
+  //
+  HWPE_WRITE(cfg_reg0, REDMULE_REG_OFFS + REDMULE_MCFG0_PTR);
+  HWPE_WRITE(cfg_reg1, REDMULE_REG_OFFS + REDMULE_MCFG1_PTR);
+  //
+  HWPE_WRITE(arith_reg, REDMULE_REG_OFFS + REDMULE_ARITH_PTR);
+  // trigger job();
+  HWPE_WRITE(0, REDMULE_TRIGGER);
+  STOP_PERFCNT(0x1)
+  START_PERFCNT(0x2)
+  // Wait for end of computation
+  asm volatile("wfi" ::: "memory");
+  STOP_PERFCNT(0x2)
+  printPerfCnt();
 
-/**
- *  Copies data from a source array to SPM at a specified address
- *  The function checks for these conditions and exits with an error message if
- * they are not met Parameters:
- *   - addr is the starting address in SPM where data will be copied
- *     - must be word-aligned (i.e., divisible by 4)
- *     - must be within the range [0, SPM_NARROW_SIZE)
- *   - src is the source array to copy from
- *   - elems is the number of elements to copy, each element is 4 bytes wide
- */
-uint32_t to_spm(uint32_t addr, uint32_t *src, uint32_t elems) {
-  if (addr % WIDE_ADDR_ALIGNMENT) {
-    printf("Error: Address must be wide-word-aligned(0x%08x) for to_spm.\n",
-           WIDE_ADDR_ALIGNMENT);
-    _Exit(0xbadc0de);
-  }
+  //errors = redmule16_compare_int(y, golden, M_SIZE * K_SIZE / 2);
 
-  volatile uint32_t *spm_addr;
-  for (uint32_t i = 0; i < elems; ++i) {
-    spm_addr = (uint32_t *)(SPM_NARROW_ADDR + make_spm_address(addr + 4 * i));
-    *spm_addr = src[i];
-  }
-  // compute next spm_addr
-  uint32_t next_addr = (addr + elems);
-  uint32_t rem = next_addr % WIDE_ADDR_ALIGNMENT;
-  next_addr = rem ? (next_addr + WIDE_ADDR_ALIGNMENT - rem) : next_addr;
-  return next_addr;
-}
-
-/**
- * Copies data from SPM to a destination array
- *  The function checks for these conditions and exits with an error message if
- * they are not met Parameters:
- *   - addr is the starting address in SPM from where data will be copied
- *     - must be word-aligned (i.e., divisible by 4)
- *     - must be within the range [0, SPM_NARROW_SIZE)
- *   - dst is the destination array to copy to
- *   - elems is the number of elements to copy, each element is 4 bytes wide
- */
-void from_spm(uint32_t addr, uint32_t *dst, uint32_t elems) {
-  if (addr & 0x3) {
-    printf("Error: Address must be word-aligned for from_spm.\n");
-    _Exit(0xbadc0de);
-  }
-
-  volatile uint32_t *spm_addr;
-  for (uint32_t i = 0; i < elems; ++i) {
-    spm_addr = (uint32_t *)(SPM_NARROW_ADDR + make_spm_address(addr + 4 * i));
-    dst[i] = *spm_addr;
-  }
+  printf("[SPM LCA] Terminated test with %d errors. See you!\n", errors);
 }
 
 inline uint32_t spm_copy(uint32_t spm_addr, uint32_t *src, uint32_t elems) {
   // spm_addr =   (spm_addr / WIDE_ADDR_ALIGNMENT) * WIDE_ADDR_ALIGNMENT;
-  uint32_t spm_next_addr = to_spm(spm_addr, src, elems);
+  to_spm(spm_addr, src, elems);
+  uint32_t last_row = get_row(spm_addr + elems * 4 - 4);
+  uint32_t spm_next_addr = get_addr_start(last_row + 1);
   printf("Copied to SPM at address 0x%08x, %d elements\n", spm_addr, elems);
   printf("Next spm address 0x%08x \n", spm_next_addr);
   return spm_next_addr;
@@ -91,7 +73,7 @@ uint32_t spm_check(uint32_t spm_addr, uint32_t elems, uint32_t *ref) {
       printf("Error at index %d, expected:0x%08x,got: 0x%08x\n", i, ref[i],
              read_data[i]);
       res = 0;
-      //break;
+      // break;
     }
   }
   return res;
@@ -120,15 +102,15 @@ int main(int argc, char *argv[]) {
   golden_spm_addr = spm_addr;
   uint32_t *src = (uint32_t *)golden;
   uint32_t elems = sizeof(golden) / sizeof(golden[0]);
-  spm_next_addr = spm_copy(golden_spm_addr, src, elems);
+  spm_next_addr = spm_copy(spm_addr, src, elems);
 
   // x_inp
-  x_spm_addr = 0x80;
+  x_spm_addr = spm_next_addr;
   spm_addr = x_spm_addr;
   src = (uint32_t *)x_inp;
   elems = x_size;
   spm_next_addr = spm_copy(spm_addr, src, elems);
-#if 0
+
   // w_input
   w_spm_addr = spm_next_addr;
   spm_addr = w_spm_addr;
@@ -142,12 +124,15 @@ int main(int argc, char *argv[]) {
   src = (uint32_t *)y_inp;
   elems = y_size;
   spm_next_addr = spm_copy(spm_addr, src, elems);
-#endif
+
   // Read back the data from SPM to verify
   spm_addr = golden_spm_addr;
   elems = (sizeof(read_data) / sizeof(read_data[0]));
   uint32_t *ref = (uint32_t *)golden;
-  testOK= spm_check(spm_addr, elems, ref) ;
+  testOK = spm_check(spm_addr, elems, ref);
+
+
+  test_hwe(x_spm_addr, w_spm_addr, y_spm_addr);
 #ifdef RV_DM_TEST
   while (1) {
     asm volatile("wfi");

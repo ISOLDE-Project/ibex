@@ -14,10 +14,10 @@
 #define BANK_SHIFT 2
 #define BANK_OFFSET_SHIFT 6  // Bits [31:6]
 
-
 static const uint32_t NUM_BANKS = 9;
 static const uint32_t BANK_DATA_WIDTH = 32;
-static const uint32_t WIDE_ADDR_ALIGNMENT = (NUM_BANKS - 1) * (BANK_DATA_WIDTH / 4);
+static const uint32_t WIDE_ADDR_ALIGNMENT =
+    (NUM_BANKS - 1) * (BANK_DATA_WIDTH / 4);
 
 /**
  *  Copies data from a source array to SPM at a specified address
@@ -45,4 +45,5 @@ void from_spm(uint32_t addr, uint32_t *dst, uint32_t elems);
 
 uint32_t get_addr_start(uint32_t row);
 uint32_t get_addr_end(uint32_t row);
+inline uint32_t get_row(uint32_t addr) { return (addr >> BANK_OFFSET_SHIFT); }
 #endif

@@ -32,6 +32,7 @@ sources:
       files:
         - tb/tb_tcdm_mem.sv
         - tb/monitor/perfCounters.sv
+        - tb/monitor/isolde_hci_monitor.sv
         - tb/tb_sram_mem.sv
         - tb/tb_axi_mem.sv
     - target: u_test
