@@ -9,7 +9,7 @@ OBJDUMP          =  $(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objdump
 LD_FILE ?=
 # Source files
 APP_FILES ?=
-SRCS   += crt0.S simple_system_common.c startup.c tinyprintf.c 
+SRCS   += crt0.S simple_system_common.c startup.c tinyprintf.c spm.c
 SRCS   += $(APP_FILES)
 
 SRC_C = $(filter %.c, $(SRCS))

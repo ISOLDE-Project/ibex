@@ -15,36 +15,8 @@
 #include "x_input.h"
 #include "y_input.h"
 
-#define WORD_ALIGN_MASK 0x3
-#define BANK_MASK 0x3C  // Bits [5:2]
-#define BANK_SHIFT 2
-#define BANK_OFFSET_SHIFT 6  // Bits [31:6]
 
-const uint32_t NUM_BANKS = 9;
-const uint32_t BANK_DATA_WIDTH = 32;
-const uint32_t WIDE_ADDR_ALIGNMENT = (NUM_BANKS - 1) * (BANK_DATA_WIDTH / 8);
 
-uint32_t make_spm_address(uint32_t addr) {
-  // Decode
-  //  Extract bank select bits [5:2]
-  uint32_t raw_bank = (addr & BANK_MASK) >> BANK_SHIFT;
-  // adjust it to the available NUM_BANKS
-  uint32_t bank_index = raw_bank % NUM_BANKS;
-
-  // Extract offset within the bank (bits [31:6])
-  uint32_t base_bank_offset = addr >> BANK_OFFSET_SHIFT;
-  // Determine how many full rows were crossed(32 bits wide)
-  uint32_t bank_row = (addr / WIDE_ADDR_ALIGNMENT) + (raw_bank / NUM_BANKS);
-  //  Adjust the offset
-  uint32_t bank_offset = base_bank_offset + bank_row;
-
-  // Encode:
-  uint32_t res = 0;
-  res |= (bank_offset << BANK_OFFSET_SHIFT);  // bits [31:6]
-  res |= (bank_index << BANK_SHIFT);          // bits [5:2]
-
-  return res;
-}
 
 /**
  *  Copies data from a source array to SPM at a specified address
@@ -142,10 +114,10 @@ int main(int argc, char *argv[]) {
   printf("***  \n");
   uint32_t wide_data_row =
       3;  // just a test position, aligned with WIDE_ADDR_ALIGNMENT
-  uint32_t spm_addr = wide_data_row * WIDE_ADDR_ALIGNMENT;
+  uint32_t spm_addr = get_addr_start(wide_data_row);
 
   // golden
-  golden_spm_addr = 0;//(spm_addr / WIDE_ADDR_ALIGNMENT) * WIDE_ADDR_ALIGNMENT;
+  golden_spm_addr = spm_addr;
   uint32_t *src = (uint32_t *)golden;
   uint32_t elems = sizeof(golden) / sizeof(golden[0]);
   spm_next_addr = spm_copy(golden_spm_addr, src, elems);

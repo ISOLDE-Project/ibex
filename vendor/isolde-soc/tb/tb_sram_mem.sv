@@ -81,7 +81,7 @@ module tb_sram_mem #(
               //loop back
               rsp_o[i].data  <= req_i[i].data;
               rsp_o[i].valid <= 1'b1;
-              $fwrite(fh_csv, "%t,%d,%h,%h,%h\n",$time,i,req_i[i].we,req_i[i].addr,req_i[i].data);
+              $fwrite(fh_csv, "%t,%d,%h,%08h,%08h\n",$time,i,req_i[i].we,req_i[i].addr,req_i[i].data);
             end else begin  //read
 
               cnt_rd += 1;
@@ -91,7 +91,10 @@ module tb_sram_mem #(
               rsp_o[i].data[31:24] <= memory[index[i]+3];
 
               rsp_o[i].valid <= 1'b1;
-              $fwrite(fh_csv, "%t,%d,%h,%h,%h\n",$time,i,req_i[i].we,req_i[i].addr,rsp_o[i].data);
+              $fwrite(fh_csv, "%t,%d,%h,%08h,%08h\n",$time,i,req_i[i].we,req_i[i].addr,{memory[index[i]+3],
+                                                                 memory[index[i]+2],
+                                                                 memory[index[i]+1],
+                                                                 memory[index[i]]});
             end
           end else begin  //~rsp_o.gnt
             delay_counter[i] <= req_i[i].req ? delay_counter[i] - 1 : DELAY_CYCLES;
@@ -116,7 +119,7 @@ initial begin
     end else begin
       $fwrite(
           fh_csv,
-          "time,mem_port,addr,we,data\n");
+          "time,mem_port,we,addr,data\n");
     end
   end
 
