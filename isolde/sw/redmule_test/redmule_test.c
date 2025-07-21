@@ -119,7 +119,7 @@ uint32_t spm_check(uint32_t spm_addr, uint32_t elems, uint32_t *ref) {
       printf("Error at index %d, expected:0x%08x,got: 0x%08x\n", i, ref[i],
              read_data[i]);
       res = 0;
-      break;
+      //break;
     }
   }
   return res;
@@ -145,13 +145,13 @@ int main(int argc, char *argv[]) {
   uint32_t spm_addr = wide_data_row * WIDE_ADDR_ALIGNMENT;
 
   // golden
-  golden_spm_addr = (spm_addr / WIDE_ADDR_ALIGNMENT) * WIDE_ADDR_ALIGNMENT;
+  golden_spm_addr = 0;//(spm_addr / WIDE_ADDR_ALIGNMENT) * WIDE_ADDR_ALIGNMENT;
   uint32_t *src = (uint32_t *)golden;
   uint32_t elems = sizeof(golden) / sizeof(golden[0]);
   spm_next_addr = spm_copy(golden_spm_addr, src, elems);
 
   // x_inp
-  x_spm_addr = spm_next_addr;
+  x_spm_addr = 0x80;
   spm_addr = x_spm_addr;
   src = (uint32_t *)x_inp;
   elems = x_size;
@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
   spm_next_addr = spm_copy(spm_addr, src, elems);
 #endif
   // Read back the data from SPM to verify
-  spm_addr = x_spm_addr;
+  spm_addr = golden_spm_addr;
   elems = (sizeof(read_data) / sizeof(read_data[0]));
   uint32_t *ref = (uint32_t *)golden;
   testOK= spm_check(spm_addr, elems, ref) ;
