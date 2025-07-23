@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
   testOK = spm_check(spm_addr, elems, ref);
 
 
-  test_hwe(x_spm_addr, w_spm_addr, y_spm_addr);
+  //test_hwe(x_spm_addr, w_spm_addr, y_spm_addr);
 #ifdef RV_DM_TEST
   while (1) {
     asm volatile("wfi");

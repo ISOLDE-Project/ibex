@@ -48,11 +48,14 @@ void to_spm(uint32_t addr, uint32_t *src, uint32_t elems) {
     _Exit(0xbadc0de);
   }
 
+  printf("*** >>\n");
   volatile uint32_t *spm_addr;
   for (uint32_t i = 0; i < elems; ++i) {
     spm_addr = (uint32_t *)(SPM_NARROW_ADDR + make_spm_address(addr + 4 * i));
+    printf("0x%x,",src[i]);
     *spm_addr = src[i];
   }
+  printf("*** >>\n");
 }
 
 /**
