@@ -60,6 +60,9 @@ ibex_sim.flist:  $(CORE_FILES)
 										       $(FUSESOC_BUILD_ROOT)/sim-verilator  \
 	                                           $(FUSESOC_BUILD_ROOT)/sim-verilator/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc \
 											   $@
+	python $(ROOT_DIR)/util/verilator_manifest.py  Verilator.yml \
+											    -t  $(verilator_target)       \
+											    -o $@	
 	touch $@
 ##
 
@@ -126,9 +129,14 @@ help:
 	@echo veri-clean                               -- gets a clean slate for simulation
 	@echo verilate VLT_TOP_MODULE=tb_top_verilator
 	
-bender-clean:
-	rm -fr ./.bender
-	rm Bender.lock
 
-redmule-update:	bender-clean
+.PHONY: bender-clean
+bender-clean:
+	@echo "Cleaning Bender project..."
+	rm -rf .bender
+	rm -rf  Bender.lock
+	@echo "Bender project cleaned."
+
+.PHONY: rtl-update
+rtl-update:	bender-clean
 	git submodule update --init

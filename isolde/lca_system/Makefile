@@ -47,6 +47,8 @@ VLT_TOP_MODULE_PARAMS := -GIMEM_LATENCY=$(IMEM_LATENCY)
 DBG_MODULE   ?= 0
 ENABLE_SPM   ?= 0
 
+
+verilator_target := vanilla
 # Select testbench target based on priority:
 # DBG_MODULE > ENABLE_SPM > default HWPE test
 ifeq ($(DBG_MODULE), 1)
@@ -61,6 +63,7 @@ common_targs += -t $(tb_target)
 
 
 
+
 include ../mk/redmule.mk
 include ../mk/sw-build.mk
 include ../mk/verilator-build.mk
@@ -69,11 +72,6 @@ include ../mk/vivado.mk
 
 
 	
-.PHONY: bender-clean
-bender-clean:
-	@echo "Cleaning Bender project..."
-	rm -rf .bender
-	rm -rf  Bender.lock
-	@echo "Bender project cleaned."
+
 
 		
