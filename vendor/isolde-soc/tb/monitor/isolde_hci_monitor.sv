@@ -12,56 +12,70 @@ module isolde_hci_monitor #(
 
     hci_core_intf.monitor hci_core
 );
-typedef enum  { idle, req_r,req_w,gnt, r_ready } hci_mon_state_t;
-hci_mon_state_t hci_mon_state, hci_mon_state_next;
+  typedef enum {
+    idle,
+    log_req_r,
+    log_req_w,
+    log_data
+  } hci_mon_state_t;
+
+  hci_mon_state_t hci_mon_state, hci_mon_state_next;
   // request phase payload
   logic [AW-1:0] add;
   logic [DW-1:0] data;
-  logic wen;  // write enable negative
-  logic req;
- 
+  logic wen;
 
-always_comb begin
-  hci_mon_state_next = idle;
-  if (hci_core.req) begin
-    hci_mon_state_next = hci_core.wen ? req_r: req_w;
+
+
+
+  always_comb begin
+
+    case (hci_mon_state)
+      log_req_w,log_req_r: hci_mon_state_next = log_data;
+      idle: begin
+        if (hci_core.req) begin
+          if (hci_core.wen) hci_mon_state_next = log_req_r;
+          else hci_mon_state_next = hci_core.be ? log_req_w : idle;
+        end else begin
+          hci_mon_state_next = idle;
+        end
+      end
+    endcase
+
   end
-end
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (!rst_ni) hci_mon_state <= idle;
-      else hci_mon_state <= hci_mon_state_next; 
+    if (!rst_ni) hci_mon_state <= idle;
   end
 
- always_ff @(posedge clk_i or negedge rst_ni) begin
-  case (hci_mon_state_next)
-   req_r,req_w:  begin
-          wen <= hci_core.wen;
-           add <=  hci_core.add;
-           data <= hci_core.data;
-           end
-    default:begin
-           wen<=0;
-           add<='0;
-           data<='0; end
-  endcase
- end
+
 
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
-    // Monitor logic to track HCI core activity
-    // This is a placeholder for actual monitoring logic
-    if (hci_core.r_valid  ) begin
-      case(hci_mon_state)
-        req_w: begin
-           $fwrite(fh_csv, "%t, %d, 0x%h, 0x%h\n", $time, wen, add, data);
-           end 
-        req_r: begin
-           $fwrite(fh_csv, "%t, %d, 0x%h, 0x%h\n", $time, wen, add, hci_core.r_data);
-           end
-      endcase
-    end
+
+    hci_mon_state <= hci_mon_state_next;
+
+    case (hci_mon_state_next)
+
+      log_req_r: begin
+        add <= hci_core.add;
+        wen <= hci_core.wen;
+      end
+      log_req_w: begin
+        add <= hci_core.add;
+        wen <= hci_core.wen;
+        data <= hci_core.data;
+      end
+      log_data: begin
+        if (hci_core.r_valid) begin
+          if (~wen) $fwrite(fh_csv, "%t, write, 0x%h, 0x%h\n", $time, add, data);
+          else $fwrite(fh_csv, "%t, read, 0x%h, 0x%h\n", $time, add, hci_core.r_data);
+          hci_mon_state <= idle;  // Return to idle after logging
+        end
+      end
+    endcase
   end
+
 
   int    fh_csv;  //filehandle
   string log_filename;
@@ -73,7 +87,7 @@ end
       $display("ERROR: Could not open %s for writing", log_filename);
       $finish;
     end else begin
-      $fwrite(fh_csv, "time,wen,addr,data\n");
+      $fwrite(fh_csv, "time,op,addr,data\n");
     end
   end
 

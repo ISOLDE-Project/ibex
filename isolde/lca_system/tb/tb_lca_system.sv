@@ -75,6 +75,7 @@ module tb_lca_system (
   // parameters
   localparam int unsigned NC = 1;
   localparam int unsigned ID = 10;
+  localparam int unsigned HCI_AW = redmule_pkg::ADDR_W;
   localparam int unsigned HCI_DW = redmule_pkg::DATA_W;
   localparam int unsigned MP = HCI_DW / 32;
   localparam int unsigned MEMORY_SIZE = 32'h30000;
@@ -397,8 +398,8 @@ MEMORY
   isolde_redmule_top #(
       .ID_WIDTH (ID),
       .N_CORES  (NC),
-      .DW       (HCI_DW),  // TCDM port dimension (in bits
-      .AddrWidth(32)
+      .DW       (HCI_DW),  // TCDM port dimension (in bits)
+      .AddrWidth(HCI_AW)
   ) i_dut (
       .clk_i         (clk_i),
       .rst_ni        (rst_ni),
@@ -410,6 +411,8 @@ MEMORY
   );
 
   isolde_hci_monitor #(
+    .AW(HCI_AW),
+    .DW(HCI_DW),
       .NAME("tb_lca_hci_monitor")
   ) i_hci_monitor (
       .clk_i,
