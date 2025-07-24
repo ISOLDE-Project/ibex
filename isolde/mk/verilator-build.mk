@@ -140,3 +140,4 @@ bender-clean:
 .PHONY: rtl-update
 rtl-update:	bender-clean
 	git submodule update --init
+	bender update
