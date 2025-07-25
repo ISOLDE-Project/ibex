@@ -8,6 +8,8 @@
  */
 
 module isolde_tcdm_interconnect #(
+    parameter bit ALIGN = 1'b0,
+    parameter int unsigned ALIGNMENT = 64,  // Address alignment boundary in bytes
     parameter int unsigned HCI_DW = 288,  // Data width of hci interface
     //
     parameter int unsigned N_TCDM_BANKS = HCI_DW / 32  // Number of Memory banks
@@ -23,11 +25,13 @@ module isolde_tcdm_interconnect #(
 
 );
 
-  isolde_tcdm_pkg::req_t cores_req[  N_TCDM_BANKS:0];  // One extra for s_tcdm_core
-  isolde_tcdm_pkg::rsp_t cores_rsp[  N_TCDM_BANKS:0];
+  isolde_tcdm_pkg::req_t cores_req[N_TCDM_BANKS:0];  // One extra for s_tcdm_core
+  isolde_tcdm_pkg::rsp_t cores_rsp[N_TCDM_BANKS:0];
   //
 
   isolde_hci_interconnect #(
+      .ALIGN,
+      .ALIGNMENT,
       .HCI_DW
   ) i_hci_interconnect (
       .clk_i,

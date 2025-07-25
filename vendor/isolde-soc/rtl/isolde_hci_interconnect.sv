@@ -8,6 +8,8 @@
  */
 
 module isolde_hci_interconnect #(
+    parameter bit ALIGN = 1'b0,
+    parameter int unsigned ALIGNMENT = 64,  // Address alignment boundary in bytes
     parameter int unsigned HCI_DW = 288,  // Data width of hci interface
     //
     parameter int unsigned N_TCDM_BANKS = HCI_DW / 32  // Number of Memory banks
@@ -28,13 +30,20 @@ module isolde_hci_interconnect #(
   logic [N_TCDM_BANKS-1:0][31:0] tcdm_r_data;
   logic [N_TCDM_BANKS-1:0] tcdm_r_valid;
 
+  // Aligned address computation
+  logic [isolde_tcdm_pkg::CORE_AW-1:0] aligned_addr;
+
+  always_comb begin
+    if (ALIGN) aligned_addr = s_hci_core.add + (s_hci_core.add % ALIGNMENT);
+    else aligned_addr = s_hci_core.add;
+  end
 
   // === HCI binding ===
   for (genvar ii = 0; ii < N_TCDM_BANKS; ii++) begin : hci_binding
 
     ///
     assign mem_req_o[ii].req  = s_tcdm_core.req.req ? 0 : s_hci_core.req;
-    assign mem_req_o[ii].addr = s_hci_core.add + ii * 4;
+    assign mem_req_o[ii].addr = aligned_addr + ii * 4;
     assign mem_req_o[ii].we   = ~s_hci_core.wen;
     assign mem_req_o[ii].be   = s_hci_core.be[(ii+1)*4-1:ii*4];
     assign mem_req_o[ii].data = s_hci_core.data[(ii+1)*32-1:ii*32];

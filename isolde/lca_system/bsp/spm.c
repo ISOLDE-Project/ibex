@@ -10,6 +10,8 @@
 #include "simple_system_regs.h"
 #include "tinyprintf.h"
 
+//#define SPM_VERBOSE 1
+
 static uint32_t make_spm_address(uint32_t addr) {
   // Decode
   //  Extract bank select bits [5:2]
@@ -47,17 +49,39 @@ void to_spm(uint32_t addr, uint32_t *src, uint32_t elems) {
     printf("Error: Address must be word-aligned for to_spm.\n");
     _Exit(0xbadc0de);
   }
-
+#ifdef SPM_VERBOSE
   printf("*** >>\n");
+#endif  
   volatile uint32_t *spm_addr;
   for (uint32_t i = 0; i < elems; ++i) {
     spm_addr = (uint32_t *)(SPM_NARROW_ADDR + make_spm_address(addr + 4 * i));
+#ifdef SPM_VERBOSE
     printf("0x%x,",src[i]);
+#endif
     *spm_addr = src[i];
   }
+ #ifdef SPM_VERBOSE 
   printf("*** >>\n");
+#endif
 }
 
+void to_spm_row(uint32_t row, uint32_t *src) {
+  uint32_t addr = get_addr_start(row);
+#ifdef SPM_VERBOSE
+  printf("   *** >> row =%d, addr=0x%08x>>\n      ", row, addr);
+#endif  
+  volatile uint32_t *spm_addr;
+  spm_addr = (uint32_t *)(addr + SPM_NARROW_ADDR);
+  for (uint32_t i = 0; i < NUM_BANKS; ++i) {
+#ifdef SPM_VERBOSE
+    printf("0x%x,",src[i]);
+#endif
+    spm_addr[i] = src[i];
+  }
+ #ifdef SPM_VERBOSE 
+  printf("   *** <<\n");
+#endif
+}
 /**
  * Copies data from SPM to a destination array
  *  The function checks for these conditions and exits with an error message if

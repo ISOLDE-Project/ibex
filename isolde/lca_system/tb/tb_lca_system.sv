@@ -119,6 +119,9 @@ MEMORY
   localparam int unsigned DEBUG_SIZE = 32'h0000_1000;
 
 
+  /********************************************************/
+  /**          Router configuratiion                     **/
+  /*******************************************************/
 
   typedef enum {
 
@@ -148,7 +151,9 @@ MEMORY
   logic sim_exit;
   MemStatisticsCallback mem_stats_cb;
 
-  //
+  /********************************************************/
+  /**           VERILATOR BUG                            **/
+  /*******************************************************/
 
   //hwpe_ctrl_intf_periph #(.ID_WIDTH(ID)) periph (.clk(clk_i));
   /**
@@ -165,6 +170,10 @@ MEMORY
       .clk(clk_i)
   );  // dummy interface for hwpe_stream_tcdm_fifo_store
 
+
+  /********************************************************/
+  /**           Interface Definitions                   **/
+  /*******************************************************/
 
   hci_core_intf #(.DW(HCI_DW)) redmule_hci (.clk(clk_i));
 
@@ -193,6 +202,10 @@ MEMORY
   assign tcdm_perfCountersSim.req = noc_reqs[MMIO_IDX];
   assign noc_rsps[MMIO_IDX] = tcdm_perfCountersSim.rsp;
 
+  /********************************************************/
+  /**           Router                                  **/
+  /*******************************************************/
+
   isolde_router #(
       .N_RULES(NoRules),
       .ADDR_RANGES(addr_map)
@@ -203,6 +216,10 @@ MEMORY
       .req_o       (noc_reqs),
       .rsp_i       (noc_rsps)
   );
+
+  /********************************************************/
+  /**           Performance counters                     **/
+  /*******************************************************/
 
   perfCounters #(
       .MMIO_ADDR(MMIO_ADDR)
@@ -242,7 +259,9 @@ MEMORY
 
   );
 
-
+  /********************************************************/
+  /**     Data memory                                    **/
+  /*******************************************************/
   tb_sram_mem #(
       .ID(0),
       .N_PORTS(MP + 1),
@@ -255,6 +274,9 @@ MEMORY
       .rsp_o (mem_rsp)
   );
 
+  /********************************************************/
+  /**     Instruction memory                             **/
+  /*******************************************************/
 
   isolde_addr_shim #(
       .START_ADDR(IMEM_ADDR),  // Set start address
@@ -274,6 +296,10 @@ MEMORY
       .tcdm_slave_i(tcdm_imem_shim)
   );
 
+
+  /********************************************************/
+  /**     Stack memory                                   **/
+  /*******************************************************/
 
   assign tcdm_stack.req = noc_reqs[STACK_IDX];
   assign noc_rsps[STACK_IDX] = tcdm_stack.rsp;
@@ -295,6 +321,12 @@ MEMORY
       .tcdm_slave_i(tcdm_stack_shim)
   );
 
+
+
+  /********************************************************/
+  /**     CV-X-IF                                        **/
+  /*******************************************************/
+
   isolde_cv_x_if #(
       .X_NUM_RS   (isolde_cv_x_if_pkg::X_NUM_RS),
       .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
@@ -309,6 +341,10 @@ MEMORY
       clk_i,
       core_xif
   );
+
+  /********************************************************/
+  /**     IBEX core                                     **/
+  /*******************************************************/
 
   ibex_top_tracing #(
       .SecureIbex      (SecureIbex),
@@ -391,6 +427,9 @@ MEMORY
       .xif_result_if         (core_xif.cpu_result)
   );
 
+  /********************************************************/
+  /**     Hardware Engine HWE                            **/
+  /*******************************************************/
 
   assign redmule_ctrl.req = noc_reqs[PERIPH_IDX];
   assign noc_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
@@ -400,7 +439,7 @@ MEMORY
       .N_CORES  (NC),
       .DW       (HCI_DW),  // TCDM port dimension (in bits)
       .AddrWidth(HCI_AW)
-  ) i_dut (
+  ) i_redmule_top (
       .clk_i         (clk_i),
       .rst_ni        (rst_ni),
       .test_mode_i   (test_mode),
@@ -419,6 +458,8 @@ MEMORY
       .rst_ni,
       .hci_core(redmule_hci)
   );
+  /********************************************************/
+
   // Declare the task with an input parameter for errors
   task endSimulation(input int errors);
 

@@ -45,7 +45,6 @@ static inline int hwpe_acquire_job() { return HWPE_READ(REDMULE_ACQUIRE); }
 static inline unsigned int hwpe_get_status() { return HWPE_READ(REDMULE_STATUS); }
 
 static inline void hwpe_soft_clear() {
-  volatile int i;
   HWPE_WRITE(0, REDMULE_SOFT_CLEAR);
 }
 
