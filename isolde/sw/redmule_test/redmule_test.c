@@ -54,7 +54,7 @@ uint32_t spm_copy(uint32_t spm_addr, uint32_t *src, uint32_t elems) {
   uint32_t src_offset = 0;
   uint32_t row = get_row(spm_addr);
   uint32_t last_row = row + elems / (NUM_BANKS - 1);
-  uint32_t spm_next_addr = get_addr_start(last_row + 1);
+  uint32_t spm_next_addr = get_addr_start(last_row );
 
   printf("Copy to SPM at address 0x%08x, %d elems in %d rows\n", spm_addr, elems,last_row-row);
   while (row < last_row) {
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
   printf("***  WIDE_ADDR_ALIGNMENT=0x%08x\n", WIDE_ADDR_ALIGNMENT);
   printf("***  \n");
   uint32_t wide_data_row =
-      3;  // just a test position, aligned with WIDE_ADDR_ALIGNMENT
+      0;  // just a test position, aligned with WIDE_ADDR_ALIGNMENT
   uint32_t spm_addr = get_addr_start(wide_data_row);
 
   // golden
