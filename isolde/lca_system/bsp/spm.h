@@ -42,6 +42,7 @@ void to_spm_row(uint32_t row, uint32_t *src) ;
  *   - elems is the number of elements to copy, each element is 4 bytes wide
  */
 void from_spm(uint32_t addr, uint32_t *dst, uint32_t elems);
+void from_spm_row(uint32_t* dst, uint32_t row) ;
 
 uint32_t get_addr_start(uint32_t row);
 uint32_t get_addr_end(uint32_t row);

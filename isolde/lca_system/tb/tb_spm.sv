@@ -289,7 +289,7 @@ MEMORY
   );
 
   isolde_tcdm_interconnect #(
-      .ALIGN(1'b1),
+      .ALIGN(1'b0),
       .HCI_DW(HCI_DW)
   ) i_tcdm_interconnect (
       .clk_i,

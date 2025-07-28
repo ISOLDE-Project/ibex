@@ -54,7 +54,7 @@ verilator_target := vanilla
 ifeq ($(DBG_MODULE), 1)
     tb_target = tb_dm
 else ifeq ($(ENABLE_SPM), 1)
-    tb_target = tb_spm
+    tb_target = spm
 else
     tb_target = vanilla_lca
 endif

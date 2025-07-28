@@ -105,6 +105,25 @@ void from_spm(uint32_t addr, uint32_t *dst, uint32_t elems) {
   }
 }
 
+
+void from_spm_row(uint32_t *dst, uint32_t row) {
+  uint32_t addr = get_addr_start(row);
+#ifdef SPM_VERBOSE
+  printf("   *** >> row =%d, addr=0x%08x>>\n      ", row, addr);
+#endif  
+  volatile uint32_t *spm_addr;
+  spm_addr = (uint32_t *)(addr + SPM_NARROW_ADDR);
+  for (uint32_t i = 0; i < NUM_BANKS; ++i) {
+#ifdef SPM_VERBOSE
+    printf("0x%x,",spm_addr[i]);
+#endif
+     dst[i]=spm_addr[i];
+  }
+ #ifdef SPM_VERBOSE 
+  printf("   *** <<\n");
+#endif
+}
+
 uint32_t get_addr_start(uint32_t row) {
   uint32_t bank_index = 0;
   uint32_t res = 0;
