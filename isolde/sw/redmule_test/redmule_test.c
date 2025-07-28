@@ -10,13 +10,17 @@
 #include <bsp/spm.h>
 #include <bsp/tinyprintf.h>
 
-// #include "redmule_utils.h"
+#include "redmule_utils.h"
 #include "archi_redmule.h"
 #include "golden.h"
 #include "hal_redmule.h"
 #include "w_input.h"
 #include "x_input.h"
 #include "y_input.h"
+
+uint32_t y_flat[sizeof(golden) / sizeof(golden[0])];
+//forward declaration
+uint32_t spm_read(uint32_t *dst, uint32_t spm_addr,  uint32_t elems) ;
 
 void test_hwe(uint32_t x, uint32_t w, uint32_t y) {
   volatile int errors = 0;
@@ -46,6 +50,9 @@ void test_hwe(uint32_t x, uint32_t w, uint32_t y) {
   printPerfCnt();
 
   // errors = redmule16_compare_int(y, golden, M_SIZE * K_SIZE / 2);
+  uint32_t elems = sizeof(y_flat) / sizeof(y_flat[0]);
+  spm_read(y_flat, y, elems);
+  errors = redmule16_compare_int(y_flat, golden, M_SIZE * K_SIZE / 2);
 
   printf("[SPM LCA] Terminated test with %d errors. See you!\n", errors);
 }
@@ -68,24 +75,25 @@ uint32_t spm_copy(uint32_t spm_addr, uint32_t *src, uint32_t elems) {
   return spm_next_addr;
 }
 
-uint32_t read_data[sizeof(golden) / sizeof(golden[0])];
+uint32_t spm_read(uint32_t *dst, uint32_t spm_addr,  uint32_t elems) {
+  uint32_t offset = 0;
+  uint32_t row = get_row(spm_addr);
+  uint32_t last_row = row + elems / (NUM_BANKS - 1)-1;
+  uint32_t spm_next_addr = get_addr_start(last_row );
 
-uint32_t spm_check(uint32_t spm_addr, uint32_t elems, uint32_t *ref) {
-  uint32_t res = 1;
-  from_spm(spm_addr, read_data, elems);
-  printf("Copied from SPM  address 0x%08x, %d elements\n", spm_addr, elems);
-
-  // check if the data matches the reference
-  for (uint32_t i = 0; i < elems; ++i) {
-    if (ref[i] != read_data[i]) {
-      printf("Error at index %d, expected:0x%08x,got: 0x%08x\n", i, ref[i],
-             read_data[i]);
-      res = 0;
-      // break;
-    }
+  printf("Read from SPM at address 0x%08x, %d elems in %d rows\n", spm_addr, elems,last_row-row);
+  while (row < last_row) {
+    from_spm_row(&dst[offset],row );
+    row++;
+    offset += NUM_BANKS - 1;  // jump to next  vector of 32 bits elements
   }
-  return res;
+
+  //printf("Copied to SPM at address 0x%08x, %d rows\n", spm_addr, row-1);
+  printf("Next spm address 0x%08x \n", spm_next_addr);
+  return spm_next_addr;
 }
+
+
 
 uint32_t x_spm_addr, y_spm_addr, w_spm_addr, golden_spm_addr, spm_next_addr;
 uint32_t x_size =
