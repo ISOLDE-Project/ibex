@@ -10,6 +10,7 @@
 #include <bsp/spm.h>
 #include <bsp/tinyprintf.h>
 
+#include "cmp_utils.h"
 #include "redmule_utils.h"
 #include "archi_redmule.h"
 #include "golden.h"
@@ -18,7 +19,9 @@
 #include "x_input.h"
 #include "y_input.h"
 
-uint32_t y_flat[sizeof(golden) / sizeof(golden[0])];
+static const int y_flat_size=sizeof(golden) / sizeof(golden[0]) +1 ;
+uint32_t y_flat[y_flat_size];
+
 //forward declaration
 uint32_t spm_read(uint32_t *dst, uint32_t spm_addr,  uint32_t elems) ;
 
@@ -57,7 +60,7 @@ void test_hwe(uint32_t x, uint32_t w, uint32_t y) {
   printf("[SPM LCA] Terminated test with %d errors. See you!\n", errors);
 }
 
-uint32_t spm_copy(uint32_t spm_addr, uint32_t *src, uint32_t elems) {
+uint32_t spm_write(uint32_t spm_addr, uint32_t *src, uint32_t elems) {
   uint32_t src_offset = 0;
   uint32_t row = get_row(spm_addr);
   uint32_t last_row = row + elems / (NUM_BANKS - 1);
@@ -78,7 +81,7 @@ uint32_t spm_copy(uint32_t spm_addr, uint32_t *src, uint32_t elems) {
 uint32_t spm_read(uint32_t *dst, uint32_t spm_addr,  uint32_t elems) {
   uint32_t offset = 0;
   uint32_t row = get_row(spm_addr);
-  uint32_t last_row = row + elems / (NUM_BANKS - 1)-1;
+  uint32_t last_row = row + elems / (NUM_BANKS - 1);
   uint32_t spm_next_addr = get_addr_start(last_row );
 
   printf("Read from SPM at address 0x%08x, %d elems in %d rows\n", spm_addr, elems,last_row-row);
@@ -118,32 +121,36 @@ int main(int argc, char *argv[]) {
   golden_spm_addr = spm_addr;
   uint32_t *src = (uint32_t *)golden;
   uint32_t elems = sizeof(golden) / sizeof(golden[0]);
-  spm_next_addr = spm_copy(spm_addr, src, elems);
+  spm_next_addr = spm_write(spm_addr, src, elems);
+  spm_read(y_flat, golden_spm_addr, elems);
+  testOK = cmp_arrays(golden,y_flat,elems);
 
+  
   // x_inp
   x_spm_addr = spm_next_addr;
   spm_addr = x_spm_addr;
   src = (uint32_t *)x_inp;
   elems = x_size;
-  spm_next_addr = spm_copy(spm_addr, src, elems);
+  spm_next_addr = spm_write(spm_addr, src, elems);
 
   // w_input
   w_spm_addr = spm_next_addr;
   spm_addr = w_spm_addr;
   src = (uint32_t *)w_inp;
   elems = w_size;
-  spm_next_addr = spm_copy(spm_addr, src, elems);
+  spm_next_addr = spm_write(spm_addr, src, elems);
 
   // y_inp
   y_spm_addr = spm_next_addr;
   spm_addr = y_spm_addr;
   src = (uint32_t *)y_inp;
   elems = y_size;
-  spm_next_addr = spm_copy(spm_addr, src, elems);
+  spm_next_addr = spm_write(spm_addr, src, elems);
 
 
 
   test_hwe(x_spm_addr, w_spm_addr, y_spm_addr);
+  
 #ifdef RV_DM_TEST
   while (1) {
     asm volatile("wfi");

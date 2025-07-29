@@ -44,7 +44,8 @@
 int signal_caught = 0;
 
 void handle_sig_generic(int sig) {
-  std::cerr << __FILE__ << ":" << __LINE__
+  std::cerr << std::endl
+            << __FILE__ << ":" << __LINE__
             << " Caught SIGNAL (signal " << sig << "). Shutting down ..."
             << std::endl;
   signal_caught = 1;
