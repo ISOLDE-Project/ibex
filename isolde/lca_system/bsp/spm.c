@@ -139,3 +139,47 @@ uint32_t get_addr_end(uint32_t row) {
   res |= (bank_index << BANK_SHIFT);  // bits [5:2]
   return res;
 }
+
+
+uint32_t spm_write(uint32_t spm_addr, uint32_t *src, uint32_t elems) {
+  uint32_t src_offset = 0;
+  uint32_t row = get_row(spm_addr);
+  uint32_t last_row = row + elems / (NUM_BANKS - 1);
+  uint32_t spm_next_addr = get_addr_start(last_row );
+#ifdef SPM_VERBOSE
+  printf("Copy to SPM at address 0x%08x, %d elems in %d rows\n", spm_addr, elems,last_row-row);
+#endif  
+  while (row < last_row) {
+    to_spm_row(row, &src[src_offset]);
+    row++;
+    src_offset += NUM_BANKS - 1;  // jump to next  vector of 32 bits elements
+  }
+
+  //printf("Copied to SPM at address 0x%08x, %d rows\n", spm_addr, row-1);
+#ifdef SPM_VERBOSE  
+  printf("Next spm address 0x%08x \n", spm_next_addr);
+#endif  
+  return spm_next_addr;
+}
+
+uint32_t spm_read(uint32_t *dst, uint32_t spm_addr,  uint32_t elems) {
+  uint32_t offset = 0;
+  uint32_t row = get_row(spm_addr);
+  uint32_t last_row = row + elems / (NUM_BANKS - 1);
+  uint32_t spm_next_addr = get_addr_start(last_row );
+#ifdef SPM_VERBOSE
+  printf("Read from SPM at address 0x%08x, %d elems in %d rows\n", spm_addr, elems,last_row-row);
+#endif  
+  while (row < last_row) {
+    from_spm_row(&dst[offset],row );
+    row++;
+    offset += NUM_BANKS - 1;  // jump to next  vector of 32 bits elements
+  }
+
+  //printf("Copied to SPM at address 0x%08x, %d rows\n", spm_addr, row-1);
+ #ifdef SPM_VERBOSE 
+  printf("Next spm address 0x%08x \n", spm_next_addr);
+ #endif 
+  return spm_next_addr;
+}
+

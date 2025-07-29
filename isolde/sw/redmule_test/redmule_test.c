@@ -22,11 +22,10 @@
 static const int y_flat_size=sizeof(golden) / sizeof(golden[0]) +1 ;
 uint32_t y_flat[y_flat_size];
 
-//forward declaration
-uint32_t spm_read(uint32_t *dst, uint32_t spm_addr,  uint32_t elems) ;
 
-void test_hwe(uint32_t x, uint32_t w, uint32_t y) {
-  volatile int errors = 0;
+
+uint32_t test_hwe(uint32_t x, uint32_t w, uint32_t y) {
+  uint32_t errors = 0;
 
   const uint32_t cfg_reg0 = ((K_SIZE << 16) | (M_SIZE << 0));
   const uint32_t cfg_reg1 = (N_SIZE << 0);
@@ -58,44 +57,8 @@ void test_hwe(uint32_t x, uint32_t w, uint32_t y) {
   errors = redmule16_compare_int(y_flat, golden, M_SIZE * K_SIZE / 2);
 
   printf("[SPM LCA] Terminated test with %d errors. See you!\n", errors);
+  return errors;
 }
-
-uint32_t spm_write(uint32_t spm_addr, uint32_t *src, uint32_t elems) {
-  uint32_t src_offset = 0;
-  uint32_t row = get_row(spm_addr);
-  uint32_t last_row = row + elems / (NUM_BANKS - 1);
-  uint32_t spm_next_addr = get_addr_start(last_row );
-
-  printf("Copy to SPM at address 0x%08x, %d elems in %d rows\n", spm_addr, elems,last_row-row);
-  while (row < last_row) {
-    to_spm_row(row, &src[src_offset]);
-    row++;
-    src_offset += NUM_BANKS - 1;  // jump to next  vector of 32 bits elements
-  }
-
-  //printf("Copied to SPM at address 0x%08x, %d rows\n", spm_addr, row-1);
-  printf("Next spm address 0x%08x \n", spm_next_addr);
-  return spm_next_addr;
-}
-
-uint32_t spm_read(uint32_t *dst, uint32_t spm_addr,  uint32_t elems) {
-  uint32_t offset = 0;
-  uint32_t row = get_row(spm_addr);
-  uint32_t last_row = row + elems / (NUM_BANKS - 1);
-  uint32_t spm_next_addr = get_addr_start(last_row );
-
-  printf("Read from SPM at address 0x%08x, %d elems in %d rows\n", spm_addr, elems,last_row-row);
-  while (row < last_row) {
-    from_spm_row(&dst[offset],row );
-    row++;
-    offset += NUM_BANKS - 1;  // jump to next  vector of 32 bits elements
-  }
-
-  //printf("Copied to SPM at address 0x%08x, %d rows\n", spm_addr, row-1);
-  printf("Next spm address 0x%08x \n", spm_next_addr);
-  return spm_next_addr;
-}
-
 
 
 uint32_t x_spm_addr, y_spm_addr, w_spm_addr, golden_spm_addr, spm_next_addr;
@@ -108,6 +71,7 @@ uint32_t w_size =
 
 int main(int argc, char *argv[]) {
   int testOK = 1;
+  uint32_t errors;
   printf("***  \n");
   printf("***  BANK_DATA_WIDTH=0x%08x\n", BANK_DATA_WIDTH);
   printf("***  NUM_BANKS=0x%08x\n", NUM_BANKS);
@@ -115,15 +79,10 @@ int main(int argc, char *argv[]) {
   printf("***  \n");
   uint32_t wide_data_row =
       0;  // just a test position, aligned with WIDE_ADDR_ALIGNMENT
-  uint32_t spm_addr = get_addr_start(wide_data_row);
-
-  // golden
-  golden_spm_addr = spm_addr;
-  uint32_t *src = (uint32_t *)golden;
-  uint32_t elems = sizeof(golden) / sizeof(golden[0]);
-  spm_next_addr = spm_write(spm_addr, src, elems);
-  spm_read(y_flat, golden_spm_addr, elems);
-  testOK = cmp_arrays(golden,y_flat,elems);
+  uint32_t spm_addr, spm_next_addr = get_addr_start(wide_data_row);
+  uint32_t *src;
+  uint32_t elems;
+ 
 
   
   // x_inp
@@ -149,13 +108,13 @@ int main(int argc, char *argv[]) {
 
 
 
-  test_hwe(x_spm_addr, w_spm_addr, y_spm_addr);
+  errors = test_hwe(x_spm_addr, w_spm_addr, y_spm_addr);
   
 #ifdef RV_DM_TEST
   while (1) {
     asm volatile("wfi");
   }
 #else
-  return testOK ? 0x0 : 0xBADC0FFE;
+  return errors ?  0xBADC0FFE :0x0;
 #endif
 }

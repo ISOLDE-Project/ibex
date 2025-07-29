@@ -30,7 +30,9 @@ static const uint32_t WIDE_ADDR_ALIGNMENT =
  *   - elems is the number of elements to copy, each element is 4 bytes wide
  */
 void to_spm(uint32_t addr, uint32_t *src, uint32_t elems);
-void to_spm_row(uint32_t row, uint32_t *src) ;
+void to_spm_row(uint32_t row, uint32_t *src);
+uint32_t spm_write(uint32_t spm_addr, uint32_t *src, uint32_t elems);
+
 /**
  * Copies data from SPM to a destination array
  *  The function checks for these conditions and exits with an error message if
@@ -43,6 +45,7 @@ void to_spm_row(uint32_t row, uint32_t *src) ;
  */
 void from_spm(uint32_t addr, uint32_t *dst, uint32_t elems);
 void from_spm_row(uint32_t* dst, uint32_t row) ;
+uint32_t spm_read(uint32_t *dst, uint32_t spm_addr,  uint32_t elems);
 
 uint32_t get_addr_start(uint32_t row);
 uint32_t get_addr_end(uint32_t row);

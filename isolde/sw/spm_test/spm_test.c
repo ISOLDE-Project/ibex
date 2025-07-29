@@ -5,17 +5,23 @@
  */
 
 // #include <stdio.h>
+
 #include <bsp/simple_system_common.h>
 #include <bsp/simple_system_regs.h>
 #include <bsp/tinyprintf.h>
+#include <bsp/spm.h>
+
 #include <stdlib.h>
 
-#include <bsp/spm.h>
+#include "cmp_utils.h"
 #include "golden.h"
 
 
 
 uint32_t read_data[sizeof(golden) / sizeof(golden[0])];
+static const int y_flat_size=sizeof(golden) / sizeof(golden[0]) +1 ;
+uint32_t y_flat[y_flat_size];
+
 int main(int argc, char *argv[]) {
   int testOK = 1;
   printf("***  \n");
@@ -47,6 +53,19 @@ int main(int argc, char *argv[]) {
       break;
     }
   }
+
+  //
+  wide_data_row =
+      0;  // just a test position, aligned with WIDE_ADDR_ALIGNMENT
+  spm_addr = get_addr_start(wide_data_row);
+
+  // golden
+  uint32_t golden_spm_addr = spm_addr;
+  src = (uint32_t *)golden;
+  elems = sizeof(golden) / sizeof(golden[0]);
+  uint32_t spm_next_addr = spm_write(spm_addr, src, elems);
+  spm_read(y_flat, golden_spm_addr, elems);
+  testOK = testOK ? cmp_arrays(golden,y_flat,elems) : testOK;
 #ifdef RV_DM_TEST
   while (1) {
     asm volatile("wfi");
