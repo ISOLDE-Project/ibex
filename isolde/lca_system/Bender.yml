@@ -18,7 +18,7 @@ dependencies:
 # not(T)           matches if target T does not match (boolean NOT)
 sources:
   files:   
-   - target: all(tb_dm ,redmule_hwpe ,rtl ,redmule_test_hwpe)
+   - target: all(not(spm), all(tb_dm ,redmule_hwpe ,rtl ,redmule_test_hwpe))
      files:
         - tb/tb_dm.sv
    - target: all(vanilla_lca,redmule_test_hwpe, rtl, redmule_hwpe)

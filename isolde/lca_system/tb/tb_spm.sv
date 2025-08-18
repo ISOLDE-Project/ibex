@@ -41,7 +41,11 @@ class MyCallback extends MemStatisticsCallback;
     /**
   ** avoid spaces in the string
   **/
+`ifdef TARGET_RV_DEBUG
+    return "LCA_SPM_DEBUG";
+`else
     return "LCA_SPM";
+`endif
   endfunction
 endclass
 
@@ -122,9 +126,10 @@ MEMORY
   localparam int unsigned SPM_NARROW_SIZE = 32'h0000_1000;  //64kB
 
   /********************************************************/
-  /**          Router configuratiion                     **/
+  /**          Router configurations                     **/
   /*******************************************************/
 
+  // DATA
   typedef enum {
 
     PERIPH_IDX,
@@ -132,6 +137,9 @@ MEMORY
     STACK_IDX,
     MMIO_IDX,
     SPM_IDX,
+`ifdef TARGET_RV_DEBUG
+    DEBUG_IDX,
+`endif
     LAST_IDX
   } data_map_idx_t;
 
@@ -143,9 +151,27 @@ MEMORY
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
       '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
       '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + SPM_NARROW_SIZE}
+      `ifdef TARGET_RV_DEBUG
+      , '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
+      `endif
   };
 
+`ifdef TARGET_RV_DEBUG
+  // INSTR
+  typedef enum {
+    INSTR_MEM_IDX,
+    INSTR_DEBUG_IDX,
 
+    INSTR_LAST_IDX
+  } instr_map_idx_t;
+
+  localparam int unsigned InstrNoRules = INSTR_LAST_IDX;
+  // 
+  localparam addr_range_t instr_map[InstrNoRules] = '{
+      '{start_addr: IMEM_ADDR, end_addr: IMEM_ADDR + IMEM_SIZE},
+      '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
+  };
+`endif
   // global signals
   string stim_instr, stim_data;
   logic                               test_mode;
@@ -210,7 +236,7 @@ MEMORY
   // === Performermance counters & simulation control===
   isolde_tcdm_if tcdm_perfCountersSim ();
 
-  // === Network on Chio NoC interfaces ===
+  // === Network on Chip NoC interfaces ===
   isolde_tcdm_pkg::req_t noc_reqs[LAST_IDX];
   isolde_tcdm_pkg::rsp_t noc_rsps[LAST_IDX];
 
@@ -289,7 +315,7 @@ MEMORY
   );
 
   isolde_tcdm_interconnect #(
-      .ALIGN(1'b0),
+      .ALIGN (1'b0),
       .HCI_DW(HCI_DW)
   ) i_tcdm_interconnect (
       .clk_i,
@@ -500,8 +526,8 @@ MEMORY
       .s_tcdm_ctrl   (redmule_ctrl)
   );
   isolde_hci_monitor #(
-    .AW(HCI_AW),
-    .DW(HCI_DW),
+      .AW  (HCI_AW),
+      .DW  (HCI_DW),
       .NAME("spm_hci_monitor")
   ) i_hci_monitor (
       .clk_i,
