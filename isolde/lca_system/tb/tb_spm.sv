@@ -208,6 +208,7 @@ MEMORY
   /**           Interface Definitions                   **/
   /*******************************************************/
 
+  // === hardware accelerator  interconnect ===
   hci_core_intf #(.DW(HCI_DW)) redmule_hci (.clk(clk_i));
 
 
@@ -220,9 +221,6 @@ MEMORY
   isolde_tcdm_if tcdm_dmemory ();
   isolde_tcdm_if tcdm_dmemory_shim ();
   isolde_tcdm_if tcdm_spm_narrow ();  // narrow scratchpad memory interface
-
-  // === hardware accelerator HWE port ===
-
   isolde_tcdm_if redmule_ctrl ();  // HWE peripheral  interface
 
   // === stack memory port ===
@@ -236,10 +234,12 @@ MEMORY
   // === Performermance counters & simulation control===
   isolde_tcdm_if tcdm_perfCountersSim ();
 
-  // === Network on Chip NoC interfaces ===
-  isolde_tcdm_pkg::req_t noc_reqs[LAST_IDX];
-  isolde_tcdm_pkg::rsp_t noc_rsps[LAST_IDX];
-
+  // === Data Network on Chip NoC interfaces ===
+  isolde_tcdm_pkg::req_t noc_data_reqs[LAST_IDX];
+  isolde_tcdm_pkg::rsp_t noc_data_rsps[LAST_IDX];
+  // === Instruction Network on Chip NoC interfaces ===
+  isolde_tcdm_pkg::req_t noc_instr_reqs[INSTR_LAST_IDX];
+  isolde_tcdm_pkg::rsp_t noc_instr_rsps[INSTR_LAST_IDX];
 
 
   /********************************************************/
@@ -253,16 +253,28 @@ MEMORY
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(tcdm_core_data),
-      .req_o       (noc_reqs),
-      .rsp_i       (noc_rsps)
+      .req_o       (noc_data_reqs),
+      .rsp_i       (noc_data_rsps)
   );
+
+   isolde_router #(
+      .N_RULES(InstrNoRules),
+      .ADDR_RANGES(instr_map)
+   ) i_isolde_instr_router (
+      .clk_i,
+      .rst_ni,
+      .tcdm_slave_i(tcdm_core_inst),
+      .req_o       (noc_instr_reqs),
+      .rsp_i       (noc_instr_rsps)
+  );
+
 
   /********************************************************/
   /**           Performance counters                     **/
   /*******************************************************/
 
-  assign tcdm_perfCountersSim.req = noc_reqs[MMIO_IDX];
-  assign noc_rsps[MMIO_IDX] = tcdm_perfCountersSim.rsp;
+  assign tcdm_perfCountersSim.req = noc_data_reqs[MMIO_IDX];
+  assign noc_data_rsps[MMIO_IDX] = tcdm_perfCountersSim.rsp;
 
   perfCounters #(
       .MMIO_ADDR(MMIO_ADDR)
@@ -286,8 +298,8 @@ MEMORY
   /**     TCDM                                           **/
   /*******************************************************/
 
-  assign tcdm_spm_narrow.req = noc_reqs[SPM_IDX];
-  assign noc_rsps[SPM_IDX]   = tcdm_spm_narrow.rsp;
+  assign tcdm_spm_narrow.req = noc_data_reqs[SPM_IDX];
+  assign noc_data_rsps[SPM_IDX]   = tcdm_spm_narrow.rsp;
 
   isolde_tcdm_if tcdm_inter_dma ();
 
@@ -330,8 +342,8 @@ MEMORY
   /**     Data memory                                    **/
   /*******************************************************/
 
-  assign tcdm_dmemory.req   = noc_reqs[DATA_IDX];
-  assign noc_rsps[DATA_IDX] = tcdm_dmemory.rsp;
+  assign tcdm_dmemory.req   = noc_data_reqs[DATA_IDX];
+  assign noc_data_rsps[DATA_IDX] = tcdm_dmemory.rsp;
 
   //   isolde_addr_shim #(
   //       .START_ADDR(DMEM_ADDR),  // Set start address
@@ -378,8 +390,8 @@ MEMORY
   /**     Stack memory                                   **/
   /*******************************************************/
 
-  assign tcdm_stack.req = noc_reqs[STACK_IDX];
-  assign noc_rsps[STACK_IDX] = tcdm_stack.rsp;
+  assign tcdm_stack.req = noc_data_reqs[STACK_IDX];
+  assign noc_data_rsps[STACK_IDX] = tcdm_stack.rsp;
 
   isolde_addr_shim #(
       .START_ADDR(SMEM_ADDR),  // Set start address
@@ -508,8 +520,8 @@ MEMORY
   /**     Hardware Engine HWE                            **/
   /*******************************************************/
 
-  assign redmule_ctrl.req = noc_reqs[PERIPH_IDX];
-  assign noc_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
+  assign redmule_ctrl.req = noc_data_reqs[PERIPH_IDX];
+  assign noc_data_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
 
   isolde_redmule_top #(
       .ID_WIDTH (ID),
