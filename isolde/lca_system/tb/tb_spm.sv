@@ -161,7 +161,6 @@ MEMORY
   typedef enum {
     INSTR_MEM_IDX,
     INSTR_DEBUG_IDX,
-
     INSTR_LAST_IDX
   } instr_map_idx_t;
 
@@ -218,13 +217,10 @@ MEMORY
 
   // === Data port ===
   isolde_tcdm_if tcdm_core_data ();
-  isolde_tcdm_if tcdm_dmemory ();
   isolde_tcdm_if tcdm_dmemory_shim ();
-  isolde_tcdm_if tcdm_spm_narrow ();  // narrow scratchpad memory interface
   isolde_tcdm_if redmule_ctrl ();  // HWE peripheral  interface
 
   // === stack memory port ===
-  isolde_tcdm_if tcdm_stack ();
   isolde_tcdm_if tcdm_stack_shim ();
 
   // === instruction memory port ===
@@ -298,9 +294,6 @@ MEMORY
   /**     TCDM                                           **/
   /*******************************************************/
 
-  assign tcdm_spm_narrow.req = noc_data_reqs[SPM_IDX];
-  assign noc_data_rsps[SPM_IDX]   = tcdm_spm_narrow.rsp;
-
   isolde_tcdm_if tcdm_inter_dma ();
 
   // === Memory banks ===
@@ -322,7 +315,9 @@ MEMORY
       .START_ADDR(SPM_NARROW_ADDR),  // Set start address
       .END_ADDR(SPM_NARROW_ADDR + SPM_NARROW_SIZE)  // Set end address
   ) i_tcdm_inter_dma_shim (
-      .tcdm_slave_i (tcdm_spm_narrow),
+      //.tcdm_slave_i (tcdm_spm_narrow),
+      .req_i(noc_data_reqs[SPM_IDX]),
+      .rsp_o(noc_data_rsps[SPM_IDX] ),
       .tcdm_master_o(tcdm_inter_dma)
   );
 
@@ -342,25 +337,22 @@ MEMORY
   /**     Data memory                                    **/
   /*******************************************************/
 
-  assign tcdm_dmemory.req   = noc_data_reqs[DATA_IDX];
-  assign noc_data_rsps[DATA_IDX] = tcdm_dmemory.rsp;
+  isolde_addr_shim #(
+      .START_ADDR(IMEM_ADDR),  // Set start address
+      .END_ADDR(IMEM_ADDR + GMEM_SIZE)  // Set end address
+  ) i_dmem_shim (
+  .req_i(noc_data_reqs[DATA_IDX]),
+  .rsp_o(noc_data_rsps[DATA_IDX]),
+      .tcdm_master_o(tcdm_dmemory_shim)
+  );
 
-  //   isolde_addr_shim #(
-  //       .START_ADDR(DMEM_ADDR),  // Set start address
-  //       .END_ADDR(DMEM_ADDR + DMEM_SIZE)  // Set end address
-  //   ) i_dmem_shim (
-  //       .tcdm_slave_i (tcdm_dmemory),
-  //       .tcdm_master_o(tcdm_dmemory_shim)
-  //   );
 
   tb_tcdm_mem #(
-      .MEMORY_SIZE(GMEM_SIZE),
-      .BASE_ADDR  (IMEM_ADDR)
+      .MEMORY_SIZE(GMEM_SIZE)
   ) i_dummy_dmemory (
       .clk_i,
       .rst_ni,
-      //.tcdm_slave_i(tcdm_dmemory_shim)
-      .tcdm_slave_i(tcdm_dmemory)
+      .tcdm_slave_i(tcdm_dmemory_shim)
   );
 
   /********************************************************/
@@ -371,8 +363,8 @@ MEMORY
       .START_ADDR(IMEM_ADDR),  // Set start address
       .END_ADDR(IMEM_ADDR + GMEM_SIZE)  // Set end address
   ) i_imem_shim (
-      .tcdm_slave_i (tcdm_core_inst),
-      //.tcdm_slave_i (tcdm_core_intf[0]),
+  .req_i(noc_instr_reqs[INSTR_MEM_IDX]),
+  .rsp_o(noc_instr_rsps[INSTR_MEM_IDX]),
       .tcdm_master_o(tcdm_imem_shim)
   );
 
@@ -390,15 +382,12 @@ MEMORY
   /**     Stack memory                                   **/
   /*******************************************************/
 
-  assign tcdm_stack.req = noc_data_reqs[STACK_IDX];
-  assign noc_data_rsps[STACK_IDX] = tcdm_stack.rsp;
-
   isolde_addr_shim #(
       .START_ADDR(SMEM_ADDR),  // Set start address
       .END_ADDR(SMEM_ADDR + SMEM_SIZE)  // Set end address
   ) i_stack_mem_shim (
-      .tcdm_slave_i (tcdm_stack),
-      //.tcdm_slave_i (tcdm_core_intf[0]),
+       .req_i(noc_data_reqs[STACK_IDX]),
+       .rsp_o(noc_data_rsps[STACK_IDX]),
       .tcdm_master_o(tcdm_stack_shim)
   );
 
