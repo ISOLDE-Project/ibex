@@ -157,7 +157,7 @@ MEMORY
   };
 
 `ifdef TARGET_RV_DEBUG
-  // INSTR
+  // DEBUG MODULE PERIPHERAL, instructions memory map
   typedef enum {
     INSTR_MEM_IDX,
     INSTR_DEBUG_IDX,
@@ -169,6 +169,22 @@ MEMORY
   localparam addr_range_t instr_map[InstrNoRules] = '{
       '{start_addr: IMEM_ADDR, end_addr: IMEM_ADDR + IMEM_SIZE},
       '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
+  };
+   // DEBUG MODULE SYSTEM_BUS_ACCESS (dm_sba) memory map
+  typedef enum {
+    DM_SBA_IMEM_IDX,  //instructions
+    DM_SBA_DMEM_IDX,  //data
+    DM_SBA_SMEM_IDX,  //stack
+    DM_SBA_SPM_IDX,  // scratchpad memory
+    DM_SBA_LAST_IDX
+  } sba_map_idx_t;
+
+  // 
+  localparam addr_range_t dm_sba_map[DM_SBA_LAST_IDX] = '{
+      '{start_addr: IMEM_ADDR, end_addr: IMEM_ADDR + IMEM_SIZE},
+      '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
+      '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
+      '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + SPM_NARROW_SIZE}
   };
 `endif
   // global signals
@@ -182,6 +198,37 @@ MEMORY
 
   logic                 [NC-1:0][1:0] evt;
   logic                               core_sleep;
+
+  /********************************************************/
+  /**           Debug module signals                     **/
+  /*******************************************************/
+ // jtag openocd bridge signals
+  logic        sim_jtag_tck;
+  logic        sim_jtag_tms;
+  logic        sim_jtag_tdi;
+  logic        sim_jtag_trstn;
+  logic        sim_jtag_tdo;
+  logic [31:0] sim_jtag_exit;
+  //logic        sim_jtag_enable;
+
+  // isolde_tcdm_if tcdm_debug_dmi ();
+  // isolde_tcdm_if tcdm_debug_sbus ();
+  // isolde_tcdm_if tcdm_debug_dmem ();
+  // isolde_tcdm_if tcdm_debug_imem ();
+  jtag_pkg::jtag_req_t jtag_in;
+  jtag_pkg::jtag_rsp_t jtag_out;
+  logic [rv_dm_pkg::NrHarts-1:0] debug_req;
+
+
+  localparam bit JTAG_BOOT = 1;
+  localparam int unsigned OPENOCD_PORT = 9999;
+  localparam CLUSTER_ID = 6'd0;
+  localparam CORE_ID = 4'd0;
+
+  localparam CORE_MHARTID = {21'b0, CLUSTER_ID, 1'b0, CORE_ID};
+  localparam NrHarts = 1;
+  localparam logic [NrHarts-1:0] SELECTABLE_HARTS = 1 << CORE_MHARTID;
+  localparam HARTINFO = {8'h0, 4'h2, 3'b0, 1'b1, dm::DataCount, dm::DataAddr};
 
   /********************************************************/
   /**           VERILATOR BUG                            **/
@@ -225,7 +272,13 @@ MEMORY
 
   // === instruction memory port ===
   isolde_tcdm_if tcdm_core_inst ();
+  isolde_tcdm_if tcdm_imem_muxed ();
   isolde_tcdm_if tcdm_imem_shim ();
+
+  // === debugger module ports ===
+  isolde_tcdm_if tcdm_dm_periph ();
+  isolde_tcdm_if tcdm_dm_sba ();
+
 
   // === Performermance counters & simulation control===
   isolde_tcdm_if tcdm_perfCountersSim ();
@@ -236,16 +289,18 @@ MEMORY
   // === Instruction Network on Chip NoC interfaces ===
   isolde_tcdm_pkg::req_t noc_instr_reqs[INSTR_LAST_IDX];
   isolde_tcdm_pkg::rsp_t noc_instr_rsps[INSTR_LAST_IDX];
-
+  // === Debug module System Bus Access (dm_sba) Network on Chip NoC interfaces ===
+  isolde_tcdm_pkg::req_t noc_dm_sba_reqs[DM_SBA_LAST_IDX];
+  isolde_tcdm_pkg::rsp_t noc_dm_sba_rsps[DM_SBA_LAST_IDX];
 
   /********************************************************/
-  /**           Router                                  **/
+  /**           Router(s)                                  **/
   /*******************************************************/
 
   isolde_router #(
       .N_RULES(NoRules),
       .ADDR_RANGES(addr_map)
-  ) i_isolde_router (
+  ) i_isolde_data_router (
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(tcdm_core_data),
@@ -264,6 +319,16 @@ MEMORY
       .rsp_i       (noc_instr_rsps)
   );
 
+   isolde_router #(
+      .N_RULES(DM_SBA_LAST_IDX),
+      .ADDR_RANGES(dm_sba_map)
+   ) i_isolde_dm_sba_router (
+      .clk_i,
+      .rst_ni,
+      .tcdm_slave_i(tcdm_dm_sba),
+      .req_o       (noc_dm_sba_reqs),
+      .rsp_i       (noc_dm_sba_rsps)
+  );
 
   /********************************************************/
   /**           Performance counters                     **/
@@ -282,13 +347,39 @@ MEMORY
       .mem_statistics_cb(mem_stats_cb)
 
   );
-
+`ifndef TARGET_RV_DEBUG
   always_comb begin
     if (sim_exit) begin
       endSimulation(tcdm_perfCountersSim.rsp.data);
     end
   end
+`endif 
 
+`ifdef TARGET_RV_DEBUG
+  /********************************************************/
+  /**     JTAG simulation                                **/
+  /*******************************************************/
+    SimJTAG #(
+      .TICK_DELAY(1),
+      .PORT(OPENOCD_PORT)
+  ) i_sim_jtag (
+      .clock          (clk_i),
+      .reset          (~rst_ni),
+      .enable         (1'b1),
+      .init_done      (rst_ni),
+      .jtag_TCK       (jtag_in.tck),
+      .jtag_TMS       (jtag_in.tms),
+      .jtag_TDI       (jtag_in.tdi),
+      .jtag_TRSTn     (jtag_in.trst_n),
+      .jtag_TDO_data  (jtag_out.tdo),
+      .jtag_TDO_driven(1'b1),
+      .exit           (sim_jtag_exit)
+  );
+
+  always_comb begin : jtag_exit_handler
+    if (sim_jtag_exit) endSimulation(tcdm_perfCountersSim.rsp.data);
+  end
+`endif
 
   /********************************************************/
   /**     TCDM                                           **/
@@ -346,7 +437,6 @@ MEMORY
       .tcdm_master_o(tcdm_dmemory_shim)
   );
 
-
   tb_tcdm_mem #(
       .MEMORY_SIZE(GMEM_SIZE)
   ) i_dummy_dmemory (
@@ -359,12 +449,11 @@ MEMORY
   /**     Instruction memory                             **/
   /*******************************************************/
 
-  isolde_addr_shim #(
+  isolde_addr_shim_wrp #(
       .START_ADDR(IMEM_ADDR),  // Set start address
       .END_ADDR(IMEM_ADDR + GMEM_SIZE)  // Set end address
   ) i_imem_shim (
-  .req_i(noc_instr_reqs[INSTR_MEM_IDX]),
-  .rsp_o(noc_instr_rsps[INSTR_MEM_IDX]),
+      .tcdm_slave_i(tcdm_imem_muxed),
       .tcdm_master_o(tcdm_imem_shim)
   );
 
@@ -399,7 +488,42 @@ MEMORY
       .tcdm_slave_i(tcdm_stack_shim)
   );
 
+  /********************************************************/
+  /**     RV Debug Module                                **/
+  /*******************************************************/
+  rv_dm #() i_rv_dm (
+      .clk_i,
+      .rst_ni,
+      /// Debug Module Interface (DMI) slave port 
+      .s_periph(tcdm_dm_periph),
+      //.s_dmi(tcdm_inst_dm),
+      /// System Bus master port
+      .m_sba(tcdm_dm_sba),
+      /// JTAG
+      .jtag_in(jtag_in),
+      .jtag_out(jtag_out),
+      .debug_req_o(debug_req)
+  );
 
+  isolde_mux_tcdm i_mux_dm_periph (
+      .clk_i,
+      .rst_ni,
+      .req_1_i(noc_data_reqs[DEBUG_IDX]),
+      .req_2_i(noc_instr_reqs[INSTR_DEBUG_IDX]),
+      .rsp_1_o(noc_data_rsps[DEBUG_IDX]),
+      .rsp_2_o(noc_instr_rsps[INSTR_DEBUG_IDX]),
+      .tcdm_master_o(tcdm_dm_periph)
+  );
+
+    isolde_mux_tcdm i_mux_dm_sb_imem (
+      .clk_i,
+      .rst_ni,
+      .req_1_i(noc_dm_sba_reqs[DM_SBA_IMEM_IDX]),
+      .req_2_i(noc_instr_reqs[INSTR_MEM_IDX]),
+      .rsp_1_o(noc_dm_sba_rsps[DM_SBA_IMEM_IDX]),
+      .rsp_2_o(noc_instr_rsps[INSTR_MEM_IDX]),
+      .tcdm_master_o(tcdm_imem_muxed)
+  );
 
   /********************************************************/
   /**     CV-X-IF                                        **/
@@ -487,7 +611,7 @@ MEMORY
       .scramble_nonce_i    ('0),
       .scramble_req_o      (),
 
-      .debug_req_i        (1'b0),
+      .debug_req_i        (debug_req[0]),
       .crash_dump_o       (),
       .double_fault_seen_o(),
 
