@@ -151,9 +151,9 @@ MEMORY
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
       '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
       '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + SPM_NARROW_SIZE}
-      `ifdef TARGET_RV_DEBUG
+      //`ifdef TARGET_RV_DEBUG
       , '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
-      `endif
+  //`endif
   };
 
 `ifdef TARGET_RV_DEBUG
@@ -170,12 +170,12 @@ MEMORY
       '{start_addr: IMEM_ADDR, end_addr: IMEM_ADDR + IMEM_SIZE},
       '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
   };
-   // DEBUG MODULE SYSTEM_BUS_ACCESS (dm_sba) memory map
+  // DEBUG MODULE SYSTEM_BUS_ACCESS (dm_sba) memory map
   typedef enum {
     DM_SBA_IMEM_IDX,  //instructions
     DM_SBA_DMEM_IDX,  //data
     DM_SBA_SMEM_IDX,  //stack
-    DM_SBA_SPM_IDX,  // scratchpad memory
+    DM_SBA_SPM_IDX,   // scratchpad memory
     DM_SBA_LAST_IDX
   } sba_map_idx_t;
 
@@ -189,35 +189,35 @@ MEMORY
 `endif
   // global signals
   string stim_instr, stim_data;
-  logic                               test_mode;
+  logic                                               test_mode;
   //
-  logic                               redmule_busy;
+  logic                                               redmule_busy;
 
-  logic                               sim_exit;
-  MemStatisticsCallback               mem_stats_cb;
+  logic                                               sim_exit;
+  MemStatisticsCallback                               mem_stats_cb;
 
-  logic                 [NC-1:0][1:0] evt;
-  logic                               core_sleep;
+  logic                 [                NC-1:0][1:0] evt;
+  logic                                               core_sleep;
 
   /********************************************************/
   /**           Debug module signals                     **/
   /*******************************************************/
- // jtag openocd bridge signals
-  logic        sim_jtag_tck;
-  logic        sim_jtag_tms;
-  logic        sim_jtag_tdi;
-  logic        sim_jtag_trstn;
-  logic        sim_jtag_tdo;
-  logic [31:0] sim_jtag_exit;
+  // jtag openocd bridge signals
+  logic                                               sim_jtag_tck;
+  logic                                               sim_jtag_tms;
+  logic                                               sim_jtag_tdi;
+  logic                                               sim_jtag_trstn;
+  logic                                               sim_jtag_tdo;
+  logic                 [                  31:0]      sim_jtag_exit;
   //logic        sim_jtag_enable;
 
   // isolde_tcdm_if tcdm_debug_dmi ();
   // isolde_tcdm_if tcdm_debug_sbus ();
   // isolde_tcdm_if tcdm_debug_dmem ();
   // isolde_tcdm_if tcdm_debug_imem ();
-  jtag_pkg::jtag_req_t jtag_in;
-  jtag_pkg::jtag_rsp_t jtag_out;
-  logic [rv_dm_pkg::NrHarts-1:0] debug_req;
+  jtag_pkg::jtag_req_t                                jtag_in;
+  jtag_pkg::jtag_rsp_t                                jtag_out;
+  logic                 [rv_dm_pkg::NrHarts-1:0]      debug_req;
 
 
   localparam bit JTAG_BOOT = 1;
@@ -308,10 +308,10 @@ MEMORY
       .rsp_i       (noc_data_rsps)
   );
 
-   isolde_router #(
+  isolde_router #(
       .N_RULES(InstrNoRules),
       .ADDR_RANGES(instr_map)
-   ) i_isolde_instr_router (
+  ) i_isolde_instr_router (
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(tcdm_core_inst),
@@ -319,10 +319,10 @@ MEMORY
       .rsp_i       (noc_instr_rsps)
   );
 
-   isolde_router #(
+  isolde_router #(
       .N_RULES(DM_SBA_LAST_IDX),
       .ADDR_RANGES(dm_sba_map)
-   ) i_isolde_dm_sba_router (
+  ) i_isolde_dm_sba_router (
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(tcdm_dm_sba),
@@ -335,7 +335,7 @@ MEMORY
   /*******************************************************/
 
   assign tcdm_perfCountersSim.req = noc_data_reqs[MMIO_IDX];
-  assign noc_data_rsps[MMIO_IDX] = tcdm_perfCountersSim.rsp;
+  assign noc_data_rsps[MMIO_IDX]  = tcdm_perfCountersSim.rsp;
 
   perfCounters #(
       .MMIO_ADDR(MMIO_ADDR)
@@ -353,13 +353,13 @@ MEMORY
       endSimulation(tcdm_perfCountersSim.rsp.data);
     end
   end
-`endif 
+`endif
 
 `ifdef TARGET_RV_DEBUG
   /********************************************************/
   /**     JTAG simulation                                **/
   /*******************************************************/
-    SimJTAG #(
+  SimJTAG #(
       .TICK_DELAY(1),
       .PORT(OPENOCD_PORT)
   ) i_sim_jtag (
@@ -408,7 +408,7 @@ MEMORY
   ) i_tcdm_inter_dma_shim (
       //.tcdm_slave_i (tcdm_spm_narrow),
       .req_i(noc_data_reqs[SPM_IDX]),
-      .rsp_o(noc_data_rsps[SPM_IDX] ),
+      .rsp_o(noc_data_rsps[SPM_IDX]),
       .tcdm_master_o(tcdm_inter_dma)
   );
 
@@ -432,8 +432,8 @@ MEMORY
       .START_ADDR(IMEM_ADDR),  // Set start address
       .END_ADDR(IMEM_ADDR + GMEM_SIZE)  // Set end address
   ) i_dmem_shim (
-  .req_i(noc_data_reqs[DATA_IDX]),
-  .rsp_o(noc_data_rsps[DATA_IDX]),
+      .req_i(noc_data_reqs[DATA_IDX]),
+      .rsp_o(noc_data_rsps[DATA_IDX]),
       .tcdm_master_o(tcdm_dmemory_shim)
   );
 
@@ -453,7 +453,7 @@ MEMORY
       .START_ADDR(IMEM_ADDR),  // Set start address
       .END_ADDR(IMEM_ADDR + GMEM_SIZE)  // Set end address
   ) i_imem_shim (
-      .tcdm_slave_i(tcdm_imem_muxed),
+      .tcdm_slave_i (tcdm_imem_muxed),
       .tcdm_master_o(tcdm_imem_shim)
   );
 
@@ -475,8 +475,8 @@ MEMORY
       .START_ADDR(SMEM_ADDR),  // Set start address
       .END_ADDR(SMEM_ADDR + SMEM_SIZE)  // Set end address
   ) i_stack_mem_shim (
-       .req_i(noc_data_reqs[STACK_IDX]),
-       .rsp_o(noc_data_rsps[STACK_IDX]),
+      .req_i(noc_data_reqs[STACK_IDX]),
+      .rsp_o(noc_data_rsps[STACK_IDX]),
       .tcdm_master_o(tcdm_stack_shim)
   );
 
@@ -508,14 +508,14 @@ MEMORY
   isolde_mux_tcdm i_mux_dm_periph (
       .clk_i,
       .rst_ni,
-      .req_1_i(noc_data_reqs[DEBUG_IDX]),
-      .req_2_i(noc_instr_reqs[INSTR_DEBUG_IDX]),
-      .rsp_1_o(noc_data_rsps[DEBUG_IDX]),
-      .rsp_2_o(noc_instr_rsps[INSTR_DEBUG_IDX]),
+      .req_2_i(noc_data_reqs[DEBUG_IDX]),
+      .req_1_i(noc_instr_reqs[INSTR_DEBUG_IDX]),
+      .rsp_2_o(noc_data_rsps[DEBUG_IDX]),
+      .rsp_1_o(noc_instr_rsps[INSTR_DEBUG_IDX]),
       .tcdm_master_o(tcdm_dm_periph)
   );
 
-    isolde_mux_tcdm i_mux_dm_sb_imem (
+  isolde_mux_tcdm i_mux_dm_sb_imem (
       .clk_i,
       .rst_ni,
       .req_1_i(noc_dm_sba_reqs[DM_SBA_IMEM_IDX]),

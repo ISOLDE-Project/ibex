@@ -21,7 +21,7 @@ module isolde_addr_shim #(
     // Interface for CPU requests
     input isolde_tcdm_pkg::req_t req_i,
     output isolde_tcdm_pkg::rsp_t rsp_o,
-    isolde_tcdm_if.master  tcdm_master_o  // Interface for memory response
+    isolde_tcdm_if.master tcdm_master_o  // Interface for memory response
 );
 
   // Internal signals for validation
@@ -73,12 +73,13 @@ module isolde_addr_shim_wrp #(
     isolde_tcdm_if.slave  tcdm_slave_i,  // Interface for CPU requests
     isolde_tcdm_if.master tcdm_master_o  // Interface for memory response
 );
-isolde_addr_shim #(
-  .START_ADDR,
-  .END_ADDR ) i_isolde_addr_shim(
-    .req_i(tcdm_slave_i.req),
-    .rsp_o(tcdm_slave_i.rsp),
-    .tcdm_master_o
-);
+  isolde_addr_shim #(
+      .START_ADDR,
+      .END_ADDR
+  ) i_isolde_addr_shim (
+      .req_i(tcdm_slave_i.req),
+      .rsp_o(tcdm_slave_i.rsp),
+      .tcdm_master_o
+  );
 
 endmodule
