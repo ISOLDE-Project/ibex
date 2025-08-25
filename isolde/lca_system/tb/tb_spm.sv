@@ -265,10 +265,12 @@ MEMORY
 
   // === Data port ===
   isolde_tcdm_if tcdm_core_data ();
+  isolde_tcdm_if tcdm_dmem_muxed ();
   isolde_tcdm_if tcdm_dmemory_shim ();
   isolde_tcdm_if redmule_ctrl ();  // HWE peripheral  interface
 
   // === stack memory port ===
+  isolde_tcdm_if tcdm_stack_muxed ();
   isolde_tcdm_if tcdm_stack_shim ();
 
   // === instruction memory port ===
@@ -430,12 +432,11 @@ MEMORY
   /**     Data memory                                    **/
   /*******************************************************/
 
-  isolde_addr_shim #(
+ isolde_addr_shim_wrp  #(
       .START_ADDR(IMEM_ADDR),  // Set start address
       .END_ADDR(IMEM_ADDR + GMEM_SIZE)  // Set end address
   ) i_dmem_shim (
-      .req_i(noc_data_reqs[DATA_IDX]),
-      .rsp_o(noc_data_rsps[DATA_IDX]),
+      .tcdm_slave_i (tcdm_dmem_muxed),
       .tcdm_master_o(tcdm_dmemory_shim)
   );
 
@@ -473,12 +474,11 @@ MEMORY
   /**     Stack memory                                   **/
   /*******************************************************/
 
-  isolde_addr_shim #(
+  isolde_addr_shim_wrp #(
       .START_ADDR(SMEM_ADDR),  // Set start address
       .END_ADDR(SMEM_ADDR + SMEM_SIZE)  // Set end address
   ) i_stack_mem_shim (
-      .req_i(noc_data_reqs[STACK_IDX]),
-      .rsp_o(noc_data_rsps[STACK_IDX]),
+      .tcdm_slave_i (tcdm_stack_muxed),
       .tcdm_master_o(tcdm_stack_shim)
   );
 
@@ -526,6 +526,30 @@ MEMORY
       .rsp_2_o(noc_instr_rsps[INSTR_MEM_IDX]),
       .tcdm_master_o(tcdm_imem_muxed)
   );
+
+
+  isolde_mux_tcdm i_mux_dm_sb_dmem (
+      .clk_i,
+      .rst_ni,
+      .req_1_i(noc_dm_sba_reqs[DM_SBA_DMEM_IDX]),
+      .req_2_i(noc_data_reqs[DATA_IDX]),
+      .rsp_1_o(noc_dm_sba_rsps[DM_SBA_DMEM_IDX]),
+      .rsp_2_o(noc_data_rsps[DATA_IDX]),
+      .tcdm_master_o(tcdm_dmem_muxed)
+  );
+
+  isolde_mux_tcdm i_mux_dm_sb_stack (
+      .clk_i,
+      .rst_ni,
+      .req_1_i(noc_dm_sba_reqs[DM_SBA_SMEM_IDX]),
+      .req_2_i(noc_data_reqs[STACK_IDX]),
+      .rsp_1_o(noc_dm_sba_rsps[DM_SBA_SMEM_IDX]),
+      .rsp_2_o(noc_data_rsps[STACK_IDX]),
+      .tcdm_master_o(tcdm_stack_muxed)
+  );
+
+
+
 
   /********************************************************/
   /**     CV-X-IF                                        **/
