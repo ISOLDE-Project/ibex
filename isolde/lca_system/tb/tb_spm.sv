@@ -194,6 +194,7 @@ MEMORY
   logic                                               redmule_busy;
 
   logic                                               sim_exit;
+  logic                 [                  31:0]      sim_exit_code;
   MemStatisticsCallback                               mem_stats_cb;
 
   logic                 [                NC-1:0][1:0] evt;
@@ -344,13 +345,14 @@ MEMORY
       .rst_ni,
       .tcdm_slave_i(tcdm_perfCountersSim),
       .sim_exit_o(sim_exit),
+      .sim_exit_code_o(sim_exit_code),
       .mem_statistics_cb(mem_stats_cb)
 
   );
 `ifndef TARGET_RV_DEBUG
   always_comb begin
     if (sim_exit) begin
-      endSimulation(tcdm_perfCountersSim.rsp.data);
+      endSimulation(sim_exit_code);
     end
   end
 `endif
@@ -377,7 +379,7 @@ MEMORY
   );
 
   always_comb begin : jtag_exit_handler
-    if (sim_jtag_exit) endSimulation(tcdm_perfCountersSim.rsp.data);
+    if (sim_jtag_exit) endSimulation(sim_exit_code);
   end
 `endif
 
