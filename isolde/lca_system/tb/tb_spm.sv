@@ -210,12 +210,7 @@ MEMORY
   logic                                               sim_jtag_trstn;
   logic                                               sim_jtag_tdo;
   logic                 [                  31:0]      sim_jtag_exit;
-  //logic        sim_jtag_enable;
 
-  // isolde_tcdm_if tcdm_debug_dmi ();
-  // isolde_tcdm_if tcdm_debug_sbus ();
-  // isolde_tcdm_if tcdm_debug_dmem ();
-  // isolde_tcdm_if tcdm_debug_imem ();
   jtag_pkg::jtag_req_t                                jtag_in;
   jtag_pkg::jtag_rsp_t                                jtag_out;
   logic                 [rv_dm_pkg::NrHarts-1:0]      debug_req;
@@ -282,6 +277,9 @@ MEMORY
   isolde_tcdm_if tcdm_dm_periph ();
   isolde_tcdm_if tcdm_dm_sba ();
 
+  // === Scratchpad memory(SPM) ports ===
+  isolde_tcdm_if tcdm_spm_dma ();
+  isolde_tcdm_if tcdm_spm_dma_muxed ();
 
   // === Performermance counters & simulation control===
   isolde_tcdm_if tcdm_perfCountersSim ();
@@ -389,8 +387,6 @@ MEMORY
   /**     TCDM                                           **/
   /*******************************************************/
 
-  isolde_tcdm_if tcdm_inter_dma ();
-
   // === Memory banks ===
   generate
     for (genvar i = 0; i < N_TCDM_BANKS; i++) begin : gen_mem
@@ -406,14 +402,12 @@ MEMORY
     end
   endgenerate
 
-  isolde_addr_shim #(
+  isolde_addr_shim_wrp #(
       .START_ADDR(SPM_NARROW_ADDR),  // Set start address
       .END_ADDR(SPM_NARROW_ADDR + SPM_NARROW_SIZE)  // Set end address
-  ) i_tcdm_inter_dma_shim (
-      //.tcdm_slave_i (tcdm_spm_narrow),
-      .req_i(noc_data_reqs[SPM_IDX]),
-      .rsp_o(noc_data_rsps[SPM_IDX]),
-      .tcdm_master_o(tcdm_inter_dma)
+  ) i_tcdm_spm_dma_shim (
+      .tcdm_slave_i (tcdm_spm_dma_muxed),
+      .tcdm_master_o(tcdm_spm_dma)
   );
 
   isolde_tcdm_interconnect #(
@@ -423,7 +417,7 @@ MEMORY
       .clk_i,
       .rst_ni,
       .s_hci_core (redmule_hci),
-      .s_tcdm_core(tcdm_inter_dma),
+      .s_tcdm_core(tcdm_spm_dma),
       .mem_req_o  (mem_req),
       .mem_rsp_i  (mem_rsp)
   );
@@ -432,7 +426,7 @@ MEMORY
   /**     Data memory                                    **/
   /*******************************************************/
 
- isolde_addr_shim_wrp  #(
+  isolde_addr_shim_wrp #(
       .START_ADDR(IMEM_ADDR),  // Set start address
       .END_ADDR(IMEM_ADDR + GMEM_SIZE)  // Set end address
   ) i_dmem_shim (
@@ -549,7 +543,15 @@ MEMORY
   );
 
 
-
+  isolde_mux_tcdm i_mux_dm_sb_spm (
+      .clk_i,
+      .rst_ni,
+      .req_1_i(noc_dm_sba_reqs[DM_SBA_SPM_IDX]),
+      .req_2_i(noc_data_reqs[SPM_IDX]),
+      .rsp_1_o(noc_dm_sba_rsps[DM_SBA_SPM_IDX]),
+      .rsp_2_o(noc_data_rsps[SPM_IDX]),
+      .tcdm_master_o(tcdm_spm_dma_muxed)
+  );
 
   /********************************************************/
   /**     CV-X-IF                                        **/
