@@ -51,8 +51,8 @@ endclass
 
 module tb_aida;
 
-  logic clk_i, rst_ni, fetch_enable_i; 
-  
+  logic clk_i, rst_ni, fetch_enable_i;
+
   import redmule_pkg::*;
   import isolde_tcdm_pkg::*;
   import aida_lca_package::*;
@@ -102,6 +102,27 @@ module tb_aida;
   localparam int unsigned OPENOCD_PORT = 9999;
 
 
+
+
+
+
+
+
+  /********************************************************/
+  /**           VERILATOR BUG                            **/
+  /*******************************************************/
+
+  //hwpe_ctrl_intf_periph #(.ID_WIDTH(ID)) periph (.clk(clk_i));
+  /**
+  * Bug in Verilator?! 
+  * Verilator 5.036 2025-04-27 rev v5.036
+  %Error-UNSUPPORTED: /home/dan/ibex/isolde/lca_system/.bender/git/checkouts/hwpe-stream-8301a9eab8e707b9/rtl/tcdm/hwpe_stream_tcdm_fifo_store.sv:82:32: Unsupported: Interfaced port on top level module
+   82 |   hwpe_stream_intf_tcdm.slave  tcdm_slave,
+      |                                ^~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=5.036
+  %Error: /home/dan/ibex/isolde/lca_system/.bender/git/checkouts/hwpe-stream-8301a9eab8e707b9/rtl/tcdm/hwpe_stream_tcdm_fifo_store.sv:82:3: Parent instance's interface is not found: 'hwpe_stream_intf_tcdm'
+* FIX: declare a dummy hwpe_stream_intf_tcdm variable
+*/
   hwpe_stream_intf_tcdm dummy_intf (
       .clk(clk_i)
   );  // dummy interface for hwpe_stream_tcdm_fifo_store
@@ -278,5 +299,60 @@ module tb_aida;
     if (errors != 0) begin
       $display("[TB LCA] @ t=%0t - Fail!", $time);
       //      $error("[TB LCA] @ t=%0t - errors=%08x", $time, errors);
-      $display("[TB LCA] @ t=%0t - errors
+      $display("[TB LCA] @ t=%0t - errors=%08x", $time, errors);
+    end else begin
+      $display("[TB LCA] @ t=%0t - Success!", $time);
+      $display("[TB LCA] @ t=%0t - errors=%08x", $time, errors);
+    end
+    $fwrite(fh, "[TB LCA] @ t=%0t - writes[imemory] =%d\n", $time,
+            tb_aida.i_dummy_imemory.cnt_wr);
+    $fwrite(fh, "[TB LCA] @ t=%0t - reads [imemory] =%d\n", $time,
+            tb_aida.i_dummy_imemory.cnt_rd);
+    //
+    $fwrite(fh, "[TB LCA] @ t=%0t - writes[dmemory] =%d\n", $time,
+            tb_aida.i_dummy_dmemory.cnt_wr);
+    $fwrite(fh, "[TB LCA] @ t=%0t - reads [dmemory] =%d\n", $time,
+            tb_aida.i_dummy_dmemory.cnt_rd);
+    //
+    $fwrite(fh, "[TB LCA] @ t=%0t - writes[stack] =%d\n", $time,
+            tb_aida.i_dummy_stack_memory.cnt_wr);
+    $fwrite(fh, "[TB LCA] @ t=%0t - reads [stack] =%d\n", $time,
+            tb_aida.i_dummy_stack_memory.cnt_rd);
+
+    $finish;
+  endtask
+
+
+  initial begin
+    integer id;
+    int cnt_rd, cnt_wr;
+    MyCallback i_callback = new(IMEM_LATENCY);
+    mem_stats_cb = i_callback;
+    fh = $fopen("rtl_debug_trace.log", "w");
+
+    // Load instruction and data memory
+    if (!$value$plusargs("STIM_INSTR=%s", stim_instr)) begin
+      $display("No STIM_INSTR specified");
+      $finish;
+    end else begin
+      $display("[TESTBENCH] @ t=%0t: loading %0s into imemory", $time, stim_instr);
+      $readmemh(stim_instr, tb_aida.i_dummy_imemory.memory);
+    end
+
+    if (!$value$plusargs("STIM_DATA=%s", stim_data)) begin
+      $display("No STIM_DATA specified");
+      $finish;
+    end else begin
+      $display("[TESTBENCH] @ t=%0t: loading %0s into dmemory", $time, stim_data);
+      $readmemh(stim_data, tb_aida.i_dummy_dmemory.memory);
+    end
+
+
+  end
+
+  // close output file for writing
+  final begin
+    $fclose(fh);
+  end
+endmodule  // tb_aida
 
