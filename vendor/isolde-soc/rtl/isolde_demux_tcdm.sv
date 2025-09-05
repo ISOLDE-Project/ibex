@@ -19,9 +19,9 @@ module isolde_demux_tcdm #(
     input logic rst_ni,
     input tb_rule_t [1:0] mem_map_i,
 
-    input  isolde_tcdm_if.slave  tcdm_slave_i,
-    output isolde_tcdm_if.master tcdm_master_o1,
-    output isolde_tcdm_if.master tcdm_master_o2
+    isolde_tcdm_if.slave  tcdm_slave_i,
+    isolde_tcdm_if.master tcdm_master_o1,
+    isolde_tcdm_if.master tcdm_master_o2
 );
 
   typedef logic [1:0] rule_idx_t;

@@ -74,8 +74,8 @@ module isolde_addr_shim_wrp #(
     isolde_tcdm_if.master tcdm_master_o  // Interface for memory response
 );
   isolde_addr_shim #(
-      .START_ADDR,
-      .END_ADDR
+      .START_ADDR(START_ADDR),
+      .END_ADDR(END_ADDR)
   ) i_isolde_addr_shim (
       .req_i(tcdm_slave_i.req),
       .rsp_o(tcdm_slave_i.rsp),

@@ -37,6 +37,8 @@ module isolde_redmule_top
     isolde_cv_x_if       core_xif
 `elsif TARGET_REDMULE_HWPE
     isolde_tcdm_if.slave s_tcdm_ctrl
+`else
+    isolde_tcdm_if.slave s_tcdm_ctrl // to be edited: duplicated only for passing lint
 `endif
 );
 
