@@ -10,7 +10,7 @@ module perfCounters #(
     isolde_tcdm_if.slave tcdm_slave_i,
     output logic sim_exit_o,
     output logic [31:0] sim_exit_code_o,
-    MemStatisticsCallback mem_statistics_cb
+    ref MemStatisticsCallback mem_statistics_cb
 );
 
   // Internal MMIO address mapping

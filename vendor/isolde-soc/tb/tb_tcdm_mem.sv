@@ -15,17 +15,13 @@ module tb_tcdm_mem #(
 
   logic [ 7:0] memory                                               [MEMORY_SIZE];
 
-
-
-
-
   logic [ 1:0] misalignment;
   logic [31:0] index;
   // Programmable delay counters for each read port
   logic [31:0] delay_counter;  // Delay counter for each memory port
 
-  int          cnt_wr = 0;
-  int          cnt_rd = 0;
+  int          cnt_wr;
+  int          cnt_rd;
 
   // Generate block for each memory port
 
@@ -63,6 +59,8 @@ module tb_tcdm_mem #(
     if (~rst_ni) begin
       tcdm_slave_i.rsp.data  <= '0;
       tcdm_slave_i.rsp.valid <= '0;
+      cnt_wr <= 0;
+      cnt_rd <= 0;
     end else begin
 
       if (tcdm_slave_i.rsp.gnt) begin

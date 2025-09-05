@@ -19,17 +19,13 @@ module tb_sram_mem #(
 
   logic [        7:0]       memory                                               [MEMORY_SIZE];
 
-
-
-
-
   logic [N_PORTS-1:0][ 1:0] misalignment;
   logic [N_PORTS-1:0][31:0] index;
   // Programmable delay counters for each read port
   logic [N_PORTS-1:0][31:0] delay_counter;  // Delay counter for each memory port
 
-  int                       cnt_wr = 0;
-  int                       cnt_rd = 0;
+  int                       cnt_wr;
+  int                       cnt_rd;
 
   // Generate block for each memory port
 
@@ -77,10 +73,12 @@ module tb_sram_mem #(
         if (~rst_ni) begin
           rsp_o[i].data  <= '0;
           rsp_o[i].valid <= '0;
+          cnt_wr <= 0;
+          cnt_rd <= 0;
         end else begin
 
           if (rsp_o[i].gnt) begin
-            rsp_o[i].gnt <= 0;
+            //rsp_o[i].gnt <= 0;
             delay_counter[i] <= DELAY_CYCLES;
             if (req_i[i].we) begin  // Write
               cnt_wr += 1;
