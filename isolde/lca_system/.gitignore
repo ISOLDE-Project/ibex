@@ -11,4 +11,5 @@ tmp/
 *.back/
 *.back
 *.hex
+ibex_synth.tcl
 

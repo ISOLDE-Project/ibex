@@ -45,3 +45,4 @@ tmp/
 *.bin
 doc/06_misc/gant.ipynb
 .~lock.*
+vivado.jou

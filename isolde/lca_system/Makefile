@@ -11,6 +11,7 @@ BUILD_DIR           := build/$(IBEX_CONFIG)
 SYNTH_DIR           := synth/$(IBEX_CONFIG)
 TMP_DIR             := tmp/$(IBEX_CONFIG)
 FUSESOC_BUILD_ROOT  :=$(mkfile_path)/$(TMP_DIR)
+FUSESOC_SYNTH_ROOT  :=$(mkfile_path)/$(SYNTH_DIR)
 FUSESOC_PROJECT     := isolde
 FUSESOC_CORE        := ibex
 FUSESOC_SYSTEM      := lca_dm_system
