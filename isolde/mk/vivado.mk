@@ -8,7 +8,7 @@
 
 # Clean all build directories and temporary files for vivado
 vivado-clean: 
-	rm -f ibex_synth.tcl
+	rm -f ibex_synth.tcl isolde_synth.tcl vivado_synth.tcl
 ##
 CORE_FILES := $(filter %.core,$(wildcard $(mkfile_path)/*))
 CORE_FILES += $(filter %.core,$(wildcard $(ROOT_DIR)/*))
@@ -24,9 +24,10 @@ ibex_synth.tcl:  $(CORE_FILES)
 	touch $@
 ##
 
-vivado_synth.flist: Bender.yml
+vivado_synth.tcl: ibex_synth.tcl  Bender.yml 
 	@echo 'INFO:  bender script vivado $(common_targs) $(VLT_BENDER)'
-	@$(BENDER) script vivado $(common_targs) $(VLT_BENDER)  >$@
+	@$(BENDER) script vivado $(common_targs) $(VLT_BENDER) >isolde_synth.tcl
+	cat ibex_synth.tcl isolde_synth.tcl >$@
 	touch $@
 
 # synth-setup:
