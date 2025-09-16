@@ -16,8 +16,8 @@ module isolde_tcdm_interconnect #(
 ) (
     input logic clk_i,  // Clock input, positive edge triggered
     input logic rst_ni,  // Asynchronous reset, active low
-    input hci_core_intf.slave s_hci_core,  // hwe slave interface
-    input isolde_tcdm_if.slave s_tcdm_core,  // core slave interface, higher prio
+    hci_core_intf.slave s_hci_core,  // hwe slave interface
+    isolde_tcdm_if.slave s_tcdm_core,  // core slave interface, higher prio
     output isolde_tcdm_pkg::req_t mem_req_o[N_TCDM_BANKS-1:0],
     input isolde_tcdm_pkg::rsp_t mem_rsp_i[N_TCDM_BANKS-1:0]
 
@@ -30,9 +30,9 @@ module isolde_tcdm_interconnect #(
   //
 
   isolde_hci_interconnect #(
-      .ALIGN,
-      .ALIGNMENT,
-      .HCI_DW
+      .ALIGN(ALIGN),
+      .ALIGNMENT(ALIGNMENT),
+      .HCI_DW(HCI_DW)
   ) i_hci_interconnect (
       .clk_i,
       .rst_ni,

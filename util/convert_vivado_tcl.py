@@ -30,7 +30,7 @@ def main():
 
     # Write output file
     with open(args.output_file, "w") as f:
-        f.write(f'set_property source_mgmt_mode None [current_project]\n')
+        #f.write(f'set_property source_mgmt_mode None [current_project]\n')
         f.write(f'{property_generic}\n')
         f.write(f'set ROOT_IBEX "{args.root}"\n')
         f.write("add_files -norecurse -fileset [current_fileset] [list \\\n")
@@ -50,7 +50,7 @@ def main():
                     converted_paths.append(f"$ROOT_IBEX/{p}")
 
             new_include_line = (
-                f"set_property include_dirs [list {' '.join(converted_paths)}] [get_filesets sources_1]"
+                f"set ibex_include_dirs [list {' '.join(converted_paths)}] "
             )
             f.write(new_include_line + "\n")
 

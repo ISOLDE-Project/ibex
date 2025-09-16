@@ -9,7 +9,7 @@ module isolde_router
 ) (
     input logic clk_i,
     input logic rst_ni,
-    input isolde_tcdm_if.slave tcdm_slave_i,
+    isolde_tcdm_if.slave tcdm_slave_i,
     output isolde_tcdm_pkg::req_t req_o[N_RULES],
     input isolde_tcdm_pkg::rsp_t rsp_i[N_RULES]
 

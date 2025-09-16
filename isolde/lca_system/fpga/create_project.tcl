@@ -5,8 +5,8 @@ source ./board/xilinx.cfg
 
 
 if { ![info exists ::project] } {
-  puts "project name is not defined"
-  exit(0)
+    puts "ERROR: Project name is not defined"
+    exit 1
 }
 
 
@@ -15,8 +15,7 @@ set scripts_vivado_version 2022.1
 set current_vivado_version [version -short]
 
 if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
-  puts ""
-  catch { "CRITICAL WARNING: This script was generated using Vivado <$scripts_vivado_version> and is being run in <$current_vivado_version> of Vivado"}
+  puts "CRITICAL WARNING: This script was generated for Vivado $scripts_vivado_version but is running in $current_vivado_version"
 }
 
 namespace eval _tcl {
@@ -52,6 +51,17 @@ set_property -name "board_part"         -value ${_board_part_}        -objects $
 set_property -name "platform.board_id"  -value ${_platform_board_id_} -objects $obj
 
 source ./vivado_synth.tcl
-#set_property top top_isolde_ip [current_fileset]
-#set_property top snitch_cluster_wrapper [current_fileset]
+
+# Get current include_dirs from the active fileset
+set current_dirs [get_property include_dirs [current_fileset]]
+
+# Prepend ibex_include_dirs to the current ones
+set new_include_dirs [concat $ibex_include_dirs $current_dirs]
+
+# Update the property
+set_property include_dirs $new_include_dirs [current_fileset]
+
+set_property top ibex_top [current_fileset]
+#set_property top  [current_fileset]
+set_property source_mgmt_mode None [current_project]
 update_compile_order -fileset sources_1

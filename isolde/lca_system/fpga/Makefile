@@ -10,16 +10,17 @@ vivado_synth.tcl: Makefile.vivado
 	make -f  Makefile.vivado \
 	         FUSESOC_SYNTH_ROOT=$(FPGA_PATH) \
 			 BENDER_RTL_ROOT=$(SYS_PATH) \
-	                vivado-clean $@
+	         $@
 
 
 .PHONY: vivado-prj
-vivado-prj: vivado_synth.tcl
-	vivado -mode batch -source ./create_project.tcl 
+vivado-prj: vivado_synth.tcl	
+	vivado -mode batch -source ./create_project.tcl  ./run_linter.tcl
 
 .PHONY: clean
 clean:
 	- make -f Makefile.vivado vivado-clean || true
+	rm -fr vivado
 	rm -f  Makefile.vivado *.jou *.log
 
 Makefile.vivado: $(SYS_MAKEFILE)

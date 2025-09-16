@@ -28,7 +28,7 @@ ibex_synth.tcl:  $(CORE_FILES)
 vivado_synth.tcl: ibex_synth.tcl  $(BENDER_RTL_ROOT)/Bender.yml 
 	@echo 'INFO:  bender script vivado $(common_targs) $(VLT_BENDER)'
 	@$(BENDER) script vivado $(common_targs) $(VLT_BENDER) >isolde_synth.tcl
-	cat ibex_synth.tcl isolde_synth.tcl >$@
+	cat  ibex_synth.tcl isolde_synth.tcl >$@
 	touch $@
 
 # synth-setup:
