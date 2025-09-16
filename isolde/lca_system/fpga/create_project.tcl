@@ -61,7 +61,7 @@ set new_include_dirs [concat $ibex_include_dirs $current_dirs]
 # Update the property
 set_property include_dirs $new_include_dirs [current_fileset]
 
-set_property top ibex_top [current_fileset]
-#set_property top  [current_fileset]
+#set_property top ibex_top [current_fileset]
+set_property top  aida_lca [current_fileset]
 set_property source_mgmt_mode None [current_project]
 update_compile_order -fileset sources_1

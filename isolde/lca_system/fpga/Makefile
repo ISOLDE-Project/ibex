@@ -8,6 +8,7 @@ all: vivado-prj
 
 vivado_synth.tcl: Makefile.vivado
 	make -f  Makefile.vivado \
+			 DBG_MODULE=1 ENABLE_SPM=1 \
 	         FUSESOC_SYNTH_ROOT=$(FPGA_PATH) \
 			 BENDER_RTL_ROOT=$(SYS_PATH) \
 	         $@

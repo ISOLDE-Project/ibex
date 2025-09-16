@@ -11,4 +11,4 @@ set_msg_config -severity {WARNING} -suppress ;# suppress all warnings
 
 synth_design -top $top_name -part $part -lint 
 
-reset_msg_config
+#reset_msg_config -all

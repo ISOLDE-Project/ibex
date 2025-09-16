@@ -10,9 +10,9 @@ module isolde_redmule_top
   //import cv32e40x_pkg::*;
   //import fpnew_pkg::*;
   //import hci_package::*;
- // import redmule_pkg::*;
-  //import hwpe_ctrl_package::*;
-  //import hwpe_stream_package::*;
+  import redmule_pkg::*;
+//import hwpe_ctrl_package::*;
+//import hwpe_stream_package::*;
 #(
     parameter int unsigned ID_WIDTH = 8,
     parameter int unsigned N_CORES = 8,
