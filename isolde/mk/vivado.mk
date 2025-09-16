@@ -9,6 +9,7 @@
 # Clean all build directories and temporary files for vivado
 vivado-clean: 
 	rm -f ibex_synth.tcl isolde_synth.tcl vivado_synth.tcl
+	rm -fr synth-vivado 
 ##
 CORE_FILES := $(filter %.core,$(wildcard $(mkfile_path)/*))
 CORE_FILES += $(filter %.core,$(wildcard $(ROOT_DIR)/*))

@@ -1,13 +1,30 @@
 ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
-fpga_path           := $(ROOT_DIR)/isolde/lca_system/fpga
+FPGA_PATH           := $(ROOT_DIR)/isolde/lca_system/fpga
+SYS_PATH            := $(ROOT_DIR)/isolde/lca_system
+SYS_MAKEFILE        := $(ROOT_DIR)/isolde/lca_system/Makefile
 
-all:
-	make -C $(ROOT_DIR)/isolde/lca_system \
-	         FUSESOC_SYNTH_ROOT=$(fpga_path) \
-			 BENDER_RTL_ROOT=$(ROOT_DIR)/isolde/lca_system \
-	                vivado-clean vivado_synth.tcl
+
+all: vivado-prj
+
+vivado_synth.tcl: Makefile.vivado
+	make -f  Makefile.vivado \
+	         FUSESOC_SYNTH_ROOT=$(FPGA_PATH) \
+			 BENDER_RTL_ROOT=$(SYS_PATH) \
+	                vivado-clean $@
+
+
+.PHONY: vivado-prj
+vivado-prj: vivado_synth.tcl
+	vivado -mode batch -source ./create_project.tcl 
 
 .PHONY: clean
 clean:
-	rm -fr synth-vivado
-	rm -f  ibex_synth.tcl
+	- make -f Makefile.vivado vivado-clean || true
+	rm -f  Makefile.vivado *.jou *.log
+
+Makefile.vivado: $(SYS_MAKEFILE)
+	cp $< $@
+
+.PHONY: cfg-zcu104
+cfg-zcu104:
+	cp board/xilinx_zcu104.cfg board/xilinx.cfg
