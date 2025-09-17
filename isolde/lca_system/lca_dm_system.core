@@ -9,8 +9,11 @@ filesets:
     depend:
       - isolde:ibex:lca_system_core
       - isolde:dv_verilator:debug_module_verilator
-#     - isolde:dv_verilator:verilator_main
-#     - isolde:dv_verilator:verilator_main_withTimeout
+
+  files_synth:
+    depend:
+      - lowrisc:prim:fifo
+      - isolde:ibex:lca_system_core
       
 
 parameters:
@@ -185,7 +188,7 @@ targets:
     <<: *default_target
     default_tool: vivado
     filesets_append:
-      - files_simple_system
+      - files_synth
     toplevel: ibex_top
     tools:
       vivado:

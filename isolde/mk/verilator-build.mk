@@ -24,7 +24,7 @@ endif
 
 .PHONY: veri-clean 
 
-# Clean all build directories and temporary files for Questasim simulation
+# Clean all build directories and temporary files for verilator simulation
 veri-clean: 
 	rm -f *.flist
 	rm -fr log/$(VLT_TOP_MODULE) 
@@ -35,23 +35,11 @@ veri-clean:
 									 $@
 	rm -fr $(FUSESOC_BUILD_ROOT) 
 
-#verilate: $(BIN_DIR)/verilator_executable
 
 ##
-
 CORE_FILES := $(filter %.core,$(wildcard $(mkfile_path)/*))
 CORE_FILES += $(filter %.core,$(wildcard $(ROOT_DIR)/*))
 CORE_FILE_NAMES := $(notdir $(CORE_FILES))
-
-fusesoc_ignore: $(ROOT_DIR)/isolde/tca_system/.bender/FUSESOC_IGNORE $(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE
-
-$(ROOT_DIR)/isolde/tca_system/.bender/FUSESOC_IGNORE:
-	@if [ ! -f $@ ]; then touch $@; fi
-
-$(ROOT_DIR)/vendor/redmule/FUSESOC_IGNORE:
-	@if [ ! -f $@ ]; then touch $@; fi
-
-
 
 ibex_sim.flist:  $(CORE_FILES)
 	@echo $(CORE_FILE_NAMES)

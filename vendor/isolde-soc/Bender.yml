@@ -28,7 +28,7 @@ sources:
     ##level 2
     - rtl/hwe/isolde_redmule_top.sv
     - rtl/noc/isolde_router.sv
-    - target: any(tb_dm,redmule_test_hwpe)
+    - target: all(tb_dm,redmule_test_hwpe)
       files:
         - tb/tb_tcdm_mem.sv
         - tb/monitor/perfCounters.sv

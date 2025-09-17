@@ -342,16 +342,21 @@ module aida_lca
       .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
   ) itf_core_xif ();
 
+`ifdef SIMULATION
   xif_monitor_cpu_issue xif_monitor_cpu_issue_i (
       clk_i,
       itf_core_xif
   );
+`endif
 
   /********************************************************/
   /**     IBEX core                                     **/
   /*******************************************************/
-
+`ifdef SIMULATION
   ibex_top_tracing #(
+`else    
+  ibex_top #(
+`endif   
       .SecureIbex      (SecureIbex),
       .ICacheScramble  (ICacheScramble),
       .PMPEnable       (PMPEnable),
@@ -453,6 +458,7 @@ module aida_lca
       .m_hci_core    (redmule_hci),
       .s_tcdm_ctrl   (redmule_ctrl)
   );
+ `ifdef SIMULATION 
   isolde_hci_monitor #(
       .AW  (HCI_AW),
       .DW  (HCI_DW),
@@ -462,5 +468,6 @@ module aida_lca
       .rst_ni,
       .hci_core(redmule_hci)
   );
+`endif
 
 endmodule

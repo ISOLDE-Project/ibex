@@ -10,9 +10,9 @@ module isolde_redmule_top
   //import cv32e40x_pkg::*;
   //import fpnew_pkg::*;
   //import hci_package::*;
- // import redmule_pkg::*;
-  //import hwpe_ctrl_package::*;
-  //import hwpe_stream_package::*;
+  import redmule_pkg::*;
+//import hwpe_ctrl_package::*;
+//import hwpe_stream_package::*;
 #(
     parameter int unsigned ID_WIDTH = 8,
     parameter int unsigned N_CORES = 8,
@@ -47,7 +47,7 @@ module isolde_redmule_top
   logic s_clk, s_clk_en;
 
 `ifdef TARGET_REDMULE_HWPE
-  hwpe_ctrl_intf_periph periph (.clk(clk_i));
+  hwpe_ctrl_intf_periph#( .ID_WIDTH  (ID_WIDTH) )  periph (.clk(clk_i));
 
   always_comb begin : bind_periph
     periph.req = s_tcdm_ctrl.req.req;

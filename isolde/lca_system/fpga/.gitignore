@@ -1,0 +1,6 @@
+board/xilinx.cfg
+Makefile.vivado
+synth-vivado/
+vivado/
+*.jou
+*.log

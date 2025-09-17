@@ -10,7 +10,9 @@ test-program        ?= $(TEST_BIN_DIR)/$(TEST)
 BUILD_DIR           := build/$(IBEX_CONFIG)
 SYNTH_DIR           := synth/$(IBEX_CONFIG)
 TMP_DIR             := tmp/$(IBEX_CONFIG)
-FUSESOC_BUILD_ROOT  :=$(mkfile_path)/$(TMP_DIR)
+FUSESOC_BUILD_ROOT  := $(mkfile_path)/$(TMP_DIR)
+FUSESOC_SYNTH_ROOT  ?= $(mkfile_path)/$(SYNTH_DIR)
+BENDER_RTL_ROOT     ?= $(mkfile_path)
 FUSESOC_PROJECT     := isolde
 FUSESOC_CORE        := ibex
 FUSESOC_SYSTEM      := lca_dm_system
@@ -65,10 +67,10 @@ common_targs +=  $(tb_target)
 
 
 
-include ../mk/redmule.mk
-include ../mk/sw-build.mk
-include ../mk/verilator-build.mk
-include ../mk/vivado.mk
+include $(mkfile_path)/../mk/redmule.mk
+include $(mkfile_path)/../mk/sw-build.mk
+include $(mkfile_path)/../mk/verilator-build.mk
+include $(mkfile_path)/../mk/vivado.mk
 
 
 
