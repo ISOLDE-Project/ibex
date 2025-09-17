@@ -47,7 +47,7 @@ module isolde_redmule_top
   logic s_clk, s_clk_en;
 
 `ifdef TARGET_REDMULE_HWPE
-  hwpe_ctrl_intf_periph periph (.clk(clk_i));
+  hwpe_ctrl_intf_periph#( .ID_WIDTH  (ID_WIDTH) )  periph (.clk(clk_i));
 
   always_comb begin : bind_periph
     periph.req = s_tcdm_ctrl.req.req;
