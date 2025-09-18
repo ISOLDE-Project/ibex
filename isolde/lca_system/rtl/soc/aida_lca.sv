@@ -24,8 +24,8 @@ module aida_lca
     parameter bit          ICacheScramble   = 1'b0,
     parameter lfsr_seed_t  RndCnstLfsrSeed  = RndCnstLfsrSeedDefault,
     parameter lfsr_perm_t  RndCnstLfsrPerm  = RndCnstLfsrPermDefault,
-    parameter int unsigned DmHaltAddr       = 32'h1A110800,
-    parameter int unsigned DmExceptionAddr  = 32'h1A110808
+    parameter int unsigned DmHaltAddr       = 32'h1A11_0800,
+    parameter int unsigned DmExceptionAddr  = 32'h1A11_0808
 ) (
     input  logic                  clk_i,
     input  logic                  rst_ni,
@@ -73,9 +73,9 @@ module aida_lca
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
       '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
       '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + SPM_NARROW_SIZE}
-      //`ifdef TARGET_RV_DEBUG
+`ifdef TARGET_RV_DEBUG
       , '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
-  //`endif
+`endif
   };
 
 `ifdef TARGET_RV_DEBUG
@@ -374,8 +374,8 @@ module aida_lca
       .WritebackStage  (WritebackStage),
       .BranchPredictor (BranchPredictor),
       .DbgTriggerEn    (DbgTriggerEn),
-      .DmHaltAddr      (32'h1A11_0800),     //TODO make a param here
-      .DmExceptionAddr (32'h1A11_0808)      //TODO make a param here
+      .DmHaltAddr      (DmHaltAddr),  
+      .DmExceptionAddr (DmExceptionAddr)
   ) i_ibex_tracing (
       .clk_i (clk_i),
       .rst_ni(rst_ni),
@@ -458,7 +458,8 @@ module aida_lca
       .m_hci_core    (redmule_hci),
       .s_tcdm_ctrl   (redmule_ctrl)
   );
- `ifdef SIMULATION 
+
+`ifdef SIMULATION 
   isolde_hci_monitor #(
       .AW  (HCI_AW),
       .DW  (HCI_DW),
