@@ -7,7 +7,13 @@
 module aida_top (
     input logic clk_i,
     input logic rst_ni,
-    input logic fetch_enable_i
+    input logic fetch_enable_i,
+    // JTAG signals (connets to  debug TAP)
+    input logic                 jtag_tck_i,
+    input logic                 jtag_trst_ni,
+    input logic                 jtag_tms_i,
+    input logic                 jtag_tdi_i,
+    output logic                jtag_tdo_o
 
 );
   import redmule_pkg::*;

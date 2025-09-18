@@ -26,3 +26,6 @@ sources:
    - target: all (spm, redmule_hwpe, rtl, redmule_test_hwpe)
      files:
        - tb/tb_spm.sv
+   - target: xilinx
+     files:
+      - fpga/rtl/xilinx_aida.v
