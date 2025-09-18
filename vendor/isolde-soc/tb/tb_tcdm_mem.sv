@@ -101,3 +101,29 @@ module tb_tcdm_mem #(
 
 
 endmodule  // tb_tcdm_verilator
+
+module tb_tcdm_mem_wrp #(
+    parameter BASE_ADDR = 0,  // Base address for memory access (default 0)
+    parameter MEMORY_SIZE = 1024,  // Size of the memory (default 1024 entries)
+    parameter DELAY_CYCLES = 0  // Number of clock cycles to delay  operations (default 2)
+) (
+    input  logic                  clk_i,
+    input  logic                  rst_ni,
+    input  isolde_tcdm_pkg::req_t req_i,
+    output isolde_tcdm_pkg::rsp_t rsp_o
+);
+  isolde_tcdm_if tcdm_slave ();
+  assign tcdm_slave.req = req_i;
+  assign rsp_o          = tcdm_slave.rsp;
+
+  tb_tcdm_mem #(
+      .BASE_ADDR(BASE_ADDR),
+      .MEMORY_SIZE(MEMORY_SIZE),
+      .DELAY_CYCLES(DELAY_CYCLES)
+  ) u_tcdm_mem (
+      .clk_i(clk_i),
+      .rst_ni(rst_ni),
+      .tcdm_slave_i(tcdm_slave)
+  );
+
+endmodule

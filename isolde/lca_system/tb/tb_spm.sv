@@ -99,14 +99,9 @@ module tb_lca_system (
   logic                 [                  31:0] sim_jtag_exit;
   jtag_pkg::jtag_req_t                           jtag_in;
   jtag_pkg::jtag_rsp_t                           jtag_out;
-  logic                 [rv_dm_pkg::NrHarts-1:0] debug_req;
+  
   // === JTAG simulation parameters
   localparam int unsigned OPENOCD_PORT = 9999;
-
-
-
-
-
 
 
 
@@ -241,13 +236,19 @@ module tb_lca_system (
   generate
     for (genvar i = 0; i < N_TCDM_BANKS; i++) begin : gen_mem
       // Instantiate memory bank
-      tb_sram_mem #(
-          .ID(i)
-      ) i_bank (
-          .clk_i,
-          .rst_ni,
-          .req_i(mem_req[i:i]),
-          .rsp_o(mem_rsp[i:i])
+      // tb_sram_mem #(
+      //     .ID(i)
+      // ) i_bank (
+      //     .clk_i,
+      //     .rst_ni,
+      //     .req_i(mem_req[i:i]),
+      //     .rsp_o(mem_rsp[i:i])
+      // );
+      tb_tcdm_mem_wrp #() i_bank (
+          .clk_i (clk_i),
+          .rst_ni(rst_ni),
+          .req_i (mem_req[i]),
+          .rsp_o (mem_rsp[i])
       );
     end
   endgenerate
@@ -287,7 +288,7 @@ module tb_lca_system (
       .aida_mmio,
       .spm_req_o(mem_req),
       .spm_rsp_i(mem_rsp),
-      .aida_jtag_in (jtag_in),
+      .aida_jtag_in(jtag_in),
       .aida_jtag_out(jtag_out)
 
   );
