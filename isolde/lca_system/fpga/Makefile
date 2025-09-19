@@ -3,7 +3,7 @@ FPGA_PATH           := $(ROOT_DIR)/isolde/lca_system/fpga
 SYS_PATH            := $(ROOT_DIR)/isolde/lca_system
 SYS_MAKEFILE        := $(ROOT_DIR)/isolde/lca_system/Makefile
 
-SYNTH_TARGET        = "-t xilinx"
+SYNTH_TARGET        += "-t xilinx"
 
 all: vivado-prj
 

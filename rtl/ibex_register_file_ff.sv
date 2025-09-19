@@ -15,10 +15,10 @@
   always_comb begin \
     if (extended_ports.raddr_``CHANNEL < 32) begin \
       extended_ports.rdata_``CHANNEL  = rf_reg[extended_ports.raddr_``CHANNEL];  \
-      extended_ports_err_read = 1'b0; \
+      extended_ports_err_read[CHANNEL] = 1'b0; \
     end else begin \
       extended_ports.rdata_``CHANNEL  = '0;  \
-      extended_ports_err_read = 1'b1; \
+      extended_ports_err_read[CHANNEL] = 1'b1; \
     end \
   end
 
@@ -69,7 +69,8 @@ module ibex_register_file_ff #(
   logic [NUM_WORDS-1:0] we_a_dec;
 
 
-  logic extended_ports_err_read, extended_ports_err_write;
+  logic [3:0] extended_ports_err_read;
+  logic extended_ports_err_write;
 
   logic oh_raddr_a_err, oh_raddr_b_err, oh_we_err;
 
@@ -266,6 +267,6 @@ module ibex_register_file_ff #(
 
   `GEN_EXT_PORT_NO_WRITE_BLOCK(0)
 
-  assign extended_ports.isolde_x_rf_err = extended_ports_err_read || extended_ports_err_write;
+  assign extended_ports.isolde_x_rf_err = |extended_ports_err_read || extended_ports_err_write;
 
 endmodule

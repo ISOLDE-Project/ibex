@@ -15,10 +15,10 @@
   always_comb begin \
     if (isolde_rf_bus.raddr_``CHANNEL < RegCount) begin \
       isolde_rf_bus.rdata_``CHANNEL  = reg_file[isolde_rf_bus.raddr_``CHANNEL];  \
-      isolde_rf_err_read = 1'b0; \
+      isolde_rf_err_read[CHANNEL] = 1'b0; \
     end else begin \
       isolde_rf_bus.rdata_``CHANNEL  = '0;  \
-      isolde_rf_err_read = 1'b1; \
+      isolde_rf_err_read[CHANNEL] = 1'b1; \
     end \
   end
 
@@ -38,7 +38,7 @@ module isolde_register_file_ff
   logic [RegSize-1:0][RegDataWidth-1:0] reg_file[RegCount-1:0];
   // logic [RegAddrWidth-1:0] echo_addr;
   logic isolde_rf_err_write;  // Error signal for write process
-  logic isolde_rf_err_read;  // Error signal for read process
+  logic [4:0] isolde_rf_err_read;  // Error signals for read process
 
   // Register Write Process (Sequential logic)
   always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -81,6 +81,6 @@ module isolde_register_file_ff
   `GEN_READ_BLOCK(4)
 
   // Combine read and write error signals
-  assign isolde_rf_bus.isolde_rf_err = isolde_rf_err_write | isolde_rf_err_read;
+  assign isolde_rf_bus.isolde_rf_err = |isolde_rf_err_read | isolde_rf_err_write  ;
 
 endmodule

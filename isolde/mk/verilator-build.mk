@@ -72,6 +72,14 @@ verilate:  ibex_sim.flist manifest.flist
 											  verilate      
 
 
+veri-lint:  ibex_sim.flist manifest.flist
+	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist     \
+											     PE_MANIFEST=${CURDIR}/manifest.flist    \
+	                                             SIM_RESULTS=$(BIN_DIR)                  \
+												   RUN_INDEX=$(IMEM_LATENCY)           \
+											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
+									   VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS)    \
+									   $@      
 
 .PHONY: veri-run
 veri-run: $(BIN_DIR)/verilator_executable 

@@ -5,15 +5,15 @@
 
 
 module aida_top (
-    input logic clk_i,
-    input logic rst_ni,
-    input logic fetch_enable_i,
+    input  logic clk_i,
+    input  logic rst_ni,
+    input  logic fetch_enable_i,
     // JTAG signals (connets to  debug TAP)
-    input logic                 jtag_tck_i,
-    input logic                 jtag_trst_ni,
-    input logic                 jtag_tms_i,
-    input logic                 jtag_tdi_i,
-    output logic                jtag_tdo_o
+    input  logic jtag_tck_i,
+    input  logic jtag_trst_ni,
+    input  logic jtag_tms_i,
+    input  logic jtag_tdi_i,
+    output logic jtag_tdo_o
 
 );
   import redmule_pkg::*;
@@ -86,7 +86,8 @@ module aida_top (
   /**     Data memory                                    **/
   /*******************************************************/
   tcdm_mem #(
-      .MEMORY_SIZE(GMEM_SIZE)
+      .MEMORY_SIZE(GMEM_SIZE),
+      .MEMORY_PRIMITIVE("auto")
   ) i_dummy_dmemory (
       .clk_i,
       .rst_ni,
@@ -97,8 +98,9 @@ module aida_top (
   /**     Instruction memory                             **/
   /*******************************************************/
   tcdm_mem #(
-      .MEMORY_SIZE (GMEM_SIZE),
-      .DELAY_CYCLES(IMEM_LATENCY)
+      .MEMORY_SIZE(GMEM_SIZE),
+      .DELAY_CYCLES(IMEM_LATENCY),
+      .MEMORY_PRIMITIVE("auto")
   ) i_dummy_imemory (
       .clk_i,
       .rst_ni,
@@ -109,9 +111,7 @@ module aida_top (
   /********************************************************/
   /**     Stack memory                                   **/
   /*******************************************************/
-  tcdm_mem #(
-      .MEMORY_SIZE(SMEM_SIZE)
-  ) i_dummy_stack_memory (
+  tcdm_mem #() i_dummy_stack_memory (
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(aida_stack_memory)

@@ -69,7 +69,7 @@ module tb_tcdm_mem #(
         tcdm_slave_i.rsp.gnt <= 0;
         delay_counter <= DELAY_CYCLES;
         if (tcdm_slave_i.req.we) begin  // Write
-          cnt_wr += 1;
+          cnt_wr <= cnt_wr + 1;
           if (tcdm_slave_i.req.be[0]) memory[index] <= tcdm_slave_i.req.data[7:0];
           if (tcdm_slave_i.req.be[1]) memory[index+1] <= tcdm_slave_i.req.data[15:8];
           if (tcdm_slave_i.req.be[2]) memory[index+2] <= tcdm_slave_i.req.data[23:16];
@@ -79,7 +79,7 @@ module tb_tcdm_mem #(
           tcdm_slave_i.rsp.valid <= 1'b1;
         end else begin  //read
 
-          cnt_rd += 1;
+          cnt_rd <= cnt_rd + 1;
           tcdm_slave_i.rsp.data[7:0] <= memory[index];
           tcdm_slave_i.rsp.data[15:8] <= memory[index+1];
           tcdm_slave_i.rsp.data[23:16] <= memory[index+2];
