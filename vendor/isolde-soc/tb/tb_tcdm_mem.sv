@@ -66,7 +66,6 @@ module tb_tcdm_mem #(
     end else begin
 
       if (tcdm_slave_i.rsp.gnt) begin
-        tcdm_slave_i.rsp.gnt <= 0;
         delay_counter <= DELAY_CYCLES;
         if (tcdm_slave_i.req.we) begin  // Write
           cnt_wr <= cnt_wr + 1;

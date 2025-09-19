@@ -100,7 +100,6 @@ module tcdm_mem #(
       delay_counter          <= DELAY_CYCLES;
     end else begin
       if (tcdm_slave_i.rsp.gnt) begin
-        tcdm_slave_i.rsp.gnt <= 1'b0;
         delay_counter <= DELAY_CYCLES;
 
         if (tcdm_slave_i.req.we) begin
