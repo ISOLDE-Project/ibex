@@ -47,14 +47,7 @@ module aida_top (
 
   jtag_pkg::jtag_req_t jtag_in;
   jtag_pkg::jtag_rsp_t jtag_out;
-  logic [rv_dm_pkg::NrHarts-1:0] debug_req;  //TODO connect to debug module
-
-
-
-
-
-
-
+ 
 
 
 
@@ -86,8 +79,8 @@ module aida_top (
   /**     Data memory                                    **/
   /*******************************************************/
   tcdm_mem #(
-      .MEMORY_SIZE(GMEM_SIZE),
-      .MEMORY_PRIMITIVE("auto")
+      .MEMORY_SIZE(2048),
+      .MEMORY_PRIMITIVE("ultra")
   ) i_dummy_dmemory (
       .clk_i,
       .rst_ni,
@@ -98,9 +91,9 @@ module aida_top (
   /**     Instruction memory                             **/
   /*******************************************************/
   tcdm_mem #(
-      .MEMORY_SIZE(GMEM_SIZE),
+      .MEMORY_SIZE(2048),
       .DELAY_CYCLES(IMEM_LATENCY),
-      .MEMORY_PRIMITIVE("auto")
+      .MEMORY_PRIMITIVE("ultra")
   ) i_dummy_imemory (
       .clk_i,
       .rst_ni,
