@@ -61,6 +61,19 @@ set new_include_dirs [concat $ibex_include_dirs $current_dirs]
 # Update the property
 set_property include_dirs $new_include_dirs [current_fileset]
 
+#
+# Create 'constrs_1' fileset (if not found)
+if {[string equal [get_filesets -quiet constrs_1] ""]} {
+  create_fileset -constrset constrs_1
+}
+
+
+# Add/Import constrs file and set constrs file properties
+set file "[file normalize ${origin_dir}/board/${_xdc_file_}.xdc]"
+add_files -norecurse -fileset constrs_1 [list $file]
+set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
+set_property -name "file_type" -value "XDC" -objects $file_obj
+
 set_property top  ${_top_module_} [current_fileset]
 set_property source_mgmt_mode None [current_project]
 update_compile_order -fileset sources_1

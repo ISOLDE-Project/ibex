@@ -18,7 +18,7 @@ vivado_synth.tcl: Makefile.vivado
 
 .PHONY: vivado-prj
 vivado-prj: vivado_synth.tcl	
-	vivado -mode batch -source ./create_project.tcl  ./run_linter.tcl
+	vivado -mode batch -source ./create_project.tcl  ./run.tcl
 
 .PHONY: clean
 clean:
