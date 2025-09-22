@@ -84,7 +84,7 @@ module perfCounters #(
     if (~rst_ni) begin
       perfcnt_d <= '0;
       perfcnt_q <= '0;
-      perfcnt_state = IDLE;
+      perfcnt_state <= IDLE;
     end else begin
       perfcnt_state <= perfcnt_next;
       case (perfcnt_next)
@@ -175,7 +175,7 @@ read performance counters implementation
             default: perfcnt_rdata <= '0;
           endcase
         end
-      end else perfcnt_rvalid = '0;
+      end else perfcnt_rvalid <= '0;
     end
   end
 

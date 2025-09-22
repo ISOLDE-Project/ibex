@@ -1,10 +1,30 @@
 // Synthesizable memory model for Vivado (ZCU104)
 // Clean 32-bit wide XPM SPRAM with byte enables
+/*
+Default value targets a RAMB18E2 (18 Kb Block RAM) in Xilinx FPGAs.
+| **Port Width (bits)**         | **Max Depth (entries)** | **Total Bits** |
+| ----------------------------- | ----------------------- | -------------- |
+| 1                             | 16,384                  | 16,384         |
+| 2                             | 8,192                   | 16,384         |
+| 4                             | 4,096                   | 16,384         |
+| 9  (*includes parity bit*)    | 2,048                   | 18,432         |
+| **18** (*16 data + 2 parity*) | **1,024**               | **18,432**     |
+| 36 (*32 data + 4 parity*)     | 512                     | 18,432         |
+
+MEMORY_PRIMITIVE options:
+    "auto"- Allow Vivado Synthesis to choose
+    "distributed"- Distributed memory
+    "block"- Block memory
+    "ultra"- Ultra RAM memory
+    "mixed"- Mixed memory
+
+*/
 
 module tcdm_mem #(
     parameter BASE_ADDR    = 0,
-    parameter MEMORY_SIZE  = 1024,   // number of 32-bit words
-    parameter DELAY_CYCLES = 0
+    parameter MEMORY_SIZE  = 512,   // number of 32-bit words
+    parameter DELAY_CYCLES = 0,
+    parameter MEMORY_PRIMITIVE = "block" // "block", "ultra", "distributed"
 ) (
     input logic                clk_i,
     input logic                rst_ni,
@@ -30,11 +50,11 @@ module tcdm_mem #(
   xpm_memory_spram #(
       .ADDR_WIDTH_A(ADDR_WIDTH),
       .MEMORY_SIZE(MEMORY_SIZE * 32),  // total bits
-      .MEMORY_PRIMITIVE("block"),  // "block" for BRAM, "ultra" for URAM, "distributed" for LUTRAM
+      .MEMORY_PRIMITIVE(MEMORY_PRIMITIVE),
       .READ_DATA_WIDTH_A(32),
       .WRITE_DATA_WIDTH_A(32),
-      .WRITE_MODE_A("read_first"),  // "read_first", "write_first", "no_change"
-      .CLOCKING_MODE("common_clock")
+      .WRITE_MODE_A("read_first")  // "read_first", "write_first", "no_change"
+      //.CLOCKING_MODE("common_clock")
   ) xpm_mem_inst (
       // -----------------------------
       // WRITE into XPM memory
@@ -80,7 +100,6 @@ module tcdm_mem #(
       delay_counter          <= DELAY_CYCLES;
     end else begin
       if (tcdm_slave_i.rsp.gnt) begin
-        tcdm_slave_i.rsp.gnt <= 1'b0;
         delay_counter <= DELAY_CYCLES;
 
         if (tcdm_slave_i.req.we) begin
@@ -111,16 +130,17 @@ endmodule
 
 module tcdm_mem_wrapper #(
     parameter BASE_ADDR    = 0,
-    parameter MEMORY_SIZE  = 1024,
-    parameter DELAY_CYCLES = 0
-)(
-    input  clk_i,
-    input  rst_ni,
-    input  req_req,
-    input  req_we,
-    input  [3:0] req_be,
-    input  [31:0] req_addr,
-    input  [31:0] req_data,
+    parameter MEMORY_SIZE  = 512,   // number of 32-bit words
+    parameter DELAY_CYCLES = 0,
+    parameter MEMORY_PRIMITIVE = "block" // "block", "ultra", "distributed"
+) (
+    input clk_i,
+    input rst_ni,
+    input req_req,
+    input req_we,
+    input [3:0] req_be,
+    input [31:0] req_addr,
+    input [31:0] req_data,
     output gnt,
     output valid,
     output err,
@@ -128,7 +148,7 @@ module tcdm_mem_wrapper #(
 );
 
   // Instantiate the SV interface internally
-  isolde_tcdm_if tcdm_intf();
+  isolde_tcdm_if tcdm_intf ();
 
   // Map wrapper signals to interface using assign
   assign tcdm_intf.req.req  = req_req;
@@ -137,20 +157,21 @@ module tcdm_mem_wrapper #(
   assign tcdm_intf.req.addr = req_addr;
   assign tcdm_intf.req.data = req_data;
 
-  assign gnt      = tcdm_intf.rsp.gnt;
-  assign valid    = tcdm_intf.rsp.valid;
-  assign err      = tcdm_intf.rsp.err;
-  assign rsp_data = tcdm_intf.rsp.data;
+  assign gnt                = tcdm_intf.rsp.gnt;
+  assign valid              = tcdm_intf.rsp.valid;
+  assign err                = tcdm_intf.rsp.err;
+  assign rsp_data           = tcdm_intf.rsp.data;
 
   // Instantiate the original SV DUT
   tcdm_mem #(
-    .BASE_ADDR(BASE_ADDR),
-    .MEMORY_SIZE(MEMORY_SIZE),
-    .DELAY_CYCLES(DELAY_CYCLES)
+      .BASE_ADDR(BASE_ADDR),
+      .MEMORY_SIZE(MEMORY_SIZE),
+      .DELAY_CYCLES(DELAY_CYCLES),
+      .MEMORY_PRIMITIVE(MEMORY_PRIMITIVE)
   ) dut (
-    .clk_i(clk_i),
-    .rst_ni(rst_ni),
-    .tcdm_slave_i(tcdm_intf.slave)  // connect the modport
+      .clk_i(clk_i),
+      .rst_ni(rst_ni),
+      .tcdm_slave_i(tcdm_intf.slave)  // connect the modport
   );
 
 endmodule

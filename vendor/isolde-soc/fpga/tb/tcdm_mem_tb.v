@@ -86,6 +86,7 @@ module tcdm_mem_tb;
     req_be   = 4'b1111;           // full word write
     req_addr = 32'h0000_0000;
     req_data = 32'hDEADBEEF;
+    //req_data = 32'h12345678;
 
     @(posedge clk);
     req_req  = 0;

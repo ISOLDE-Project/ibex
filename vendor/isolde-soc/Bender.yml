@@ -28,6 +28,10 @@ sources:
     ##level 2
     - rtl/hwe/isolde_redmule_top.sv
     - rtl/noc/isolde_router.sv
+    ##level 3
+    - rtl/aida_lca_package.sv
+    - rtl/aida_lca.sv
+    - rtl/aida_top.sv
     - target: all(tb_dm,redmule_test_hwpe)
       files:
         - tb/tb_tcdm_mem.sv
@@ -45,3 +49,6 @@ sources:
         - tb/tb_isolde_log_interconnect.sv
         - tb/tb_isolde_hci_interconnect.sv
         - tb/tb_isolde_tcdm_interconnect.sv
+    - target: xilinx
+      files:
+        - fpga/rtl/tcdm_mem.sv

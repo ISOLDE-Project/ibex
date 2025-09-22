@@ -1,15 +1,15 @@
 // Copyleft 2025 ISOLDE
 
 module isolde_mux_tcdm (
-    input logic                 clk_i,          // Clock input, positive edge triggered
-    input logic                 rst_ni,         // Asynchronous reset, active low
-            // Input1 
-            input isolde_tcdm_pkg::req_t req_1_i,
-            output isolde_tcdm_pkg::rsp_t rsp_1_o,
-            // Input2 higher priority
-            input isolde_tcdm_pkg::req_t req_2_i,
-            output isolde_tcdm_pkg::rsp_t rsp_2_o,
-          isolde_tcdm_if.master tcdm_master_o   // Output
+    input  logic                  clk_i,         // Clock input, positive edge triggered
+    input  logic                  rst_ni,        // Asynchronous reset, active low
+    // Input1 
+    input  isolde_tcdm_pkg::req_t req_1_i,
+    output isolde_tcdm_pkg::rsp_t rsp_1_o,
+    // Input2 higher priority
+    input  isolde_tcdm_pkg::req_t req_2_i,
+    output isolde_tcdm_pkg::rsp_t rsp_2_o,
+           isolde_tcdm_if.master  tcdm_master_o  // Output
 
 );
 
@@ -21,8 +21,8 @@ module isolde_mux_tcdm (
       .DATA_WIDTH(2),
       .DEPTH(4)
   ) i_slv_fifo (
-      .clk_i,
-      .rst_ni,
+      .clk_i(clk_i),
+      .rst_ni(rst_ni),
       .flush_i(1'b0),
       .testmode_i(1'b0),
       .full_o(),
@@ -79,5 +79,4 @@ module isolde_mux_tcdm (
   end
 
 
-  always_ff @(posedge clk_i or negedge rst_ni) if (~rst_ni) slv_rsp <= '0;
 endmodule

@@ -4,6 +4,7 @@
 `define GEN_READ_PORT(CHANNEL) \
   logic [RegAddrWidth-1:0] raddr_``CHANNEL ;                  /* Read address */ \
   logic [RegSize-1:0][RegDataWidth-1:0] rdata_``CHANNEL;      /* Read data output */
+  
 
 // Interface definition
 interface isolde_register_file_if;

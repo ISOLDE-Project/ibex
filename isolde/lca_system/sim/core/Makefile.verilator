@@ -75,8 +75,7 @@ $(VERI_OBJ_DIR)/V$(VLT_TOP_MODULE).mk:  $(TBSRC_VERI)
 	$(VERILATOR) --cc --sv --exe \
 		$(VERI_TRACE) \
 		$(VLT_FLAGS)   \
-		--Wno-lint --Wno-UNOPTFLAT \
-		--Wno-MODDUP  \
+		-f verilator_waivers.f \
 		 $(TBSRC_VERI) \
 		-f $(CV_CORE_MANIFEST) \
 		-f $(PE_MANIFEST) \
@@ -96,3 +95,18 @@ veri-clean:
 
 ###############################################################################
 
+.PHONY: veri-lint
+veri-lint: $(TBSRC_VERI) 
+	@echo "$(BANNER)"
+	@echo "* Linting  with Verilator"
+	@echo "$(BANNER)"
+	$(VERILATOR) --sv --lint-only \
+		$(VERI_TRACE) \
+		$(VLT_FLAGS)   \
+		--Wall \
+		--Wpedantic  \
+		 $(TBSRC_VERI) \
+		-f verilator_waivers.f \
+		-f $(CV_CORE_MANIFEST) \
+		-f $(PE_MANIFEST) \
+		$(VERI_COMPILE_FLAGS)

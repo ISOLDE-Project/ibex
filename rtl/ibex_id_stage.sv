@@ -462,6 +462,8 @@ module ibex_id_stage
   always_comb begin
     if (~isolde_decoder_busy) begin
       instr_rdata_std = instr_batch_rdata_i[0];
+    end else begin
+      instr_rdata_std = 32'h0x0; 
     end
   end
   /////////////

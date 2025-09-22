@@ -72,10 +72,7 @@ module isolde_router
   assign push_id_fifo = |rsp_gnt_vec;
   assign pop_id_fifo  = |rsp_valid_vec;
 
-  always_ff @(posedge clk_i, negedge rst_ni)
-    if (!rst_ni) begin
-      rsp_idx <= INVALID;
-    end
+
 
 
   addr_decode #(

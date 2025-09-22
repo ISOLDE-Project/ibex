@@ -77,7 +77,11 @@ Assuming working directory *isolde/lca_system* and each command from bellow in a
 make DBG_MODULE=1 veri-clean verilate
 make DBG_MODULE=1 TEST=hello_test test-clean test-build  veri-run
 ```
-**Note**: Application( in this example *hello_test*) has to be an endless loop.   
+or  
+```sh
+make DBG_MODULE=1 ENABLE_SPM=1 TEST=redmule_test veri-clean verilate  test-clean test-build veri-run
+```
+  
 
 2. start openocd
 ```sh
