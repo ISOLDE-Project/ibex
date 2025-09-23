@@ -4,3 +4,4 @@ synth-vivado/
 vivado/
 *.jou
 *.log
+.Xil/

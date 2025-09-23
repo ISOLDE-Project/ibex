@@ -1,7 +1,10 @@
 ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
+FPGA_DIR            :=  $(shell git rev-parse --show-toplevel)/isolde/lca_system/fpga
 FPGA_PATH           := $(ROOT_DIR)/isolde/lca_system/fpga
 SYS_PATH            := $(ROOT_DIR)/isolde/lca_system
 SYS_MAKEFILE        := $(ROOT_DIR)/isolde/lca_system/Makefile
+
+export FPGA_DIR
 
 SYNTH_TARGET        += "-t xilinx"
 
@@ -18,13 +21,20 @@ vivado_synth.tcl: Makefile.vivado
 
 .PHONY: vivado-prj
 vivado-prj: vivado_synth.tcl	
-	vivado -mode batch -source ./create_project.tcl  ./run_linter.tcl
+	vivado -mode batch -source ./tcl/create_project.tcl  
+
+
+.PHONY: synth
+synth: vivado_synth.tcl	
+	vivado -mode batch -source ./tcl/create_project.tcl  ./tcl/synth.tcl
+
 
 .PHONY: clean
 clean:
 	- make -f Makefile.vivado vivado-clean || true
-	rm -fr vivado
+	rm -fr vivado synth-vivado
 	rm -f  Makefile.vivado *.jou *.log
+	rm -f ibex_synth.tcl isolde_synth.tcl vivado_synth.tcl
 
 Makefile.vivado: $(SYS_MAKEFILE)
 	cp $< $@
