@@ -1,6 +1,6 @@
 ################################################################
 # configure board
-source ./board/xilinx.cfg
+source ../board/xilinx.cfg
 ################################################################
 
 set top_name [get_property top [current_fileset]]
@@ -11,6 +11,6 @@ set_msg_config -severity {INFO} -suppress  ;# suppress all info messages
 
 launch_runs synth_1  -jobs 12
 wait_on_runs synth_1
-launch_runs  impl_1 -jobs 12
+launch_runs impl_1 -to_step write_bitstream -jobs 12
 wait_on_runs impl_1
 close_project

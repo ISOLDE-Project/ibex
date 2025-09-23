@@ -1,6 +1,6 @@
 ################################################################
 # configure board
-source ./board/xilinx.cfg
+source $::env(FPGA_DIR)/board/xilinx.cfg
 ################################################################
 
 
@@ -28,7 +28,7 @@ proc get_script_folder {} {
 
 # Set the reference directory for source file relative paths (by default the value is script directory path)
 variable origin_dir
-set origin_dir [_tcl::get_script_folder]
+set origin_dir [_tcl::get_script_folder]/../
 
 
 
@@ -51,6 +51,8 @@ set_property -name "board_part"         -value ${_board_part_}        -objects $
 set_property -name "platform.board_id"  -value ${_platform_board_id_} -objects $obj
 
 source ./vivado_synth.tcl
+#
+read_ip $::env(FPGA_DIR)/ips/xilinx_clk_mngr/xilinx_clk_mngr.srcs/sources_1/ip/xilinx_clk_mngr/xilinx_clk_mngr.xci
 
 # Get current include_dirs from the active fileset
 set current_dirs [get_property include_dirs [current_fileset]]
@@ -75,5 +77,6 @@ set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
 
 set_property top  ${_top_module_} [current_fileset]
-set_property source_mgmt_mode None [current_project]
+#set_property source_mgmt_mode None [current_project]
 update_compile_order -fileset sources_1
+close_project

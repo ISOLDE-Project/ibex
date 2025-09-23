@@ -1,9 +1,10 @@
 // Copyleft ISOLDE 2025
 
 
+
 module xilinx_aida (
-    input wire ref_clk_p,
-    input wire ref_clk_n,
+    input wire CLK_IN1_D_0_clk_p,
+    input wire CLK_IN1_D_0_clk_n,
     input wire pad_reset,
     //JTAG
     inout wire pad_jtag_tck,
@@ -16,20 +17,21 @@ module xilinx_aida (
 
   wire ref_clk;
 
+ xilinx_clk_mngr i_xilinx_clk_mngr 
+ (
+  // Clock out ports
+  .clk_out1(ref_clk),
+  // Status and control signals
+  .reset(pad_reset),
+ // Clock in ports
+  .clk_in1_p(CLK_IN1_D_0_clk_p),
+  . clk_in1_n(CLK_IN1_D_0_clk_n)
+ );
 
-  //Differential to single ended clock conversion
-  IBUFGDS #(
-      .IOSTANDARD("LVDS"),
-      .DIFF_TERM("FALSE"),
-      .IBUF_LOW_PWR("FALSE")
-  ) i_sysclk_iobuf (
-      .I (ref_clk_p),
-      .IB(ref_clk_n),
-      .O (ref_clk)
-  );
+
   aida_top #() i_aida_top (
       .clk_i(ref_clk),
-      .rst_ni(pad_reset),
+      .rst_ni(1'b1),
       .fetch_enable_i(1'b1),
       // JTAG signals 
       .jtag_tck_i(pad_jtag_tck),
