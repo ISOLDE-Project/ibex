@@ -1,11 +1,9 @@
 ################################################################
 # configure board
-source ../board/xilinx.cfg
+source $::env(FPGA_DIR)/board/xilinx.cfg
 ################################################################
 
-set top_name [get_property top [current_fileset]]
-puts "Current top module is: $top_name"
-
+open_project $::env(FPGA_DIR)/vivado/$project/$project.xpr
 set_msg_config -severity {INFO} -suppress  ;# suppress all info messages
 #set_msg_config -severity {WARNING} -suppress ;# suppress all warnings
 

@@ -1,11 +1,11 @@
 FPGA_DIR            :=  $(shell git rev-parse --show-toplevel)/isolde/lca_system/fpga
-PROJECT		        :=  xilinx_clk_mngr
+PROJECT		        :=  xilinx_sys_rst
 VIVADO              ?=  vivado
 VIVADOFLAGS         ?=  -nojournal -mode batch -source scripts/prologue.tcl
 MODE                =   batch
 
 
-export FPGA_DIR
+export FPGA_DIR 
 export PROJECT
 
 .DEFAULT_GOAL:=help

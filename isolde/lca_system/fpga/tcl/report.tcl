@@ -1,14 +1,19 @@
-source ./board/xilinx.cfg
+################################################################
+# configure board
+source $::env(FPGA_DIR)/board/xilinx.cfg
+################################################################
 
-open_project ./vivado/$project/$project.xpr
+open_project $::env(FPGA_DIR)/vivado/$project/$project.xpr
 
-open_run synth_1
-report_utilization
-# Query all URAM sites in the device
-puts "URAM count: [llength [get_sites URAM*]]"
+# Open the implemented design
+open_run impl_1
 
-# Query all BRAM (RAMB18/36) sites in the device
-puts "RAMB18 count: [llength [get_sites RAMB18*]]"
-puts "RAMB36 count: [llength [get_sites RAMB36*]]"
+# Generate a brief timing summary and save to file
+report_timing_summary -delay_type max -max_paths 1 -file $::env(FPGA_DIR)/timing_summary.rpt
 
-#list_property [get_parts xczu7ev-ffvc1156-2-e]
+set timing_summary [report_timing_summary -return_timing_objects]
+puts "WNS: [get_property STATS.WNS $timing_summary]"
+puts "TNS: [get_property STATS.TNS $timing_summary]"
+puts "WHS: [get_property STATS.WHS $timing_summary]"
+puts "THS: [get_property STATS.THS $timing_summary]"
+close_project
