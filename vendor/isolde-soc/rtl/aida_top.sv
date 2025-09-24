@@ -30,7 +30,11 @@ module aida_top (
   parameter bit RV32E = 1'b0;
   parameter ibex_pkg::rv32m_e RV32M = ibex_pkg::RV32MSingleCycle;
   parameter ibex_pkg::rv32b_e RV32B = ibex_pkg::RV32BNone;
-  parameter ibex_pkg::regfile_e RegFile = ibex_pkg::RegFileFF;
+  `ifdef SIMULATION
+    parameter ibex_pkg::regfile_e RegFile = ibex_pkg::RegFileFF;
+  `else 
+    parameter ibex_pkg::regfile_e RegFile = ibex_pkg::RegFileFPGA;
+  `endif
   parameter bit BranchTargetALU = 1'b0;
   parameter bit WritebackStage = 1'b0;
   parameter bit ICache = 1'b0;
