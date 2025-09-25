@@ -51,8 +51,12 @@ set_property -name "board_part"         -value ${_board_part_}        -objects $
 set_property -name "platform.board_id"  -value ${_platform_board_id_} -objects $obj
 
 source ./vivado_synth.tcl
-#
+
+##################################################################
+# Read IPs
+##################################################################
 read_ip $::env(FPGA_DIR)/ips/xilinx_clk_mngr/xilinx_clk_mngr.srcs/sources_1/ip/xilinx_clk_mngr/xilinx_clk_mngr.xci
+read_ip $::env(FPGA_DIR)/ips/xilinx_sys_rst/xilinx_sys_rst.srcs/sources_1/ip/xilinx_sys_rst/xilinx_sys_rst.xci
 
 # Get current include_dirs from the active fileset
 set current_dirs [get_property include_dirs [current_fileset]]

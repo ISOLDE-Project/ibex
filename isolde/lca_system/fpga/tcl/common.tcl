@@ -1,3 +1,4 @@
+# Copyleft ISOLDE 2025 
 ################################################################
 # configure board
 source $::env(FPGA_DIR)/board/xilinx.cfg
@@ -8,7 +9,7 @@ set BOARD ${_platform_board_id_}
 
 set XILINX_BOARD ${_board_part_} 
 
-#set partNumber $::env(XILINX_PART)
+set ipName $::env(PROJECT)
 
 # sets up Vivado messages in a more sensible way
 set_msg_config -id {[Synth 8-3352]}         -new_severity "critical warning"
@@ -28,3 +29,7 @@ set CPUS [exec getconf _NPROCESSORS_ONLN]
 if { ![info exists CPUS] } {
   set CPUS 8
 }
+
+create_project $ipName . -part $part
+set_property board_part $XILINX_BOARD [current_project]
+set_property target_language Verilog [current_project]

@@ -5,3 +5,4 @@ vivado/
 *.jou
 *.log
 .Xil/
+*.rpt

@@ -15,14 +15,14 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 ##################################################################
 
 # To test this script, run the following commands from Vivado Tcl console:
-# source xilinx_clk_mngr-ip.tcl
+# source xilinx_sys_rst-ip.tcl
 # If there is no project opened, this script will create a
 # project, but make sure you do not have an existing project
 # in the current working folder.
 
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
-  create_project xilinx_clk_mngr xilinx_clk_mngr -part xczu7ev-ffvc1156-2-e
+  create_project xilinx_sys_rst xilinx_sys_rst -part xczu7ev-ffvc1156-2-e
   set_property BOARD_PART xilinx.com:zcu104:part0:1.1 [current_project]
   set_property target_language Verilog [current_project]
   set_property simulator_language Mixed [current_project]
@@ -35,7 +35,7 @@ if { $list_projs eq "" } {
 set bCheckIPs 1
 set bCheckIPsPassed 1
 if { $bCheckIPs == 1 } {
-  set list_check_ips { xilinx.com:ip:clk_wiz:* }
+  set list_check_ips { xilinx.com:ip:proc_sys_reset:* }
   set list_ips_missing ""
   common::send_msg_id "IPS_TCL-1001" "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
 
@@ -58,41 +58,18 @@ if { $bCheckIPsPassed != 1 } {
 }
 
 ##################################################################
-# CREATE IP xilinx_clk_mngr
+# CREATE IP xilinx_sys_rst
 ##################################################################
 
-set xilinx_clk_mngr [create_ip -name clk_wiz -vendor xilinx.com -library ip -module_name xilinx_clk_mngr]
+set xilinx_sys_rst [create_ip -name proc_sys_reset -vendor xilinx.com -library ip -module_name xilinx_sys_rst]
 
 # User Parameters
-set_property -dict [list \
-  CONFIG.CLKIN1_JITTER_PS {33.330000000000005} \
-  CONFIG.CLKOUT1_JITTER {449.353} \
-  CONFIG.CLKOUT1_PHASE_ERROR {523.418} \
-  CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {10.0} \
-  CONFIG.CLKOUT2_JITTER {116.415} \
-  CONFIG.CLKOUT2_PHASE_ERROR {77.836} \
-  CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {100.000} \
-  CONFIG.CLKOUT2_USED {false} \
-  CONFIG.CLK_IN1_BOARD_INTERFACE {clk_300mhz} \
-  CONFIG.MMCM_CLKFBOUT_MULT_F {92.375} \
-  CONFIG.MMCM_CLKIN1_PERIOD {3.333} \
-  CONFIG.MMCM_CLKIN2_PERIOD {10.0} \
-  CONFIG.MMCM_CLKOUT0_DIVIDE_F {92.375} \
-  CONFIG.MMCM_CLKOUT1_DIVIDE {1} \
-  CONFIG.MMCM_DIVCLK_DIVIDE {30} \
-  CONFIG.NUM_OUT_CLKS {1} \
-  CONFIG.PRIM_IN_FREQ {300.000} \
-  CONFIG.PRIM_SOURCE {Differential_clock_capable_pin} \
-  CONFIG.RESET_BOARD_INTERFACE {reset} \
-  CONFIG.RESET_PORT {reset} \
-  CONFIG.RESET_TYPE {ACTIVE_HIGH} \
-  CONFIG.USE_LOCKED {true} \
-] [get_ips xilinx_clk_mngr]
+set_property CONFIG.RESET_BOARD_INTERFACE {reset} [get_ips xilinx_sys_rst]
 
 # Runtime Parameters
 set_property -dict { 
   GENERATE_SYNTH_CHECKPOINT {1}
-} $xilinx_clk_mngr
+} $xilinx_sys_rst
 
 ##################################################################
 
