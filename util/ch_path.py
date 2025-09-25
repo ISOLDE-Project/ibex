@@ -3,12 +3,12 @@
 import os
 
 # Read from environment variables
-fusesoc_build_root = os.environ.get("FUSESOC_BUILD_ROOT")
+fusesoc_synth_root = os.environ.get("FUSESOC_SYNTH_ROOT")
 root_dir = os.environ.get("ROOT_DIR")
 
 # Validate environment variables
-if not fusesoc_build_root or not root_dir:
-    raise EnvironmentError("FUSESOC_BUILD_ROOT or ROOT_DIR is not set in environment.")
+if not fusesoc_synth_root or not root_dir:
+    raise EnvironmentError("FUSESOC_SYNTH_ROOT or ROOT_DIR is not set in environment.")
 
 # Define replacement base paths
 relative_prefix = "../../../../../"
@@ -16,11 +16,11 @@ generated_prefix = "generated/"
 incdir_prefix = "+incdir+"
 
 base_path = os.path.join(root_dir, "")
-generated_path = os.path.join(fusesoc_build_root, "sim-vcs/generated/")
+generated_path = os.path.join(fusesoc_synth_root, "sim-vcs/generated/")
 
 # Construct file paths
-input_file = os.path.join(fusesoc_build_root, "sim-vcs/isolde_ibex_lca_dm_system_0.scr")
-output_file = os.path.join(root_dir, "isolde/lca_system/ibex_fusesoc.flist")
+input_file = os.path.join(fusesoc_synth_root, "sim-vcs/isolde_ibex_lca_dm_system_0.scr")
+output_file = os.path.join(root_dir, "isolde/lca_system/ibex_vcs_synth.f")
 
 def replace_paths_in_file(input_path, output_path):
     with open(input_path, 'r') as infile, open(output_path, 'w') as outfile:
