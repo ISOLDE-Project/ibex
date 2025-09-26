@@ -25,7 +25,8 @@ module aida_lca
     parameter lfsr_seed_t  RndCnstLfsrSeed  = RndCnstLfsrSeedDefault,
     parameter lfsr_perm_t  RndCnstLfsrPerm  = RndCnstLfsrPermDefault,
     parameter int unsigned DmHaltAddr       = 32'h1A11_0800,
-    parameter int unsigned DmExceptionAddr  = 32'h1A11_0808
+    parameter int unsigned DmExceptionAddr  = 32'h1A11_0808,
+    parameter bit          BootROMEnable    = 1'b1
 ) (
     input  logic                  clk_i,
     input  logic                  rst_ni,
@@ -46,6 +47,12 @@ module aida_lca
   logic [rv_dm_pkg::NrHarts-1:0]      debug_req;
   logic                               core_sleep;
   logic [                NC-1:0][1:0] evt;
+
+   logic [31:0] BOOT_ADDR;
+
+   //assign BOOT_ADDR = BootROMEnable? ROM_BOOT_ADDR:RV_BOOT_ADDR;
+
+   assign BOOT_ADDR =  ROM_BOOT_ADDR;
 
   /********************************************************/
   /**          Router configurations                     **/
@@ -81,6 +88,7 @@ module aida_lca
 `ifdef TARGET_RV_DEBUG
   // DEBUG MODULE PERIPHERAL, instructions memory map
   typedef enum {
+    BOOT_MEM_IDX,
     INSTR_MEM_IDX,
     INSTR_DEBUG_IDX,
     INSTR_LAST_IDX
@@ -89,6 +97,7 @@ module aida_lca
   localparam int unsigned InstrNoRules = INSTR_LAST_IDX;
   // 
   localparam addr_range_t instr_map[InstrNoRules] = '{
+      '{start_addr: ROM_BOOT_ADDR, end_addr: ROM_BOOT_ADDR + ROM_BOOT_SIZE},
       '{start_addr: IMEM_ADDR, end_addr: IMEM_ADDR + IMEM_SIZE},
       '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
   };
@@ -325,6 +334,18 @@ module aida_lca
   ) i_stack_mem_shim (
       .tcdm_slave_i (tcdm_stack_muxed),
       .tcdm_master_o(aida_stack_memory)
+  );
+
+
+  /********************************************************/
+  /**     BOOT ROM memory                                   **/
+  /*******************************************************/
+
+  isolde_boot_rom_wrp #(
+  .base_addr(ROM_BOOT_ADDR)
+  ) i_aida_boot_rom(
+    .rom_req_i(noc_instr_reqs[BOOT_MEM_IDX]),
+    .rom_rsp_o(noc_instr_rsps[BOOT_MEM_IDX])
   );
 
 
