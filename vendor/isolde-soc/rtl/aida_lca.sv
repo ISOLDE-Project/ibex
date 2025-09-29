@@ -50,8 +50,6 @@ module aida_lca
 
    logic [31:0] BOOT_ADDR;
 
-   //assign BOOT_ADDR = BootROMEnable? ROM_BOOT_ADDR:RV_BOOT_ADDR;
-
    assign BOOT_ADDR =  BootROMEnable? ROM_BOOT_ADDR : RV_BOOT_ADDR;
 
   /********************************************************/
