@@ -52,7 +52,7 @@ module aida_lca
 
    //assign BOOT_ADDR = BootROMEnable? ROM_BOOT_ADDR:RV_BOOT_ADDR;
 
-   assign BOOT_ADDR =  ROM_BOOT_ADDR;
+   assign BOOT_ADDR =  BootROMEnable? ROM_BOOT_ADDR : RV_BOOT_ADDR;
 
   /********************************************************/
   /**          Router configurations                     **/
@@ -338,15 +338,21 @@ module aida_lca
 
 
   /********************************************************/
-  /**     BOOT ROM memory                                   **/
+  /**     BOOT ROM memory                                **/
   /*******************************************************/
 
-  isolde_boot_rom_wrp #(
-  .base_addr(ROM_BOOT_ADDR)
-  ) i_aida_boot_rom(
-    .rom_req_i(noc_instr_reqs[BOOT_MEM_IDX]),
-    .rom_rsp_o(noc_instr_rsps[BOOT_MEM_IDX])
-  );
+
+    generate
+    if (BootROMEnable) begin : boot_rom_block
+        isolde_boot_rom #(
+        .BASE_ADDR(ROM_BOOT_ADDR)
+        ) i_aida_boot_rom (
+        .clk_i(clk_i),
+        .boot_req_i(noc_instr_reqs[BOOT_MEM_IDX]),
+        .boot_rsp_o(noc_instr_rsps[BOOT_MEM_IDX])
+        );
+    end
+    endgenerate
 
 
   /********************************************************/
@@ -373,7 +379,7 @@ module aida_lca
   /********************************************************/
   /**     IBEX core                                     **/
   /*******************************************************/
-`ifdef SIMULATION
+`ifdef TARGET_VERILATOR
   ibex_top_tracing #(
 `else    
   ibex_top #(
@@ -397,7 +403,7 @@ module aida_lca
       .DbgTriggerEn    (DbgTriggerEn),
       .DmHaltAddr      (DmHaltAddr),  
       .DmExceptionAddr (DmExceptionAddr)
-  ) i_ibex_tracing (
+  ) i_ibex_top (
       .clk_i (clk_i),
       .rst_ni(rst_ni),
 
@@ -480,7 +486,7 @@ module aida_lca
       .s_tcdm_ctrl   (redmule_ctrl)
   );
 
-`ifdef SIMULATION 
+`ifdef TARGET_VERILATOR 
   isolde_hci_monitor #(
       .AW  (HCI_AW),
       .DW  (HCI_DW),

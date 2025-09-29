@@ -12,7 +12,7 @@ MEMORY
 }
 */
   localparam rule_addr_t ROM_BOOT_ADDR = 32'h0000_0080;
-  localparam int unsigned ROM_BOOT_SIZE = 32'h8;
+  localparam int unsigned ROM_BOOT_SIZE = 32'h16;
   localparam rule_addr_t IMEM_ADDR = 32'h0010_0000;
   localparam int unsigned IMEM_SIZE = 32'h08000;
   localparam rule_addr_t DMEM_ADDR = 32'h00110000;

@@ -1,56 +1,76 @@
 // Copyleft ISOLDE 2025
 
+
+// helper functions
+function automatic logic [31:0] jal(logic [4:0] rd, logic [20:0] imm);
+  return {imm[20], imm[10:1], imm[11], imm[19:12], rd, 7'h6f};
+endfunction
+
+function automatic logic [31:0] jalr(logic [4:0] rd, logic [4:0] rs1, logic [11:0] offset);
+  return {offset[11:0], rs1, 3'b0, rd, 7'h67};
+endfunction
+
+function automatic logic [31:0] lui(logic [4:0] rd, logic [19:0] uimm);
+  return {uimm, rd, 7'b0110111};
+endfunction
+
+
+
 module isolde_boot_rom #(
-    parameter logic [31:0] base_addr = 32'h0000_0080  // ROM base address
-)(
-    input  logic         clk_i,
-    input  logic         req_i,
-    input  logic [31:0]  addr_i,
-    output logic [31:0]  rdata_o
+    parameter BASE_ADDR = 32'h0000_0080  // ROM base address
+) (
+    input logic clk_i,
+
+    input  isolde_tcdm_pkg::req_t boot_req_i,
+    output isolde_tcdm_pkg::rsp_t boot_rsp_o
 );
 
-    localparam int RomSize = 2;
+  localparam MEMORY_SIZE = 2;  // Size of the memory in bytes
 
-    // Manually encoded instructions using base_addr
-    // LUI x1, base_addr[31:12]
-    localparam logic [31:0] instr_lui = 
-        (base_addr & 32'hFFFFF000) | (5'd1 << 7) | 32'h00000037;  // rd = x1, opcode = LUI
+  // Manually encoded instructions using BASE_ADDR
+  // LUI x1, BASE_ADDR[31:12]
+  localparam logic [31:0] instr_lui = lui(5'h1, BASE_ADDR[31:12]);
 
-    // JALR x0, x1, base_addr[11:0]
-    localparam logic [31:0] instr_jalr =
-        (base_addr[11:0] << 20) |     // imm[11:0]
-        (5'd1 << 15) |                // rs1 = x1
-        (3'd0 << 12) |                // funct3 = 000
-        (5'd0 << 7)  |                // rd = x0
-        7'b1100111;                   // opcode = JALR
+  // JALR x0, x1, BASE_ADDR[11:0]
+  localparam logic [31:0] instr_jalr = jalr(5'h0, 5'h1, BASE_ADDR[11:0]);
 
-    logic [1:0] addr_q;
 
-    // Address calculation
-    assign addr_q = addr_i[3:2]; // word-aligned address indexing
+  logic [1:0] misalignment;
+  logic [1:0] index;
 
-    // ROM output logic
-    always_comb begin
-        case (addr_q)
-            2: rdata_o = instr_jalr;
-            3: rdata_o = instr_lui;
-            default: rdata_o = 32'b0;
+
+
+  always_comb begin
+    boot_rsp_o.gnt = boot_req_i.req;  // Always grant access for simplicity
+
+    index =  boot_req_i.addr [3:2];
+
+  end
+
+  // Always block to process read and write operations
+  always_ff @(posedge clk_i) begin
+
+    if (boot_rsp_o.gnt) begin
+
+      if (boot_req_i.we) begin  // Write
+        //loop back
+        boot_rsp_o.data  <= 32'hDEAD_BEEF;
+        boot_rsp_o.valid <= 1'b1;
+      end else begin  //read
+        case (index)
+          0: boot_rsp_o.data <= instr_lui;
+          1: boot_rsp_o.data <= instr_jalr;
+
+          default: boot_rsp_o.data <= 32'h0BAD_D000;
         endcase
+        boot_rsp_o.valid <= 1'b1;
+      end
+    end else begin  //~rsp_o.gnt
+
+      boot_rsp_o.data  <= '0;
+      boot_rsp_o.valid <= 1'b0;
     end
 
+  end
 endmodule
 
-module isolde_boot_rom_wrp #(
-    parameter logic [31:0] base_addr = 32'h0000_0080  // ROM base address
-)(
-    input  logic         clk_i,
-    input  logic         req_i,
-    input isolde_tcdm_pkg::req_t rom_req_i,
-    output isolde_tcdm_pkg::rsp_t rom_rsp_o
-);
-isolde_boot_rom #(.base_addr(base_addr)) isolde_boot_rom(
-    .req_i(rom_req_i.req),
-    .addr_i(rom_req_i.addr),
-    .rdata_o(rom_rsp_o.data)
-);
-endmodule
