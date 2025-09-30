@@ -22,6 +22,16 @@ module xilinx_aida (
   wire [0:0] sys_interconnect_aresetn;
   wire [0:0] sys_peripheral_aresetn;
 
+//
+  wire jtag_tck_gated;
+
+  BUFGCE i_jtag_clk_gate
+    (
+      .I(pad_jtag_tck),
+      .CE(1'b1),
+      .O(jtag_tck_gated)
+     );
+
   // Clock manager instance (generates ref_clk)
   xilinx_clk_mngr i_xilinx_clk_mngr (
     // Clock out ports
@@ -57,7 +67,7 @@ module xilinx_aida (
     .fetch_enable_i(1'b1),
 
     // JTAG signals
-    .jtag_tck_i(pad_jtag_tck),
+    .jtag_tck_i(jtag_tck_gated),
     .jtag_trst_ni(1'b1),
     .jtag_tms_i(pad_jtag_tms),
     .jtag_tdi_i(pad_jtag_tdi),

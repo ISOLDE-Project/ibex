@@ -30,11 +30,11 @@ module aida_top (
   parameter bit RV32E = 1'b0;
   parameter ibex_pkg::rv32m_e RV32M = ibex_pkg::RV32MSingleCycle;
   parameter ibex_pkg::rv32b_e RV32B = ibex_pkg::RV32BNone;
-  `ifdef SIMULATION
-    parameter ibex_pkg::regfile_e RegFile = ibex_pkg::RegFileFF;
-  `else 
-    parameter ibex_pkg::regfile_e RegFile = ibex_pkg::RegFileFPGA;
-  `endif
+`ifdef SIMULATION
+  parameter ibex_pkg::regfile_e RegFile = ibex_pkg::RegFileFF;
+`else
+  parameter ibex_pkg::regfile_e RegFile = ibex_pkg::RegFileFPGA;
+`endif
   parameter bit BranchTargetALU = 1'b0;
   parameter bit WritebackStage = 1'b0;
   parameter bit ICache = 1'b0;
@@ -51,7 +51,12 @@ module aida_top (
 
   jtag_pkg::jtag_req_t jtag_in;
   jtag_pkg::jtag_rsp_t jtag_out;
- 
+
+  assign jtag_in.tck    = jtag_tck_i;
+  assign jtag_in.trst_n = jtag_trst_ni;
+  assign jtag_in.tms    = jtag_tms_i;
+  assign jtag_in.tdi    = jtag_tdi_i;
+  assign jtag_out.tdo   = jtag_tdo_o;
 
 
 
