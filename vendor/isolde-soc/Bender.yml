@@ -25,6 +25,7 @@ sources:
     - rtl/isolde_hci_interconnect.sv
     - rtl/isolde_tcdm_interconnect.sv
     - rtl/isolde_log_interconnect.sv
+    - rtl/isolde_boot_rom.sv
     ##level 2
     - rtl/hwe/isolde_redmule_top.sv
     - rtl/noc/isolde_router.sv
@@ -49,6 +50,7 @@ sources:
         - tb/tb_isolde_log_interconnect.sv
         - tb/tb_isolde_hci_interconnect.sv
         - tb/tb_isolde_tcdm_interconnect.sv
+        - tb/tb_isolde_boot_rom.sv
     - target: xilinx
       files:
         - fpga/rtl/tcdm_mem.sv

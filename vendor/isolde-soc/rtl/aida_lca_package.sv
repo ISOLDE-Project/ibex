@@ -11,7 +11,9 @@ MEMORY
     stack       : ORIGIN = 0x00140000, LENGTH = 0x30000
 }
 */
-  localparam rule_addr_t IMEM_ADDR = 32'h00100000;
+  localparam rule_addr_t ROM_BOOT_ADDR = 32'h0000_0080;
+  localparam int unsigned ROM_BOOT_SIZE = 32'h16;
+  localparam rule_addr_t IMEM_ADDR = 32'h0010_0000;
   localparam int unsigned IMEM_SIZE = 32'h08000;
   localparam rule_addr_t DMEM_ADDR = 32'h00110000;
   localparam int unsigned DMEM_SIZE = 32'h30000;
@@ -19,7 +21,7 @@ MEMORY
   localparam int unsigned SMEM_SIZE = 32'h30000;
   localparam int unsigned GMEM_SIZE = SMEM_ADDR + SMEM_SIZE - IMEM_ADDR;
   //  see reset vector in bsp/crt0.S
-  localparam rule_addr_t BOOT_ADDR = 32'h00100080;
+  localparam rule_addr_t RV_BOOT_ADDR = 32'h00100080;
   localparam rule_addr_t PERIPH_ADDR = 32'h00001000;
   //see bsp/simple_system_regs.h
   localparam rule_addr_t MMIO_ADDR = 32'h8000_0000;

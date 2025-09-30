@@ -77,7 +77,7 @@ module tb_lca_system (
   parameter bit ICacheECC = 1'b0;
   parameter bit BranchPredictor = 1'b0;
   parameter int unsigned IMEM_LATENCY = 0;
-
+  parameter bit BootROMEnable = 1'b1;  // enable booting from ROM
 
 
 
@@ -87,19 +87,19 @@ module tb_lca_system (
   // global signals
   string stim_instr, stim_data;
 
-  logic                                          sim_exit;
-  logic                 [                  31:0] sim_exit_code;
-  MemStatisticsCallback                          mem_stats_cb;
+  logic                        sim_exit;
+  logic                 [31:0] sim_exit_code;
+  MemStatisticsCallback        mem_stats_cb;
 
 
 
   /********************************************************/
   /**           Debug module signals                     **/
   /*******************************************************/
-  logic                 [                  31:0] sim_jtag_exit;
-  jtag_pkg::jtag_req_t                           jtag_in;
-  jtag_pkg::jtag_rsp_t                           jtag_out;
-  
+  logic                 [31:0] sim_jtag_exit;
+  jtag_pkg::jtag_req_t         jtag_in;
+  jtag_pkg::jtag_rsp_t         jtag_out;
+
   // === JTAG simulation parameters
   localparam int unsigned OPENOCD_PORT = 9999;
 
@@ -277,7 +277,8 @@ module tb_lca_system (
       .BranchPredictor (BranchPredictor),
       .DbgTriggerEn    (DbgTriggerEn),
       .DmHaltAddr      (32'h1A11_0800),     //TODO make a param here
-      .DmExceptionAddr (32'h1A11_0808)      //TODO make a param here
+      .DmExceptionAddr (32'h1A11_0808),      //TODO make a param here
+      .BootROMEnable  (BootROMEnable)
   ) i_aida_lca (
       .clk_i,
       .rst_ni,
