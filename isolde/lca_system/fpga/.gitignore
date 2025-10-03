@@ -6,3 +6,5 @@ vivado/
 *.log
 .Xil/
 *.rpt
+*pulpissimo*
+padframe_adapter.sv
