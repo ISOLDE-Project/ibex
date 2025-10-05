@@ -1,6 +1,6 @@
 # Copyleft ISOLDE 2025
 
-# 300MHZ clock
+## 300MHZ clock
 set_property PACKAGE_PIN AH18 [get_ports CLK_IN1_D_0_clk_p]
 set_property PACKAGE_PIN AH17 [get_ports CLK_IN1_D_0_clk_n]
 set_property IOSTANDARD DIFF_SSTL12 [get_ports CLK_IN1_D_0_clk_p]
@@ -8,12 +8,31 @@ set_property IOSTANDARD DIFF_SSTL12 [get_ports CLK_IN1_D_0_clk_n]
 
 
 ## Reset
-set_property -dict {PACKAGE_PIN M11 IOSTANDARD LVCMOS33} [get_ports pad_reset]
+#set_property -dict {PACKAGE_PIN M11 IOSTANDARD LVCMOS33} [get_ports pad_reset]
+## Active High SW18, a.k.a GPIO_PB_SW3
+set_property -dict {PACKAGE_PIN C3  IOSTANDARD LVCMOS33} [get_ports pad_reset]  
+
+## GPIO LEDs (Active High)
+set_property PACKAGE_PIN D5 [get_ports GPIO_LED_0]
+set_property PACKAGE_PIN D6 [get_ports GPIO_LED_1]
+set_property PACKAGE_PIN A5 [get_ports GPIO_LED_2]
+set_property PACKAGE_PIN B5 [get_ports GPIO_LED_3]
+
+set_property IOSTANDARD LVCMOS33 [get_ports GPIO_LED_0]
+set_property IOSTANDARD LVCMOS33 [get_ports GPIO_LED_1]
+set_property IOSTANDARD LVCMOS33 [get_ports GPIO_LED_2]
+set_property IOSTANDARD LVCMOS33 [get_ports GPIO_LED_3]
+
+## Pushbuttons
+#set_property -dict {PACKAGE_PIN B4 IOSTANDARD LVCMOS33} [get_ports GPIO_PB_SW0]
+#set_property -dict {PACKAGE_PIN C4 IOSTANDARD LVCMOS33} [get_ports GPIO_PB_SW1]
+#set_property -dict {PACKAGE_PIN B3 IOSTANDARD LVCMOS33} [get_ports GPIO_PB_SW2]
+#
 
 ## JTAG
-create_clock -period 100.000 -name tck -waveform {0.000 50.000} [get_ports pad_jtag_tck]
+create_clock -period 200.000 -name tck -waveform {0.000 50.000} [get_ports pad_jtag_tck]
 set_input_jitter tck 1.000
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets i_aida_padframe/i_pad_jtag_tck/iobuf_i/O]
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets pad_jtag_tck_IBUF_inst/O]
 
 ## PMOD 0
 set_property -dict {PACKAGE_PIN G8 IOSTANDARD LVCMOS33} [get_ports pad_jtag_tms]

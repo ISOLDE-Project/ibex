@@ -10,7 +10,7 @@ module aida_lca
     parameter int unsigned MHPMCounterNum   = 0,
     parameter int unsigned MHPMCounterWidth = 40,
     parameter bit          RV32E            = 1'b0,
-    parameter rv32m_e      RV32M            = RV32MFast,
+    parameter rv32m_e      RV32M            = RV32MSingleCycle,
     parameter rv32b_e      RV32B            = RV32BNone,
     parameter regfile_e    RegFile          = RegFileFF,
     parameter bit          BranchTargetALU  = 1'b0,
@@ -19,11 +19,8 @@ module aida_lca
     parameter bit          ICacheECC        = 1'b0,
     parameter bit          BranchPredictor  = 1'b0,
     parameter bit          DbgTriggerEn     = 1'b0,
-    parameter int unsigned DbgHwBreakNum    = 1,
     parameter bit          SecureIbex       = 1'b0,
     parameter bit          ICacheScramble   = 1'b0,
-    parameter lfsr_seed_t  RndCnstLfsrSeed  = RndCnstLfsrSeedDefault,
-    parameter lfsr_perm_t  RndCnstLfsrPerm  = RndCnstLfsrPermDefault,
     parameter int unsigned DmHaltAddr       = 32'h1A11_0800,
     parameter int unsigned DmExceptionAddr  = 32'h1A11_0808,
     parameter bit          BootROMEnable    = 1'b1
@@ -467,6 +464,8 @@ module aida_lca
   /*******************************************************/
 
   assign redmule_ctrl.req = noc_data_reqs[PERIPH_IDX];
+
+`ifdef TARGET_VERILATOR 
   assign noc_data_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
 
   isolde_redmule_top #(
@@ -483,8 +482,7 @@ module aida_lca
       .m_hci_core    (redmule_hci),
       .s_tcdm_ctrl   (redmule_ctrl)
   );
-
-`ifdef TARGET_VERILATOR 
+  
   isolde_hci_monitor #(
       .AW  (HCI_AW),
       .DW  (HCI_DW),
@@ -494,6 +492,8 @@ module aida_lca
       .rst_ni,
       .hci_core(redmule_hci)
   );
+  `else
+   assign noc_data_rsps[PERIPH_IDX] = '0; //redmule_ctrl.rsp;
 `endif
 
 endmodule

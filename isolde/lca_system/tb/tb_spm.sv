@@ -182,7 +182,7 @@ module tb_lca_system (
       .jtag_TDI       (jtag_in.tdi),
       .jtag_TRSTn     (jtag_in.trst_n),
       .jtag_TDO_data  (jtag_out.tdo),
-      .jtag_TDO_driven(1'b1),
+      .jtag_TDO_driven(jtag_out.tdo_oe),
       .exit           (sim_jtag_exit)
   );
 
@@ -277,8 +277,8 @@ module tb_lca_system (
       .BranchPredictor (BranchPredictor),
       .DbgTriggerEn    (DbgTriggerEn),
       .DmHaltAddr      (32'h1A11_0800),     //TODO make a param here
-      .DmExceptionAddr (32'h1A11_0808),      //TODO make a param here
-      .BootROMEnable  (BootROMEnable)
+      .DmExceptionAddr (32'h1A11_0808),     //TODO make a param here
+      .BootROMEnable   (BootROMEnable)
   ) i_aida_lca (
       .clk_i,
       .rst_ni,

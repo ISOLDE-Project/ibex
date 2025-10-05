@@ -29,6 +29,7 @@ sources:
     ##level 2
     - rtl/hwe/isolde_redmule_top.sv
     - rtl/noc/isolde_router.sv
+    - rtl/ibex_rst.sv
     ##level 3
     - rtl/aida_lca_package.sv
     - rtl/aida_lca.sv
