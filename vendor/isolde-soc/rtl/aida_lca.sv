@@ -464,8 +464,6 @@ module aida_lca
   /*******************************************************/
 
   assign redmule_ctrl.req = noc_data_reqs[PERIPH_IDX];
-
-`ifdef TARGET_VERILATOR 
   assign noc_data_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
 
   isolde_redmule_top #(
@@ -482,7 +480,8 @@ module aida_lca
       .m_hci_core    (redmule_hci),
       .s_tcdm_ctrl   (redmule_ctrl)
   );
-  
+
+`ifdef TARGET_VERILATOR   
   isolde_hci_monitor #(
       .AW  (HCI_AW),
       .DW  (HCI_DW),
@@ -492,8 +491,6 @@ module aida_lca
       .rst_ni,
       .hci_core(redmule_hci)
   );
-  `else
-   assign noc_data_rsps[PERIPH_IDX] = '0; //redmule_ctrl.rsp;
 `endif
 
 endmodule

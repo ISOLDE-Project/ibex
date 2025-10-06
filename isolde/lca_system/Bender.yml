@@ -28,5 +28,5 @@ sources:
        - tb/tb_spm.sv
    - target: xilinx
      files:
-      - fpga/rtl/aida_padframe.sv
-      - fpga/rtl/xilinx_aida.sv
+     - fpga/rtl/xilinx_aida.sv
+     
