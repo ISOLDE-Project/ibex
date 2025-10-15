@@ -126,3 +126,8 @@ kill -9 27459
  RISC-V memory access method(s) shall be used as follow:
  - *progbuf*  for reading/writting dmem and stack
  - *sysbus*   for reading/writting imem
+
+ # Build the fpga simulation
+ ```sh
+  make -f Makefile.wrapper  veri-clean verilate veri-run
+ ```

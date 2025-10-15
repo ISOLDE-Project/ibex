@@ -56,3 +56,9 @@ sources:
         - fpga/rtl/aida_padframe.sv
         - fpga/rtl/tcdm_mem.sv
         - fpga/rtl/aida_top.sv
+    - target: fpga_sim
+      files:
+        - fpga/rtl/aida_top.sv
+        - fpga/sim/tcdm_mem.sv
+        - fpga/tb/aida_tb.sv
+    

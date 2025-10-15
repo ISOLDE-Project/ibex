@@ -14,6 +14,7 @@ FUSESOC_BUILD_ROOT  := $(mkfile_path)/$(TMP_DIR)
 FUSESOC_SYNTH_ROOT  ?= $(mkfile_path)/$(SYNTH_DIR)
 BENDER_RTL_ROOT     ?= $(mkfile_path)
 BENDER_SYNTH_TARGET ?= 
+BENDER_EXTRA_TARGET ?= 
 FUSESOC_PROJECT     := isolde
 FUSESOC_CORE        := ibex
 FUSESOC_SYSTEM      := lca_dm_system
