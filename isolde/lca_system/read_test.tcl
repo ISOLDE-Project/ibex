@@ -7,10 +7,19 @@ reset halt
 set width 32
 
 # Define addresses and expected values
+##################
+#
+# 0x00100000 Instruction Memory
+# 0x00110000 Data Memory
+# 0x00140000 Stack Memory
+# 0x80001000 Scratchpad Memory
+#
+##################    
 set tests {
     {0x00100000 {0x0badc0de 0xdeadbeaf}}
     {0x00110000 {0x12345678 0xabcdef01}}
     {0x00140000 {0xa5a5a5a5 0x5a5a5a5a}}
+    {0x80001000 {0xdeafbeaf 0xfaceabee}}
 }
 
 set overall_match 1

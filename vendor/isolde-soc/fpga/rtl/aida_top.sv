@@ -69,7 +69,7 @@ module aida_top
   isolde_tcdm_if aida_mmio ();
 
 
-
+assign aida_mmio.rsp = '0; // tie off unused mmio port
 
 
 
@@ -166,7 +166,9 @@ module aida_top
       .aida_data_memory(aida_data_memory),
       .aida_stack_memory(aida_stack_memory),
       .aida_instr_memory(aida_instr_memory),
+`ifdef TARGET_AIDA_MMIO            
       .aida_mmio(aida_mmio),
+`endif      
       .spm_req_o(mem_req),
       .spm_rsp_i(mem_rsp),
       .aida_jtag_in(soc_jtag_in),

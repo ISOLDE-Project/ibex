@@ -6,7 +6,7 @@ riscv set_mem_access sysbus
 #reset halt 
 set width 32
 
-set test_addrs {0x00100000  0x00140000}
+set test_addrs {0x00100000  0x00110000 0x00140000 0x80001000}
 
 # Generate random 32-bit values for each address
 set tests {}
