@@ -65,11 +65,10 @@ module aida_top
   // === stack memory port ===
   isolde_tcdm_if aida_stack_memory ();
 
+`ifdef TARGET_AIDA_MMIO  
   // === memory mapped I/O ports ===
   isolde_tcdm_if aida_mmio ();
-
-
-assign aida_mmio.rsp = '0; // tie off unused mmio port
+`endif
 
 
 
