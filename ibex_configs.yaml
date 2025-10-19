@@ -202,9 +202,9 @@ isolde:
   RegFile                  : "ibex_pkg::RegFileFF"
   BranchTargetALU          : 0
   WritebackStage           : 0
-  ICache                   : 1
+  ICache                   : 0
   ICacheECC                : 0
-  ICacheScramble           : 1
+  ICacheScramble           : 0
   BranchPredictor          : 0
   DbgTriggerEn             : 0
   SecureIbex               : 0

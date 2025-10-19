@@ -53,7 +53,7 @@ module tcdm_mem #(
       .MEMORY_PRIMITIVE(MEMORY_PRIMITIVE),
       .READ_DATA_WIDTH_A(32),
       .WRITE_DATA_WIDTH_A(32),
-      .WRITE_MODE_A("read_first")  // "read_first", "write_first", "no_change"
+      .WRITE_MODE_A("write_first")  // "read_first", "write_first", "no_change"
       //.CLOCKING_MODE("common_clock")
   ) xpm_mem_inst (
       // -----------------------------

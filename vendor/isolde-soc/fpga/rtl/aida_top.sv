@@ -4,59 +4,48 @@
 
 
 
-module aida_top (
-    input  logic clk_i,
-    input  logic rst_ni,
-    input  logic fetch_enable_i,
-    // JTAG signals (connets to  debug TAP)
-    input  logic jtag_tck_i,
-    input  logic jtag_trst_ni,
-    input  logic jtag_tms_i,
-    input  logic jtag_tdi_i,
-    output logic jtag_tdo_o
-
-);
+module aida_top
+  import ibex_pkg::*;
   import redmule_pkg::*;
   import isolde_tcdm_pkg::*;
   import aida_lca_package::*;
-  //ibex parameters
-  parameter bit SecureIbex = 1'b0;
-  parameter bit ICacheScramble = 1'b0;
-  parameter bit PMPEnable = 1'b0;
-  parameter int unsigned PMPGranularity = 0;
-  parameter int unsigned PMPNumRegions = 4;
-  parameter int unsigned MHPMCounterNum = 0;
-  parameter int unsigned MHPMCounterWidth = 40;
-  parameter bit RV32E = 1'b0;
-  parameter ibex_pkg::rv32m_e RV32M = ibex_pkg::RV32MSingleCycle;
-  parameter ibex_pkg::rv32b_e RV32B = ibex_pkg::RV32BNone;
-`ifdef SIMULATION
-  parameter ibex_pkg::regfile_e RegFile = ibex_pkg::RegFileFF;
-`else
-  parameter ibex_pkg::regfile_e RegFile = ibex_pkg::RegFileFPGA;
-`endif
-  parameter bit BranchTargetALU = 1'b0;
-  parameter bit WritebackStage = 1'b0;
-  parameter bit ICache = 1'b0;
-  parameter bit DbgTriggerEn = 1'b0;
-  parameter bit ICacheECC = 1'b0;
-  parameter bit BranchPredictor = 1'b0;
-  parameter int unsigned IMEM_LATENCY = 0;  //TODO remove this param 
+#(
+    //ibex parameters
+    parameter bit RV32E           = 1'b0,
+    parameter bit ICacheScramble  = 1'b0,
+    parameter bit ICache          = 1'b0,
+    parameter bit ICacheECC       = 1'b0,
+    parameter bit BranchTargetALU = 1'b0,
+    parameter bit WritebackStage  = 1'b0,
+    parameter bit SecureIbex      = 1'b0,
+    parameter bit BranchPredictor = 1'b0,
+    parameter bit DbgTriggerEn    = 1'b0,
+
+    parameter bit          PMPEnable        = 1'b0,
+    parameter int unsigned PMPGranularity   = 0,
+    parameter int unsigned PMPNumRegions    = 4,
+    parameter int unsigned MHPMCounterNum   = 0,
+    parameter int unsigned MHPMCounterWidth = 40,
+
+    parameter rv32m_e   RV32M   = RV32MSingleCycle,
+    parameter rv32b_e   RV32B   = RV32BNone,
+    parameter regfile_e RegFile = RegFileFPGA,
+
+    parameter int unsigned DmHaltAddr      = 32'h1A11_0800,
+    parameter int unsigned DmExceptionAddr = 32'h1A11_0808,
+    parameter bit          BootROMEnable   = 1'b1
+) (
+    input logic clk_i,
+    input logic rst_ni,
+    input logic fetch_enable_i,
+    // === JTAG port ===
+    input jtag_pkg::jtag_req_t soc_jtag_in,
+    output jtag_pkg::jtag_rsp_t soc_jtag_out
+);
 
 
 
-  /********************************************************/
-  /**           Debug module signals                     **/
-  /*******************************************************/
 
-  jtag_pkg::jtag_req_t jtag_in;
-  jtag_pkg::jtag_rsp_t jtag_out;
-
-  assign jtag_in.tck    = jtag_tck_i;
-  assign jtag_in.trst_n = jtag_trst_ni;
-  assign jtag_in.tms    = jtag_tms_i;
-  assign jtag_in.tdi    = jtag_tdi_i;
-  assign jtag_out.tdo   = jtag_tdo_o;
 
 
 
@@ -76,11 +65,10 @@ module aida_top (
   // === stack memory port ===
   isolde_tcdm_if aida_stack_memory ();
 
+`ifdef TARGET_AIDA_MMIO  
   // === memory mapped I/O ports ===
   isolde_tcdm_if aida_mmio ();
-
-
-
+`endif
 
 
 
@@ -101,7 +89,7 @@ module aida_top (
   /*******************************************************/
   tcdm_mem #(
       .MEMORY_SIZE(2048),
-      .DELAY_CYCLES(IMEM_LATENCY),
+      //.DELAY_CYCLES(IMEM_LATENCY),
       .MEMORY_PRIMITIVE("ultra")
   ) i_dummy_imemory (
       .clk_i,
@@ -167,8 +155,9 @@ module aida_top (
       .WritebackStage  (WritebackStage),
       .BranchPredictor (BranchPredictor),
       .DbgTriggerEn    (DbgTriggerEn),
-      .DmHaltAddr      (32'h1A11_0800),     //TODO make a param here
-      .DmExceptionAddr (32'h1A11_0808)      //TODO make a param here
+      .DmHaltAddr      (DmHaltAddr),
+      .DmExceptionAddr (DmExceptionAddr),
+      .BootROMEnable   (BootROMEnable)
   ) i_aida_lca (
       .clk_i(clk_i),
       .rst_ni(rst_ni),
@@ -176,11 +165,13 @@ module aida_top (
       .aida_data_memory(aida_data_memory),
       .aida_stack_memory(aida_stack_memory),
       .aida_instr_memory(aida_instr_memory),
+`ifdef TARGET_AIDA_MMIO            
       .aida_mmio(aida_mmio),
+`endif      
       .spm_req_o(mem_req),
       .spm_rsp_i(mem_rsp),
-      .aida_jtag_in(jtag_in),
-      .aida_jtag_out(jtag_out)
+      .aida_jtag_in(soc_jtag_in),
+      .aida_jtag_out(soc_jtag_out)
 
   );
 

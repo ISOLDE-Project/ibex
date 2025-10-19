@@ -50,7 +50,7 @@ clean:                      ## Removes all build products
 	make -C $(FPGA_DIR)/ips/xilinx_clk_mngr  $@
 	make -C $(FPGA_DIR)/ips/xilinx_sys_rst   $@
 
-clean-vivado:
+clean-vivado:              ## Removes the generated files together with the vivado project
 	rm -fr vivado synth-vivado
 	rm -f ibex_synth.tcl isolde_synth.tcl vivado_synth.tcl
 

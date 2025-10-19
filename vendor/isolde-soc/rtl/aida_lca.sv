@@ -10,7 +10,7 @@ module aida_lca
     parameter int unsigned MHPMCounterNum   = 0,
     parameter int unsigned MHPMCounterWidth = 40,
     parameter bit          RV32E            = 1'b0,
-    parameter rv32m_e      RV32M            = RV32MFast,
+    parameter rv32m_e      RV32M            = RV32MSingleCycle,
     parameter rv32b_e      RV32B            = RV32BNone,
     parameter regfile_e    RegFile          = RegFileFF,
     parameter bit          BranchTargetALU  = 1'b0,
@@ -19,11 +19,8 @@ module aida_lca
     parameter bit          ICacheECC        = 1'b0,
     parameter bit          BranchPredictor  = 1'b0,
     parameter bit          DbgTriggerEn     = 1'b0,
-    parameter int unsigned DbgHwBreakNum    = 1,
     parameter bit          SecureIbex       = 1'b0,
     parameter bit          ICacheScramble   = 1'b0,
-    parameter lfsr_seed_t  RndCnstLfsrSeed  = RndCnstLfsrSeedDefault,
-    parameter lfsr_perm_t  RndCnstLfsrPerm  = RndCnstLfsrPermDefault,
     parameter int unsigned DmHaltAddr       = 32'h1A11_0800,
     parameter int unsigned DmExceptionAddr  = 32'h1A11_0808,
     parameter bit          BootROMEnable    = 1'b1
@@ -34,7 +31,9 @@ module aida_lca
            isolde_tcdm_if.master  aida_data_memory,
            isolde_tcdm_if.master  aida_stack_memory,
            isolde_tcdm_if.master  aida_instr_memory,
+`ifdef TARGET_AIDA_MMIO          
            isolde_tcdm_if.master  aida_mmio,
+`endif           
     // ===  Scratchpad Memory (SPM) banks  connections ===
     output isolde_tcdm_pkg::req_t spm_req_o        [N_TCDM_BANKS-1:0],
     input  isolde_tcdm_pkg::rsp_t spm_rsp_i        [N_TCDM_BANKS-1:0],
@@ -62,7 +61,9 @@ module aida_lca
     PERIPH_IDX,
     DATA_IDX,
     STACK_IDX,
+`ifdef TARGET_AIDA_MMIO              
     MMIO_IDX,
+`endif   
     SPM_IDX,
 `ifdef TARGET_RV_DEBUG
     DEBUG_IDX,
@@ -76,7 +77,9 @@ module aida_lca
       '{start_addr: PERIPH_ADDR, end_addr: IMEM_ADDR},
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
+`ifdef TARGET_AIDA_MMIO                
       '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
+`endif      
       '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + SPM_NARROW_SIZE}
 `ifdef TARGET_RV_DEBUG
       , '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
@@ -195,9 +198,10 @@ module aida_lca
   /********************************************************/
   /**           memory mapped I/O                        **/
   /*******************************************************/
-
+`ifdef TARGET_AIDA_MMIO          
   assign aida_mmio.req = noc_data_reqs[MMIO_IDX];
   assign noc_data_rsps[MMIO_IDX] = aida_mmio.rsp;
+`endif
 
 
   /********************************************************/
@@ -484,7 +488,7 @@ module aida_lca
       .s_tcdm_ctrl   (redmule_ctrl)
   );
 
-`ifdef TARGET_VERILATOR 
+`ifdef TARGET_VERILATOR   
   isolde_hci_monitor #(
       .AW  (HCI_AW),
       .DW  (HCI_DW),

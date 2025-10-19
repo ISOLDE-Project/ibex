@@ -55,8 +55,8 @@ ibex_sim.flist:  $(CORE_FILES)
 ##
 
 manifest.flist: Bender.yml
-	@echo 'INFO:  bender script verilator $(common_targs) $(VLT_BENDER)'
-	@$(BENDER) script verilator $(common_targs) $(VLT_BENDER)  >$@
+	@echo 'INFO:  $(BENDER) script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(VLT_BENDER)'
+	@$(BENDER) script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(VLT_BENDER)  >$@
 	touch $@
 
 

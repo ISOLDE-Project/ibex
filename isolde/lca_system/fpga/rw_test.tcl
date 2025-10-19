@@ -3,23 +3,29 @@ reset halt
 #riscv set_mem_access progbuf
 riscv set_mem_access sysbus
 
-reset halt 
+#reset halt 
 set width 32
 
-# Define addresses and expected values
-##################
-#
-# 0x00100000 Instruction Memory
-# 0x00110000 Data Memory
-# 0x00140000 Stack Memory
-# 0x80001000 Scratchpad Memory
-#
-##################    
-set tests {
-    {0x00100000 {0x0badc0de 0xdeadbeaf}}
-    {0x00110000 {0x12345678 0xabcdef01}}
-    {0x00140000 {0xa5a5a5a5 0x5a5a5a5a}}
-    {0x80001000 {0xdeafbeaf 0xfaceabee}}
+set test_addrs {0x00100000  0x00110000 0x00140000 0x80001000}
+
+# Generate random 32-bit values for each address
+set tests {}
+foreach addr $test_addrs {
+    # Generate a random 32-bit integer
+    # expr {int(rand() * 0xFFFFFFFF)} → 0 to 0xFFFFFFFF
+    set rand_val [expr {int(rand() * 0xFFFFFFFF)}]
+
+    # Format it as a hex word (0xXXXXXXXX)
+    set hex_val [format "0x%08X" $rand_val]
+
+    # Append the address–value pair to the tests list
+    lappend tests [list $addr [list $hex_val]]
+}
+
+# Print out generated pairs (for debugging)
+puts "Generated test data:"
+foreach test $tests {
+    puts $test
 }
 
 set overall_match 1
@@ -61,4 +67,4 @@ if {$overall_match} {
     puts "ONE OR MORE TESTS FAILED."
 }
 
-shutdown
+#shutdown
