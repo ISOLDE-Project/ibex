@@ -45,3 +45,7 @@ set_property -dict {PACKAGE_PIN H7 IOSTANDARD LVCMOS33} [get_ports pad_jtag_tck]
 #set_property -dict {PACKAGE_PIN J7 IOSTANDARD LVCMOS33} [get_ports pad_pmod0_7]
 
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets pad_jtag_tck_IBUF_inst/O] 
+
+# Declare that clk_out1_xilinx_clk_mngr and tck are asynchronous
+set_false_path -from [get_clocks clk_out1_xilinx_clk_mngr] -to [get_clocks tck]
+set_false_path -from [get_clocks tck] -to [get_clocks clk_out1_xilinx_clk_mngr]
