@@ -9,7 +9,8 @@ package:
 dependencies:
   redmule:            {path: ../../vendor/redmule }
   axi:                { git: "https://github.com/pulp-platform/axi.git"               , version: 0.39.6    }
-
+  udma_core:          {git: "https://github.com/pulp-platform/udma_core.git"          , version: 2.0.0     }
+  
 export_include_dirs:
 #  - rtl/include
   - tb/include 
