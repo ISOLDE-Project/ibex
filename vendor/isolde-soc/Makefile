@@ -15,4 +15,10 @@ include $(ROOT_DIR)/isolde/mk/verilator-build.mk
 ibex_sim.flist:  
 	@echo "Unit test sim files"
 	echo "$(mkfile_path)/tb/verilator/tb_top_verilator.cpp" >  ${CURDIR}/ibex_sim.flist
+	echo "$(ROOT_DIR)/rtl/isolde_cv_x_if_pkg.sv" >> ${CURDIR}/ibex_sim.flist
+	echo "$(ROOT_DIR)/vendor/lowrisc_ip/ip/prim/rtl/prim_ram_1p_pkg.sv" >> ${CURDIR}/ibex_sim.flist
+	echo "$(ROOT_DIR)/rtl/ibex_pkg.sv" >> ${CURDIR}/ibex_sim.flist
+	echo "$(ROOT_DIR)/vendor/isolde-dm/rtl/jtag_pkg.sv" >> ${CURDIR}/ibex_sim.flist
+	echo "$(ROOT_DIR)/vendor/isolde-dm/rtl/rv_dm_pkg.sv" >> ${CURDIR}/ibex_sim.flist
+
 	echo "--top-module $(VLT_TOP_MODULE)"   >> ${CURDIR}/ibex_sim.flist
