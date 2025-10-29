@@ -38,9 +38,12 @@ module aida_top
     input logic clk_i,
     input logic rst_ni,
     input logic fetch_enable_i,
+    // === output ports ===
+    output aida_io_pkg::aida_pads_o_t pads_o,
     // === JTAG port ===
     input jtag_pkg::jtag_req_t soc_jtag_in,
     output jtag_pkg::jtag_rsp_t soc_jtag_out
+       
 );
 
 
@@ -165,9 +168,9 @@ module aida_top
       .aida_data_memory(aida_data_memory),
       .aida_stack_memory(aida_stack_memory),
       .aida_instr_memory(aida_instr_memory),
-`ifdef TARGET_AIDA_MMIO            
-      .aida_mmio(aida_mmio),
-`endif      
+      
+      .pads_o(pads_o),
+
       .spm_req_o(mem_req),
       .spm_rsp_i(mem_rsp),
       .aida_jtag_in(soc_jtag_in),

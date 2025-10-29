@@ -18,6 +18,8 @@ export_include_dirs:
 sources:
   files:   
     - rtl/common/isolde_tcdm_pkg.sv
+    - rtl/aida_lca_pkg.sv
+    - rtl/io/aida_io_pkg.sv
     - rtl/isolde_tcdm_if.sv
     - rtl/isolde_tcdm_to_axi.sv
     - rtl/isolde_addr_shim.sv
@@ -29,12 +31,12 @@ sources:
     - rtl/isolde_boot_rom.sv
     - rtl/uart/udma_uart_tx.sv
     - rtl/uart/isolde_uart_top.sv
+    - rtl/io/aida_io.sv
     ##level 2
     - rtl/hwe/isolde_redmule_top.sv
     - rtl/noc/isolde_router.sv
     - rtl/ibex_rst.sv
     ##level 3
-    - rtl/aida_lca_package.sv
     - rtl/aida_lca.sv
     - target: all(tb_dm,redmule_test_hwpe)
       files:
