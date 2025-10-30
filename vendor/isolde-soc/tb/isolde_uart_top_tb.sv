@@ -25,7 +25,22 @@ module isolde_uart_top_tb (
       core_req.we  = 0;
       core_req.be  = 4'b0000;
       @(posedge clk_i);
-      //wait (cores_rsp.valid);
+      //wait (core_rsp.valid);
+    end
+  endtask
+  // Read task with check
+  task automatic read_and_check( input logic [7:0] expected);
+    logic [7:0] read_data;
+    begin
+      uart_req( 32'hABAD_F00D, 1'b0);  // Read request
+      read_data = core_rsp.data[7:0];
+
+      if (read_data !== expected) begin
+        $error("[Time %0t] ❌ Read mismatch: expected %h, got %h", $time, 
+               expected, read_data);
+      end else begin
+        $display("[Time %0t] ✅ Read success: value = %h", $time, read_data);
+      end
     end
   endtask
 
@@ -53,7 +68,7 @@ module isolde_uart_top_tb (
     uart_req(32'hDA_CA_BA_AA, 1'b1);
     uart_req(32'hDE_AD_BE_EF, 1'b1);
     uart_req(32'hFE_ED_FA_CE, 1'b1);
-    
+    read_and_check(8'hCE);
 
 
 

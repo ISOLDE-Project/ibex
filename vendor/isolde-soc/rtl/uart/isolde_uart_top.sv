@@ -50,8 +50,8 @@ module isolde_uart_top #(
 
     output logic uart_tx_o,
 
-    isolde_tcdm_pkg::req_t uart_req_i,
-    isolde_tcdm_pkg::rsp_t uart_rsp_o
+    input isolde_tcdm_pkg::req_t uart_req_i,
+    output isolde_tcdm_pkg::rsp_t uart_rsp_o
 
 
 );
@@ -65,11 +65,38 @@ module isolde_uart_top #(
   logic       s_data_tx_ready;
   logic [7:0] s_data_tx;
 
-  assign s_data_tx_valid = uart_req_i.req;
-  assign s_data_tx = uart_req_i.data[7:0];
-  assign uart_rsp_o.gnt = s_data_tx_ready;
-  assign uart_rsp_o.data = {24'h0, s_data_tx};  // TX data to return
-  assign uart_rsp_o.valid = s_tx_done;
+
+
+  // Always block to process read/write operations
+  always_ff @(posedge sys_clk_i or negedge rstn_i) begin
+    if (!rstn_i) begin
+      // Reset all state
+      s_data_tx                    <= '0;
+    end else begin
+      if (uart_req_i.req) begin
+        if (uart_req_i.we) begin
+          // Write operation
+           uart_rsp_o.gnt <= s_data_tx_ready;
+          if(s_data_tx_ready) begin
+           
+             s_data_tx <= uart_req_i.data[7:0];
+             s_data_tx_valid <= 1;
+             uart_rsp_o <= uart_req_i.data[7:0];  // echo back         
+          end
+        end else begin
+          // Read operation
+         uart_rsp_o.data <= s_data_tx;
+                 // Mark response as valid
+         uart_rsp_o.valid <= 1'b1; 
+         uart_rsp_o.gnt <= 1;
+        end
+
+      end else begin
+                 uart_rsp_o.valid <= 1'b0; 
+         uart_rsp_o.gnt <= 0;
+    end
+  end
+  end
 
   udma_uart_tx u_uart_tx (
       .clk_i          (sys_clk_i),

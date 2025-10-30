@@ -131,23 +131,23 @@ module aida_soc_io
   assign  tcdm_mmio_print.req = mmio_reqs[IO_PRINT_IDX];
   assign  mmio_rsps[IO_PRINT_IDX] = tcdm_mmio_print.rsp;
 
-  tcdm_mem #(
-      .MEMORY_SIZE(2048),
-      //.DELAY_CYCLES(IMEM_LATENCY),
-      .MEMORY_PRIMITIVE("ultra")
-  ) i_print_memory (
-      .clk_i,
-      .rst_ni,
-      .tcdm_slave_i(tcdm_mmio_print)
-  );
+//   tcdm_mem #(
+//       .MEMORY_SIZE(2048),
+//       //.DELAY_CYCLES(IMEM_LATENCY),
+//       .MEMORY_PRIMITIVE("ultra")
+//   ) i_print_memory (
+//       .clk_i,
+//       .rst_ni,
+//       .tcdm_slave_i(tcdm_mmio_print)
+//   );
 
-  // isolde_uart_top #(
-  //     .CLOCK_FREQ(115200)
-  // ) i_isolde_uart_top (
-  //     .sys_clk_i(clk_i),
-  //     .rstn_i(rst_ni),
-  //     .uart_tx_o(pads_o.uart_tx_o),
-  //     .uart_req_i(mmio_reqs[IO_PRINT_IDX]),
-  //     .uart_rsp_o(mmio_rsps[IO_PRINT_IDX])
-  // );
+  isolde_uart_top #(
+      .CLOCK_FREQ(115200)
+  ) i_isolde_uart_top (
+      .sys_clk_i(clk_i),
+      .rstn_i(rst_ni),
+      .uart_tx_o(pads_o.uart_tx_o),
+      .uart_req_i(mmio_reqs[IO_PRINT_IDX]),
+      .uart_rsp_o(mmio_rsps[IO_PRINT_IDX])
+  );
 endmodule
