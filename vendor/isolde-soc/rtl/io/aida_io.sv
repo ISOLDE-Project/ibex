@@ -86,52 +86,51 @@ module aida_soc_io
 
   logic [31:0] exit_code;
 
+  /********************************************************/
+  /**          EXIT CODE                               **/
+  /*******************************************************/
+ isolde_tcdm_if tcdm_mmio_exit ();
+  assign  tcdm_mmio_exit.req = mmio_reqs[IO_EXIT_IDX];
+  assign  mmio_rsps[IO_EXIT_IDX] = tcdm_mmio_exit.rsp;
 
 
-  // // Grant logic: active only when reset is inactive
-  // assign mmio_rsps[IO_EXIT_IDX].gnt = rst_ni && mmio_reqs[IO_EXIT_IDX].req;
+  // Grant logic: active only when reset is inactive
+  assign tcdm_mmio_exit.rsp.gnt = rst_ni && tcdm_mmio_exit.req.req;
 
-  // // Always block to process read/write operations
-  // always_ff @(posedge clk_i or negedge rst_ni) begin
-  //   if (!rst_ni) begin
-  //     // Reset all state
-  //     exit_code                    <= '0;
-  //     mmio_rsps[IO_EXIT_IDX].data  <= '0;
-  //     mmio_rsps[IO_EXIT_IDX].valid <= 1'b0;
-  //   end else begin
-  //     // Default outputs every cycle
-  //     mmio_rsps[IO_EXIT_IDX].data  <= 32'hDEAD_BEEF;  // debug pattern
-  //     mmio_rsps[IO_EXIT_IDX].valid <= 1'b0;
+  // Always block to process read/write operations
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      // Reset all state
+      exit_code                    <= '0;
+    end else begin
+      // Default outputs every cycle
+      tcdm_mmio_exit.rsp.data  <= 32'hDEAD_BEEF;  // debug pattern
+      tcdm_mmio_exit.rsp.valid <= 1'b0;
 
-  //     if (mmio_rsps[IO_EXIT_IDX].gnt) begin
-  //       if (mmio_reqs[IO_EXIT_IDX].we) begin
-  //         // Write operation
-  //         exit_code <= mmio_reqs[IO_EXIT_IDX].data;
-  //         mmio_rsps[IO_EXIT_IDX].data <= mmio_reqs[IO_EXIT_IDX].data;  // echo back
-  //       end else begin
-  //         // Read operation
-  //         mmio_rsps[IO_EXIT_IDX].data <= exit_code;
-  //       end
-  //       // Mark response as valid
-  //       mmio_rsps[IO_EXIT_IDX].valid <= 1'b1;
-  //     end
-  //   end
-  // end
+      if (tcdm_mmio_exit.rsp.gnt) begin
+        if (tcdm_mmio_exit.req.we) begin
+          // Write operation
+          exit_code <= tcdm_mmio_exit.req.data;
+          tcdm_mmio_exit.rsp <= tcdm_mmio_exit.req.data;  // echo back
+        end else begin
+          // Read operation
+         tcdm_mmio_exit.rsp.data <= exit_code;
+        end
+        // Mark response as valid
+        tcdm_mmio_exit.rsp.valid <= 1'b1;
+      end
+    end
+  end
 
 
+  /********************************************************/
+  /**           UART                             **/
+  /*******************************************************/
 
-  // isolde_uart_top #(
-  //     .CLOCK_FREQ(115200)
-  // ) i_isolde_uart_top (
-  //     .sys_clk_i(clk_i),
-  //     .rstn_i(rst_ni),
-  //     .uart_tx_o(pads_o.uart_tx_o),
-  //     .uart_req_i(mmio_reqs[IO_PRINT_IDX]),
-  //     .uart_rsp_o(mmio_rsps[IO_PRINT_IDX])
-  // );
  isolde_tcdm_if tcdm_mmio_print ();
   assign  tcdm_mmio_print.req = mmio_reqs[IO_PRINT_IDX];
   assign  mmio_rsps[IO_PRINT_IDX] = tcdm_mmio_print.rsp;
+
   tcdm_mem #(
       .MEMORY_SIZE(2048),
       //.DELAY_CYCLES(IMEM_LATENCY),
@@ -142,4 +141,13 @@ module aida_soc_io
       .tcdm_slave_i(tcdm_mmio_print)
   );
 
+  // isolde_uart_top #(
+  //     .CLOCK_FREQ(115200)
+  // ) i_isolde_uart_top (
+  //     .sys_clk_i(clk_i),
+  //     .rstn_i(rst_ni),
+  //     .uart_tx_o(pads_o.uart_tx_o),
+  //     .uart_req_i(mmio_reqs[IO_PRINT_IDX]),
+  //     .uart_rsp_o(mmio_rsps[IO_PRINT_IDX])
+  // );
 endmodule
