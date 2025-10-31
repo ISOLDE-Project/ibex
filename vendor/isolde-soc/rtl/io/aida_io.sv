@@ -147,7 +147,7 @@ module aida_soc_io
       .sys_clk_i(clk_i),
       .rstn_i(rst_ni),
       .uart_tx_o(pads_o.uart_tx_o),
-      .uart_req_i(mmio_reqs[IO_PRINT_IDX]),
-      .uart_rsp_o(mmio_rsps[IO_PRINT_IDX])
+      .uart_req_i(tcdm_mmio_print.req),
+      .uart_rsp_o(tcdm_mmio_print.rsp)
   );
 endmodule

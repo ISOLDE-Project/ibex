@@ -32,7 +32,7 @@ module isolde_uart_top #(
 
     output logic uart_tx_o,
 
-    input isolde_tcdm_pkg::req_t uart_req_i,
+    input  isolde_tcdm_pkg::req_t uart_req_i,
     output isolde_tcdm_pkg::rsp_t uart_rsp_o
 
 
@@ -48,24 +48,41 @@ module isolde_uart_top #(
   logic [7:0] s_data_tx;
   logic gnt_d, gnt_q;
 
-
+  // Grant logic: active only when reset is inactive
+  assign gnt_d           = rstn_i && s_data_tx_ready && uart_req_i.req;
   assign s_data_tx_valid = rstn_i && s_data_tx_ready && uart_req_i.req && uart_req_i.we;
-  assign uart_rsp_o.gnt = gnt_q;
-  assign uart_rsp_o.data = {24'h0, s_data_tx};  // TX data to return
-  assign uart_rsp_o.valid = s_tx_done;
+  //   assign uart_rsp_o.gnt   = gnt_q;
+  //   assign uart_rsp_o.data  = {24'h0, s_data_tx};  // TX data to return
+  //   assign uart_rsp_o.valid = s_tx_done;
 
 
-always_comb begin
-    if (s_data_tx_valid)
-         s_data_tx = uart_req_i.data[7:0];
+  always_comb begin
+    if (s_data_tx_valid) s_data_tx = uart_req_i.data[7:0];
     else begin
-        if(!rstn_i)
-            s_data_tx = '0;
+      if (!rstn_i) s_data_tx = '0;
     end
-end
+  end
 
+
+
+  // Always block to process read/write operations
   always_ff @(posedge sys_clk_i or negedge rstn_i) begin
-        gnt_q <= rstn_i && s_data_tx_ready && uart_req_i.req;
+    if (!rstn_i) begin
+      // Reset all state
+      uart_rsp_o.gnt <= 0;
+    end else begin
+      gnt_q <= gnt_d;
+      if (gnt_q) begin
+        uart_rsp_o.data  <= {24'h0, s_data_tx};
+        // Mark response as valid
+        uart_rsp_o.gnt   <= 1;
+        uart_rsp_o.valid <= 1;
+      end else begin
+        uart_rsp_o.gnt   <= 0;
+        uart_rsp_o.valid <= 0;
+      end
+
+    end
   end
 
 
