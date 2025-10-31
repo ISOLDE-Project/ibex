@@ -25,7 +25,7 @@ module isolde_uart_top_tb (
       core_req.we  = 0;
       core_req.be  = 4'b0000;
       @(posedge clk_i);
-      //wait (core_rsp.valid);
+      wait (core_rsp.valid);
     end
   endtask
   // Read task with check
@@ -68,6 +68,7 @@ module isolde_uart_top_tb (
     uart_req(32'hDA_CA_BA_AA, 1'b1);
     uart_req(32'hDE_AD_BE_EF, 1'b1);
     uart_req(32'hFE_ED_FA_CE, 1'b1);
+     $display("[Time %0t] ✅ writes done!", $time);
     read_and_check(8'hCE);
 
 
