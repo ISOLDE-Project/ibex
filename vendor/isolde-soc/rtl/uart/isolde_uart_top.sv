@@ -1,23 +1,5 @@
 // Copyyleft 2025 ISOLDE
-// Copyright 2018 ETH Zurich and University of Bologna.
-// Copyright and related rights are licensed under the Solderpad Hardware
-// License, Version 0.51 (the "License"); you may not use this file except in
-// compliance with the License.  You may obtain a copy of the License at
-// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
-// or agreed to in writing, software, hardware and materials distributed under
-// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the
-// specific language governing permissions and limitations under the License.
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// Description: UART top level
-//
-///////////////////////////////////////////////////////////////////////////////
-//
-// Authors    : Antonio Pullini (pullinia@iis.ee.ethz.ch)
-//
-///////////////////////////////////////////////////////////////////////////////
 
 
 module isolde_uart_top #(
@@ -64,39 +46,28 @@ module isolde_uart_top #(
   logic       s_tx_done;
   logic       s_data_tx_ready;
   logic [7:0] s_data_tx;
+  logic gnt_d, gnt_q;
 
 
+  assign s_data_tx_valid = rstn_i && s_data_tx_ready && uart_req_i.req && uart_req_i.we;
+  assign uart_rsp_o.gnt = gnt_q;
+  assign uart_rsp_o.data = {24'h0, s_data_tx};  // TX data to return
+  assign uart_rsp_o.valid = s_tx_done;
 
-  // Always block to process read/write operations
-  always_ff @(posedge sys_clk_i or negedge rstn_i) begin
-    if (!rstn_i) begin
-      // Reset all state
-      s_data_tx                    <= '0;
-    end else begin
-      if (uart_req_i.req) begin
-        if (uart_req_i.we) begin
-          // Write operation
-           uart_rsp_o.gnt <= s_data_tx_ready;
-          if(s_data_tx_ready) begin
-           
-             s_data_tx <= uart_req_i.data[7:0];
-             s_data_tx_valid <= 1;
-             uart_rsp_o <= uart_req_i.data[7:0];  // echo back         
-          end
-        end else begin
-          // Read operation
-         uart_rsp_o.data <= s_data_tx;
-                 // Mark response as valid
-         uart_rsp_o.valid <= 1'b1; 
-         uart_rsp_o.gnt <= 1;
-        end
 
-      end else begin
-                 uart_rsp_o.valid <= 1'b0; 
-         uart_rsp_o.gnt <= 0;
+always_comb begin
+    if (s_data_tx_valid)
+         s_data_tx = uart_req_i.data[7:0];
+    else begin
+        if(!rstn_i)
+            s_data_tx = '0;
     end
+end
+
+  always_ff @(posedge sys_clk_i or negedge rstn_i) begin
+        gnt_q <= rstn_i && s_data_tx_ready && uart_req_i.req;
   end
-  end
+
 
   udma_uart_tx u_uart_tx (
       .clk_i          (sys_clk_i),
@@ -117,4 +88,4 @@ module isolde_uart_top #(
 
 
 
-endmodule  // udma_uart_top
+endmodule  // isolde_uart_top
