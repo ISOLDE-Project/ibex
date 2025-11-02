@@ -5,10 +5,10 @@ riscv set_mem_access sysbus
 
 #reset halt 
 set width 32
-# ===   Instruction Memory | Data Memory | Stack Memory | Scratchpad Memory  | \
-# ===   MMIO_ADDR_EXIT | MMIO_ADDR_PRINT ===
-set test_addrs {0x00100000  0x00110000 0x00140000 0x80001000  0x80000000 0x80000004 }
-
+# ===   | Instruction Memory | Data Memory | Stack Memory | Scratchpad Memory  | \
+#         MMIO_ADDR_EXIT | ===
+set test_addrs {0x00100000  0x00110000 0x00140000 0x80001000  0x80000000  }
+set uart_addr 0x80000004
 # Generate random 32-bit values for each address
 set tests {}
 foreach addr $test_addrs {
@@ -60,6 +60,26 @@ foreach test $tests {
         set overall_match 0
     }
 }
+#UART test
+    set tx_rand_val [expr {int(rand() * 0xFFFFFFFF)}]
+
+    # Format it as a hex word (0xXXXXXXXX)
+    set tx_hex_val [format "0x%08X" $tx_rand_val]
+    puts "Writing memory at $uart_addr, value $tx_hex_val ..."
+    write_memory $uart_addr $width $tx_hex_val phys
+
+    puts "Reading memory at $uart_addr..."
+    set tx_echo [read_memory $uart_addr $width 1 phys]
+
+    
+    puts "Verifying UART echo (only last 8 bits)..."
+    set sent_byte [format "0x%x" [expr {$tx_rand_val & 0xFF}]]
+    if {$sent_byte eq [lindex $tx_echo 0]} {
+        puts "SUCCESS: UART echo matches sent value."
+    } else {
+        puts "ERROR: UART echo mismatch: sent $sent_byte, got [lindex $tx_echo 0]"
+        set overall_match 0
+    }
 
 puts "============================================="
 if {$overall_match} {
