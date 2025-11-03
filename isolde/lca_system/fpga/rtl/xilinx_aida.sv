@@ -15,7 +15,10 @@ module xilinx_aida (
     output wire GPIO_LED_0,
     output wire GPIO_LED_1,
     output wire GPIO_LED_2,
-    output wire GPIO_LED_3
+    output wire GPIO_LED_3,
+
+    //UART TX
+    inout wire pad_uart_tx
 
 );
 
@@ -23,6 +26,9 @@ module xilinx_aida (
   // JTAG Static connection signals 
   jtag_pkg::jtag_req_t jtag_req;
   jtag_pkg::jtag_rsp_t jtag_rsp;
+
+  // AIDA pad outputs
+  aida_io_pkg::aida_pads_o_t pads_o;
 
   // Internal clock and reset signals
   wire ref_clk;
@@ -47,11 +53,14 @@ module xilinx_aida (
       .pad2soc_jtag_o(jtag_req),
       .soc2pad_jtag_i(jtag_rsp),
       .internal_jtag_trstn(1'b1),
-      //
+      .soc2pads_o(pads_o),
+
+      //Pads
       .pad_jtag_tms(pad_jtag_tms),
       .pad_jtag_tdi(pad_jtag_tdi),
       .pad_jtag_tdo(pad_jtag_tdo),
-      .pad_jtag_tck(jtag_tck_buf)
+      .pad_jtag_tck(jtag_tck_buf),
+      .pad_uart_tx (pad_uart_tx)
   );
 
   // Clock manager instance (generates ref_clk)
@@ -95,16 +104,17 @@ module xilinx_aida (
       .clk_i         (ref_clk),
       .rst_ni        (~sys_mb_reset),  // Use system reset controller output
       .fetch_enable_i(fetch_enable),
-
+      // Pads
+      .pads_o        (pads_o),
       // JTAG port
-      .soc_jtag_in (jtag_req),
-      .soc_jtag_out(jtag_rsp)
+      .soc_jtag_in   (jtag_req),
+      .soc_jtag_out  (jtag_rsp)
   );
 
   // LED is ON when reset is active (logic high)
   assign GPIO_LED_0 = locked_sig;
   assign GPIO_LED_1 = sys_mb_reset;
   assign GPIO_LED_2 = fetch_enable;
-  assign GPIO_LED_3 = 1'b1; // Always ON
+  assign GPIO_LED_3 = 1'b1;  // Always ON
 
 endmodule

@@ -4,11 +4,13 @@ module aida_padframe (
     output jtag_pkg::jtag_req_t pad2soc_jtag_o,
     input jtag_pkg::jtag_rsp_t soc2pad_jtag_i,
     input wire internal_jtag_trstn,
+    output aida_io_pkg::aida_pads_o_t soc2pads_o,
     // Landing Pads
     input wire pad_jtag_tms,
     input wire pad_jtag_tdi,
     inout wire pad_jtag_tdo,
-    input wire pad_jtag_tck
+    input wire pad_jtag_tck,
+    inout wire pad_uart_tx
 
 );
 
@@ -70,4 +72,21 @@ module aida_padframe (
       .O(tck_ibuf_out)
   );
   assign pad2soc_jtag_o.tck = tck_ibuf_out;
+
+
+
+
+  // ------------------------------------------------------------------------
+  //UART TX
+  //  - Uses IOBUF
+  //  - No internal pull-up (recommended external 10 kΩ)
+  // ------------------------------------------------------------------------
+  (* IOSTANDARD = "LVCMOS33" *)
+  IOBUF uart_tx_iobuf_inst (
+      .I (soc2pads_o.uart_tx_o),  // internal signal to drive TDO
+      .O (),                      // not used internally
+      .IO(pad_uart_tx),           // physical FPGA pin
+      .T (1'b1)                   // tri-state control
+  );
+
 endmodule : aida_padframe
