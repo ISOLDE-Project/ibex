@@ -70,7 +70,7 @@ module isolde_uart_top #(
   assign tcdm_uart_wrp.rsp.gnt = rstn_i && s_data_tx_ready && tcdm_uart_wrp.req.req;
 
   // Always block to process read/write operations
-  always_ff @(posedge sys_clk_i or negedge rstn_i) begin
+  always_ff @(posedge sys_clk_i ) begin
     if (rstn_i) begin
 
       // Default outputs every cycle

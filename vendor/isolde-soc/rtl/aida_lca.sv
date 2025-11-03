@@ -198,7 +198,7 @@ module aida_lca
   /**           memory mapped I/O                        **/
   /*******************************************************/
       
-aida_soc_io #(
+aida_io #(
     .MMIO_ADDR(MMIO_ADDR)
 ) i_aida_io(
     .clk_i,

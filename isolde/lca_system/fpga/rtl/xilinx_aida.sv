@@ -18,7 +18,7 @@ module xilinx_aida (
     output wire GPIO_LED_3,
 
     //UART TX
-    inout wire pad_uart_tx
+    output wire pad_uart_tx
 
 );
 

@@ -44,8 +44,26 @@ set_property -dict {PACKAGE_PIN H7 IOSTANDARD LVCMOS33} [get_ports pad_jtag_tck]
 #set_property -dict {PACKAGE_PIN J6 IOSTANDARD LVCMOS33} [get_ports pad_pmod0_6]
 #set_property -dict {PACKAGE_PIN J7 IOSTANDARD LVCMOS33} [get_ports pad_pmod0_7]
 
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets pad_jtag_tck_IBUF_inst/O] 
 
 # Declare that clk_out1_xilinx_clk_mngr and tck are asynchronous
 set_false_path -from [get_clocks clk_out1_xilinx_clk_mngr] -to [get_clocks tck]
 set_false_path -from [get_clocks tck] -to [get_clocks clk_out1_xilinx_clk_mngr]
+
+## UART TX
+#
+# FPGA_TXD → FT4232HL RXD ( Channel D) → USB → PC (virtual COM port)
+#
+# +-----------------------------------------+----------------------------+
+# |                 FT4232H                 | XCZU7EV                    |
+# +-------+----------+----------------------+-------+--------------------+
+# | Pin # | Pin Name | ASYNC Serial (RS232) | Pin # | Net Name           |
+# +-------+----------+----------------------+-------+--------------------+
+# | 48    | DDBUS0   | TXD                  | A20   | UART2_TXD_FPGA_RXD |
+# +-------+----------+----------------------+-------+--------------------+
+# | 52    | DDBUS1   | RXD                  | C19   | UART2_RXD_FPGA_TXD |
+# +-------+----------+----------------------+-------+--------------------+
+# References:
+# https://www.mouser.com/datasheet/2/903/ug1267-zcu104-eval-bd-1596428.pdf
+# https://ftdichip.com/wp-content/uploads/2024/09/DS_FT4232H.pdf
+
+set_property -dict {PACKAGE_PIN C19 IOSTANDARD LVCMOS33} [get_ports pad_uart_tx]

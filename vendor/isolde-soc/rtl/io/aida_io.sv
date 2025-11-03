@@ -1,7 +1,7 @@
 // Copyleft 2025 ISOLDE 
 
 
-module aida_soc_io
+module aida_io
   import isolde_tcdm_pkg::*;
   import aida_lca_package::*;
 #(
@@ -57,7 +57,7 @@ module aida_soc_io
   /********************************************************/
   /**           MUX                                     **/
   /*******************************************************/
-  isolde_mux_tcdm i_mux_dm_sb_spm (
+  isolde_mux_tcdm i_mux_dm_data_mmio (
       .clk_i,
       .rst_ni,
       .req_2_i(dm_sba_req),
@@ -131,18 +131,10 @@ module aida_soc_io
   assign  tcdm_mmio_print.req = mmio_reqs[IO_PRINT_IDX];
   assign  mmio_rsps[IO_PRINT_IDX] = tcdm_mmio_print.rsp;
 
-//   tcdm_mem #(
-//       .MEMORY_SIZE(2048),
-//       //.DELAY_CYCLES(IMEM_LATENCY),
-//       .MEMORY_PRIMITIVE("ultra")
-//   ) i_print_memory (
-//       .clk_i,
-//       .rst_ni,
-//       .tcdm_slave_i(tcdm_mmio_print)
-//   );
 
   isolde_uart_top #(
-      .CLOCK_FREQ(115200)
+      .CLOCK_FREQ(aida_io_pkg::UART_CLOCK_FREQ),
+      .BAUD_RATE(aida_io_pkg::UART_BAUD_RATE)
   ) i_isolde_uart_top (
       .sys_clk_i(clk_i),
       .rstn_i(rst_ni),

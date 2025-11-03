@@ -51,13 +51,15 @@ module aida_padframe (
   // TDO : Test Data Output (bidirectional)
   //  - Uses IOBUF
   //  - No internal pull-up (recommended external 10 kΩ)
+  //
+  // https://docs.amd.com/r/en-US/ug953-vivado-7series-libraries/IOBUF
   // ------------------------------------------------------------------------
   (* IOSTANDARD = "LVCMOS33" *)
   IOBUF tdo_iobuf_inst (
       .I (soc2pad_jtag_i.tdo),     // internal signal to drive TDO
       .O (),                       // not used internally
       .IO(pad_jtag_tdo),           // physical FPGA pin
-      .T (~soc2pad_jtag_i.tdo_oe)  // tri-state control
+      .T (~soc2pad_jtag_i.tdo_oe)  // tri-state control // 1 => Hi-Z; 0 => drive I onto IO
   );
 
   // ------------------------------------------------------------------------
@@ -79,14 +81,18 @@ module aida_padframe (
   // ------------------------------------------------------------------------
   //UART TX
   //  - Uses IOBUF
-  //  - No internal pull-up (recommended external 10 kΩ)
+  //  - Internal pull-up 
+  // References:
+  // https://docs.amd.com/r/en-US/ug953-vivado-7series-libraries/OBUFT
   // ------------------------------------------------------------------------
-  (* IOSTANDARD = "LVCMOS33" *)
-  IOBUF uart_tx_iobuf_inst (
-      .I (soc2pads_o.uart_tx_o),  // internal signal to drive TDO
-      .O (),                      // not used internally
-      .IO(pad_uart_tx),           // physical FPGA pin
-      .T (1'b1)                   // tri-state control
+  OBUFT #(
+      .DRIVE(8),  // Specify the output drive strength
+      .IOSTANDARD("DEFAULT"),  // Specify the output I/O standard
+      .SLEW("SLOW")  // Specify the output slew rate
+  ) uart_tx_obuft_inst (
+      .O(pad_uart_tx),           // physical FPGA pin
+      .I(soc2pads_o.uart_tx_o),  // internal signal to drive pad_uart_tx
+      .T(1'b0)                   // tri-state control // 1 => Hi-Z; 0 => drive I onto IO
   );
 
 endmodule : aida_padframe
