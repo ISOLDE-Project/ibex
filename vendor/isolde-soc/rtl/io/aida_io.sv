@@ -44,15 +44,9 @@ module aida_io
   // /**           Interface Definitions                   **/
   // /*******************************************************/
 
-  // // === Data port ===
-
   isolde_tcdm_if tcdm_mmio_muxed ();
-
-  // assign tcdm_mmio_muxed.req = dm_sba_req;
-  // assign dm_sba_rsp = tcdm_mmio_muxed.rsp;
-
-  isolde_tcdm_pkg::req_t mmio_reqs[IO_LAST_IDX];
-  isolde_tcdm_pkg::rsp_t mmio_rsps[IO_LAST_IDX];
+   isolde_tcdm_pkg::req_t mmio_reqs[IO_LAST_IDX];
+   isolde_tcdm_pkg::rsp_t mmio_rsps[IO_LAST_IDX];
 
   /********************************************************/
   /**           MUX                                     **/
@@ -84,29 +78,25 @@ module aida_io
       .rsp_i       (mmio_rsps)
   );
 
-  logic [31:0] exit_code;
-
   /********************************************************/
   /**          EXIT CODE                               **/
   /*******************************************************/
- isolde_tcdm_if tcdm_mmio_exit ();
-  assign  tcdm_mmio_exit.req = mmio_reqs[IO_EXIT_IDX];
-  assign  mmio_rsps[IO_EXIT_IDX] = tcdm_mmio_exit.rsp;
+  logic [31:0] exit_code;
+  isolde_tcdm_if tcdm_mmio_exit ();
+  assign tcdm_mmio_exit.req = mmio_reqs[IO_EXIT_IDX];
+  assign mmio_rsps[IO_EXIT_IDX] = tcdm_mmio_exit.rsp;
 
 
   // Grant logic: active only when reset is inactive
   assign tcdm_mmio_exit.rsp.gnt = rst_ni && tcdm_mmio_exit.req.req;
+  assign tcdm_mmio_exit.rsp.err = 1'b0;  // No error generation
 
   // Always block to process read/write operations
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       // Reset all state
-      exit_code                    <= '0;
+      exit_code <= '0;
     end else begin
-      // Default outputs every cycle
-      tcdm_mmio_exit.rsp.data  <= 32'hDEAD_BEEF;  // debug pattern
-      tcdm_mmio_exit.rsp.valid <= 1'b0;
-
       if (tcdm_mmio_exit.rsp.gnt) begin
         if (tcdm_mmio_exit.req.we) begin
           // Write operation
@@ -114,7 +104,7 @@ module aida_io
           tcdm_mmio_exit.rsp.data <= tcdm_mmio_exit.req.data;  // echo back
         end else begin
           // Read operation
-         tcdm_mmio_exit.rsp.data <= exit_code;
+          tcdm_mmio_exit.rsp.data <= exit_code;
         end
         // Mark response as valid
         tcdm_mmio_exit.rsp.valid <= 1'b1;
@@ -127,14 +117,14 @@ module aida_io
   /**           UART                             **/
   /*******************************************************/
 
- isolde_tcdm_if tcdm_mmio_print ();
-  assign  tcdm_mmio_print.req = mmio_reqs[IO_PRINT_IDX];
-  assign  mmio_rsps[IO_PRINT_IDX] = tcdm_mmio_print.rsp;
+  isolde_tcdm_if tcdm_mmio_print ();
+  assign tcdm_mmio_print.req = mmio_reqs[IO_PRINT_IDX];
+  assign mmio_rsps[IO_PRINT_IDX] = tcdm_mmio_print.rsp;
 
 
   isolde_uart_top #(
       .CLOCK_FREQ(aida_io_pkg::UART_CLOCK_FREQ),
-      .BAUD_RATE(aida_io_pkg::UART_BAUD_RATE)
+      .BAUD_RATE (aida_io_pkg::UART_BAUD_RATE)
   ) i_isolde_uart_top (
       .sys_clk_i(clk_i),
       .rstn_i(rst_ni),
@@ -142,4 +132,5 @@ module aida_io
       .uart_req_i(tcdm_mmio_print.req),
       .uart_rsp_o(tcdm_mmio_print.rsp)
   );
+
 endmodule

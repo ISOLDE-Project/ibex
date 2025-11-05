@@ -46,51 +46,38 @@ module isolde_uart_top #(
   logic       s_tx_done;
   logic       s_data_tx_ready;
   logic [7:0] s_data_tx;
+  logic [7:0] echo_data_tx;
 
 
-
-  assign s_data_tx_valid = rstn_i && s_data_tx_ready && uart_req_i.req && uart_req_i.we;
-
-
-  always_comb begin
-    if (s_data_tx_valid) s_data_tx = uart_req_i.data[7:0];
-    else begin
-      if (!rstn_i) s_data_tx = '0;
-    end
-  end
-  /********************************************************/
-  /**          TCDM wrapper                              **/
-  /*******************************************************/
-  isolde_tcdm_if tcdm_uart_wrp ();
-  assign tcdm_uart_wrp.req = uart_req_i;
-  assign uart_rsp_o = tcdm_uart_wrp.rsp;
 
 
   // Grant logic: active only when reset is inactive
-  assign tcdm_uart_wrp.rsp.gnt = rstn_i && s_data_tx_ready && tcdm_uart_wrp.req.req;
+  assign uart_rsp_o.gnt = rstn_i && s_data_tx_ready && uart_req_i.req;
+  assign uart_rsp_o.err = 1'b0;  // No error generation
+  //UART TX data and valid signals
+  assign s_data_tx_valid = uart_rsp_o.gnt && uart_req_i.we;
+  assign s_data_tx = uart_req_i.data[7:0];
+
 
   // Always block to process read/write operations
-  always_ff @(posedge sys_clk_i ) begin
-    if (rstn_i) begin
-
-      // Default outputs every cycle
-      tcdm_uart_wrp.rsp.data  <= 32'hDEAD_BEEF;  // debug pattern
-      tcdm_uart_wrp.rsp.valid <= 1'b0;
-
-      if (tcdm_uart_wrp.rsp.gnt) begin
-        if (tcdm_uart_wrp.req.we) begin
-
-          tcdm_uart_wrp.rsp.data <= tcdm_uart_wrp.req.data;  // echo back
+  always_ff @(posedge sys_clk_i or negedge rstn_i) begin
+    if (!rstn_i) begin
+      echo_data_tx <= '0;
+    end else begin
+      if (uart_rsp_o.gnt) begin
+        if (uart_req_i.we) begin
+          // Write operation
+          echo_data_tx <= s_data_tx;
+          uart_rsp_o.data <= uart_req_i.data;  // echo back
         end else begin
           // Read operation
-          tcdm_uart_wrp.rsp.data <= s_data_tx;
+          uart_rsp_o.data <= echo_data_tx;
         end
         // Mark response as valid
-        tcdm_uart_wrp.rsp.valid <= 1'b1;
+        uart_rsp_o.valid <= 1'b1;
       end
     end
   end
-
 
 
   udma_uart_tx u_uart_tx (

@@ -44,6 +44,7 @@ module tcdm_mem #(
 
   logic [31:0] mem_dout;
 
+  assign tcdm_slave_i.rsp.err = 1'b0; // No error generation
   // ============================================================
   // XPM Single-Port RAM (SPRAM) : 32-bit wide with byte enables
   // ============================================================
