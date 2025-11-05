@@ -66,4 +66,4 @@ set_false_path -from [get_clocks tck] -to [get_clocks clk_out1_xilinx_clk_mngr]
 # https://www.mouser.com/datasheet/2/903/ug1267-zcu104-eval-bd-1596428.pdf
 # https://ftdichip.com/wp-content/uploads/2024/09/DS_FT4232H.pdf
 
-set_property -dict {PACKAGE_PIN C19 IOSTANDARD LVCMOS33} [get_ports pad_uart_tx]
+set_property -dict {PACKAGE_PIN C19 IOSTANDARD LVCMOS18} [get_ports pad_uart_tx]

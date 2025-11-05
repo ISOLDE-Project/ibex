@@ -53,7 +53,7 @@ module xilinx_aida (
       .pad2soc_jtag_o(jtag_req),
       .soc2pad_jtag_i(jtag_rsp),
       .internal_jtag_trstn(1'b1),
-      .soc2pads_o(pads_o),
+      .soc2pads_i(pads_o),
 
       //Pads
       .pad_jtag_tms(pad_jtag_tms),

@@ -111,7 +111,7 @@ module aida_io
         if (tcdm_mmio_exit.req.we) begin
           // Write operation
           exit_code <= tcdm_mmio_exit.req.data;
-          tcdm_mmio_exit.rsp <= tcdm_mmio_exit.req.data;  // echo back
+          tcdm_mmio_exit.rsp.data <= tcdm_mmio_exit.req.data;  // echo back
         end else begin
           // Read operation
          tcdm_mmio_exit.rsp.data <= exit_code;

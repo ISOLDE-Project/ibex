@@ -4,13 +4,13 @@ module aida_padframe (
     output jtag_pkg::jtag_req_t pad2soc_jtag_o,
     input jtag_pkg::jtag_rsp_t soc2pad_jtag_i,
     input wire internal_jtag_trstn,
-    output aida_io_pkg::aida_pads_o_t soc2pads_o,
+    input aida_io_pkg::aida_pads_o_t soc2pads_i,
     // Landing Pads
     input wire pad_jtag_tms,
     input wire pad_jtag_tdi,
     inout wire pad_jtag_tdo,
     input wire pad_jtag_tck,
-    inout wire pad_uart_tx
+    output wire pad_uart_tx
 
 );
 
@@ -91,7 +91,7 @@ module aida_padframe (
       .SLEW("SLOW")  // Specify the output slew rate
   ) uart_tx_obuft_inst (
       .O(pad_uart_tx),           // physical FPGA pin
-      .I(soc2pads_o.uart_tx_o),  // internal signal to drive pad_uart_tx
+      .I(soc2pads_i.uart_tx_o),  // internal signal to drive pad_uart_tx
       .T(1'b0)                   // tri-state control // 1 => Hi-Z; 0 => drive I onto IO
   );
 

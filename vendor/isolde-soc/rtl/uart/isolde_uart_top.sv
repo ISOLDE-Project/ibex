@@ -40,7 +40,7 @@ module isolde_uart_top #(
 
   localparam logic [15:0] BAUD_DIV = CLOCK_FREQ / BAUD_RATE;
 
-  logic [1:0] s_uart_status;
+  logic [0:0] s_uart_status;
 
   logic       s_data_tx_valid;
   logic       s_tx_done;
@@ -80,7 +80,7 @@ module isolde_uart_top #(
       if (tcdm_uart_wrp.rsp.gnt) begin
         if (tcdm_uart_wrp.req.we) begin
 
-          tcdm_uart_wrp.rsp <= tcdm_uart_wrp.req.data;  // echo back
+          tcdm_uart_wrp.rsp.data <= tcdm_uart_wrp.req.data;  // echo back
         end else begin
           // Read operation
           tcdm_uart_wrp.rsp.data <= s_data_tx;
