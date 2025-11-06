@@ -54,9 +54,9 @@ foreach test $tests {
     }
 
     if {$match} {
-        puts "SUCCESS: Memory at $addr matches expected values."
+        puts "✅ SUCCESS: Memory at $addr matches expected values."
     } else {
-        puts "FAILURE: Memory verification failed at $addr."
+        puts "❌ FAILURE: Memory verification failed at $addr."
         set overall_match 0
     }
 }
@@ -65,6 +65,7 @@ foreach test $tests {
 
     # Format it as a hex word (0xXXXXXXXX)
     set tx_hex_val [format "0x%08X" $tx_rand_val]
+    puts "---------------------------------------------"
     puts "Writing memory at $uart_addr, value $tx_hex_val ..."
     write_memory $uart_addr $width $tx_hex_val phys
 
@@ -74,18 +75,19 @@ foreach test $tests {
     
     puts "Verifying UART echo (only last 8 bits)..."
     set sent_byte [format "0x%x" [expr {$tx_rand_val & 0xFF}]]
+    set tx_echo [format "0x%x" [expr {$tx_echo & 0xFF}]]
     if {$sent_byte eq [lindex $tx_echo 0]} {
-        puts "SUCCESS: UART echo matches sent value."
+        puts "✅ SUCCESS: UART echo matches sent value."
     } else {
-        puts "ERROR: UART echo mismatch: sent $sent_byte, got [lindex $tx_echo 0]"
+        puts "❌ FAILURE: UART echo mismatch: sent $sent_byte, got [lindex $tx_echo 0]"
         set overall_match 0
     }
 
 puts "============================================="
 if {$overall_match} {
-    puts "ALL TESTS PASSED."
+    puts "✅ ALL TESTS PASSED."
 } else {
-    puts "ONE OR MORE TESTS FAILED."
+    puts "❌ ONE OR MORE TESTS FAILED."
 }
 
 #shutdown

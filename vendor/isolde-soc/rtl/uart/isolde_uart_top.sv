@@ -32,10 +32,7 @@ module isolde_uart_top #(
 
     output logic uart_tx_o,
 
-    input  isolde_tcdm_pkg::req_t uart_req_i,
-    output isolde_tcdm_pkg::rsp_t uart_rsp_o
-
-
+    isolde_tcdm_if.slave tcdm_slave_print_i
 );
 
   localparam logic [15:0] BAUD_DIV = CLOCK_FREQ / BAUD_RATE;
@@ -48,33 +45,29 @@ module isolde_uart_top #(
   logic [7:0] s_data_tx;
   logic [7:0] echo_data_tx;
 
+  logic       rsp_valid_q;
 
 
 
-  // Grant logic: active only when reset is inactive
-  assign uart_rsp_o.gnt = rstn_i && s_data_tx_ready && uart_req_i.req;
-  assign uart_rsp_o.err = 1'b0;  // No error generation
-  //UART TX data and valid signals
-  assign s_data_tx_valid = uart_rsp_o.gnt && uart_req_i.we;
-  assign s_data_tx = uart_req_i.data[7:0];
+  // Output register connections
+  assign tcdm_slave_print_i.rsp.data  = echo_data_tx;
+  assign tcdm_slave_print_i.rsp.valid = rsp_valid_q;
+  assign tcdm_slave_print_i.rsp.err   = 1'b0;
+  assign tcdm_slave_print_i.rsp.gnt   = rstn_i && tcdm_slave_print_i.req.req;
 
-
-  // Always block to process read/write operations
   always_ff @(posedge sys_clk_i or negedge rstn_i) begin
     if (!rstn_i) begin
       echo_data_tx <= '0;
+      rsp_valid_q  <= 1'b0;
     end else begin
-      if (uart_rsp_o.gnt) begin
-        if (uart_req_i.we) begin
-          // Write operation
-          echo_data_tx <= s_data_tx;
-          uart_rsp_o.data <= uart_req_i.data;  // echo back
-        end else begin
-          // Read operation
-          uart_rsp_o.data <= echo_data_tx;
+      // default: no response unless we accept a request this cycle
+      rsp_valid_q <= 1'b0;
+
+      if (tcdm_slave_print_i.rsp.gnt) begin
+        if (tcdm_slave_print_i.req.we) begin
+          echo_data_tx <= tcdm_slave_print_i.req.data;
         end
-        // Mark response as valid
-        uart_rsp_o.valid <= 1'b1;
+        rsp_valid_q <= 1'b1;
       end
     end
   end
