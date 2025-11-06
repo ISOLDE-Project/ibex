@@ -13,6 +13,8 @@ module isolde_mux_tcdm (
 
 );
 
+  isolde_tcdm_pkg::req_t req_q;
+
   logic [1:0] slv_req, slv_rsp;
   assign slv_req[0] = req_1_i.req;
   assign slv_req[1] = req_2_i.req;
@@ -35,21 +37,33 @@ module isolde_mux_tcdm (
       .pop_i(tcdm_master_o.rsp.valid)
   );
 
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      req_q <= '0;
+    end else begin
+      if (slv_req[1]) begin
+        req_q.req  = 1'b0;
+        req_q.addr = req_2_i.addr;
+        req_q.we   = req_2_i.we;
+        req_q.be   = req_2_i.be;
+        req_q.data = req_2_i.data;
+      end else if (slv_req[0]) begin
+        req_q.req  = 1'b0;
+        req_q.addr = req_1_i.addr;
+        req_q.we   = req_1_i.we;
+        req_q.be   = req_1_i.be;
+        req_q.data = req_1_i.data;
+      end 
+    end
+  end
+
   always_comb begin
-    tcdm_master_o.req.req = 1'b0;
+    tcdm_master_o.req = req_q;
     if (slv_req[1]) begin
-      tcdm_master_o.req.req  = 1'b1;
-      tcdm_master_o.req.addr = req_2_i.addr;
-      tcdm_master_o.req.we   = req_2_i.we;
-      tcdm_master_o.req.be   = req_2_i.be;
-      tcdm_master_o.req.data = req_2_i.data;
+      tcdm_master_o.req = req_2_i;
 
     end else if (slv_req[0]) begin
-      tcdm_master_o.req.req  = 1'b1;
-      tcdm_master_o.req.addr = req_1_i.addr;
-      tcdm_master_o.req.we   = req_1_i.we;
-      tcdm_master_o.req.be   = req_1_i.be;
-      tcdm_master_o.req.data = req_1_i.data;
+      tcdm_master_o.req = req_1_i;
     end
   end
 
