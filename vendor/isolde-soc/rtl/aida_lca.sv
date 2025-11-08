@@ -213,19 +213,6 @@ aida_io #(
     .data_rsp(noc_data_rsps[MMIO_IDX])
 );
 
-//  isolde_tcdm_if tcdm_mmio_muxed ();
-//    assign  tcdm_mmio_muxed.req = noc_dm_sba_reqs[DM_SBA_MMIO_IDX];
-//   assign noc_dm_sba_rsps[DM_SBA_MMIO_IDX]= tcdm_mmio_muxed.rsp;
-
-//    tcdm_mem #(
-//       .MEMORY_SIZE(2048),
-//       //.DELAY_CYCLES(IMEM_LATENCY),
-//       .MEMORY_PRIMITIVE("ultra")
-//   ) i_print_memory (
-//       .clk_i,
-//       .rst_ni,
-//       .tcdm_slave_i(tcdm_mmio_muxed)
-//   );
 
   /********************************************************/
   /**     RV Debug Module                                **/

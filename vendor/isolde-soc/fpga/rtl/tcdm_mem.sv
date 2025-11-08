@@ -21,10 +21,8 @@ MEMORY_PRIMITIVE options:
 */
 
 module tcdm_mem #(
-    parameter BASE_ADDR    = 0,
-    parameter MEMORY_SIZE  = 512,   // number of 32-bit words
-    parameter DELAY_CYCLES = 0,
-    parameter MEMORY_PRIMITIVE = "block" // "block", "ultra", "distributed"
+    parameter MEMORY_SIZE = 512,  // number of 32-bit words
+    parameter MEMORY_PRIMITIVE = "block"  // "block", "ultra", "distributed"
 ) (
     input logic                clk_i,
     input logic                rst_ni,
@@ -34,25 +32,35 @@ module tcdm_mem #(
   // ============================================================
   // Local signals
   // ============================================================
-  logic [31:0] delay_counter;
-  logic [31:0] index;
-
-  int cnt_wr = 0;
-  int cnt_rd = 0;
 
   localparam ADDR_WIDTH = $clog2(MEMORY_SIZE);
+  logic [ADDR_WIDTH-1:0] index;
 
   logic [31:0] mem_dout;
+  logic        rsp_valid_q;
 
-  assign tcdm_slave_i.rsp.err = 1'b0; // No error generation
+  assign tcdm_slave_i.rsp.err = 1'b0;  // No error generation
   // ============================================================
+  // Address calculation (word aligned)
+  // ============================================================
+  assign index = tcdm_slave_i.req.addr[ADDR_WIDTH+1:2];  // word aligned
+  // ============================================================
+  // Grant logic 
+  // ============================================================
+  assign tcdm_slave_i.rsp.gnt = rst_ni && tcdm_slave_i.req.req;
+  // ============================================================
+  assign tcdm_slave_i.rsp.data = mem_dout;
+  assign tcdm_slave_i.rsp.valid = rsp_valid_q;
+
   // XPM Single-Port RAM (SPRAM) : 32-bit wide with byte enables
   // ============================================================
   xpm_memory_spram #(
       .ADDR_WIDTH_A(ADDR_WIDTH),
+      .BYTE_WRITE_WIDTH_A(8),  //8-bit byte-wide writes
       .MEMORY_SIZE(MEMORY_SIZE * 32),  // total bits
       .MEMORY_PRIMITIVE(MEMORY_PRIMITIVE),
       .READ_DATA_WIDTH_A(32),
+      .READ_LATENCY_A(1), //Read data output to port douta takes this number of clka cycles.
       .WRITE_DATA_WIDTH_A(32),
       .WRITE_MODE_A("write_first")  // "read_first", "write_first", "no_change"
       //.CLOCKING_MODE("common_clock")
@@ -81,59 +89,29 @@ module tcdm_mem #(
       .dbiterra()
   );
 
-  // ============================================================
-  // Address calculation (word aligned)
-  // ============================================================
-  always_comb begin
-    if (rst_ni && tcdm_slave_i.req.req) tcdm_slave_i.rsp.gnt = (delay_counter == 0) ? 1'b1 : 1'b0;
-    else tcdm_slave_i.rsp.gnt = 1'b0;
 
-    index = (tcdm_slave_i.req.addr - BASE_ADDR) >> 2;
-  end
+
+
 
   // ============================================================
   // Transaction handler
   // ============================================================
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) begin
-      tcdm_slave_i.rsp.data  <= '0;
-      tcdm_slave_i.rsp.valid <= 1'b0;
-      delay_counter          <= DELAY_CYCLES;
+      rsp_valid_q <= 1'b0;
+
     end else begin
-      if (tcdm_slave_i.rsp.gnt) begin
-        delay_counter <= DELAY_CYCLES;
 
-        if (tcdm_slave_i.req.we) begin
-          // -----------------------------
-          // WRITE: data goes into XPM
-          // -----------------------------
-          cnt_wr <= cnt_wr + 1;
-          tcdm_slave_i.rsp.data <= tcdm_slave_i.req.data;
-          tcdm_slave_i.rsp.valid <= 1'b1;
-        end else begin
-          // -----------------------------
-          // READ: return XPM data
-          // -----------------------------
-          cnt_rd <= cnt_rd + 1;
-          tcdm_slave_i.rsp.data <= mem_dout;  // <--- USE READ DATA
-          tcdm_slave_i.rsp.valid <= 1'b1;
-        end
+      rsp_valid_q <= tcdm_slave_i.rsp.gnt;
 
-      end else begin
-        delay_counter <= tcdm_slave_i.req.req ? delay_counter - 1 : DELAY_CYCLES;
-        tcdm_slave_i.rsp.data <= '0;
-        tcdm_slave_i.rsp.valid <= 1'b0;
-      end
     end
   end
 
 endmodule
 
 module tcdm_mem_wrapper #(
-    parameter BASE_ADDR    = 0,
-    parameter MEMORY_SIZE  = 512,   // number of 32-bit words
-    parameter DELAY_CYCLES = 0,
-    parameter MEMORY_PRIMITIVE = "block" // "block", "ultra", "distributed"
+    parameter MEMORY_SIZE = 512,  // number of 32-bit words
+    parameter MEMORY_PRIMITIVE = "block"  // "block", "ultra", "distributed"
 ) (
     input clk_i,
     input rst_ni,
@@ -160,14 +138,12 @@ module tcdm_mem_wrapper #(
 
   assign gnt                = tcdm_intf.rsp.gnt;
   assign valid              = tcdm_intf.rsp.valid;
-//  assign err                = tcdm_intf.rsp.err;
+  //  assign err                = tcdm_intf.rsp.err;
   assign rsp_data           = tcdm_intf.rsp.data;
 
   // Instantiate the original SV DUT
   tcdm_mem #(
-      .BASE_ADDR(BASE_ADDR),
       .MEMORY_SIZE(MEMORY_SIZE),
-      .DELAY_CYCLES(DELAY_CYCLES),
       .MEMORY_PRIMITIVE(MEMORY_PRIMITIVE)
   ) dut (
       .clk_i(clk_i),
