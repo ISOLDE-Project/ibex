@@ -43,29 +43,31 @@ module isolde_uart_top #(
   logic       s_tx_done;
   logic       s_data_tx_ready;
   logic [7:0] s_data_tx;
-  logic [7:0] echo_data_tx;
 
   logic       rsp_valid_q;
 
 
 
   // Output register connections
-  assign tcdm_slave_print_i.rsp.data  = echo_data_tx;
+  assign tcdm_slave_print_i.rsp.data = s_data_tx;
   assign tcdm_slave_print_i.rsp.valid = rsp_valid_q;
-  assign tcdm_slave_print_i.rsp.err   = 1'b0;
-  assign tcdm_slave_print_i.rsp.gnt   = rstn_i && tcdm_slave_print_i.req.req;
+  assign tcdm_slave_print_i.rsp.err = 1'b0;
+  assign tcdm_slave_print_i.rsp.gnt = rstn_i && s_data_tx_ready && tcdm_slave_print_i.req.req;
+
+
 
   always_ff @(posedge sys_clk_i or negedge rstn_i) begin
     if (!rstn_i) begin
-      echo_data_tx <= '0;
+      s_data_tx <= '0;
       rsp_valid_q  <= 1'b0;
     end else begin
       // default: no response unless we accept a request this cycle
       rsp_valid_q <= 1'b0;
-
+      s_data_tx_valid <= 1'b0;
       if (tcdm_slave_print_i.rsp.gnt) begin
         if (tcdm_slave_print_i.req.we) begin
-          echo_data_tx <= tcdm_slave_print_i.req.data;
+          s_data_tx <= tcdm_slave_print_i.req.data;
+          s_data_tx_valid <= 1'b1;
         end
         rsp_valid_q <= 1'b1;
       end

@@ -1,15 +1,6 @@
 
-# Initial setup
-in folder 'isolde/lca_system': 
+# UART JTAG test
 
 ```sh
-. ./eth.sh 
-make rtl-update
+hexdump -v -e '1/1 "%02X "' /dev/ttyUSB3
 ```
-# Vivado lint
-in folder 'isolde/lca_system/fpga':  
-```sh
- make cfg-zcu104
- make clean
- make
- ```
