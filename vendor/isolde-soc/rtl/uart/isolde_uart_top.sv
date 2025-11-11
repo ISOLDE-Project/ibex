@@ -47,9 +47,8 @@ module isolde_uart_top #(
   logic       rsp_valid_q;
 
 
-
   // Output register connections
-  assign tcdm_slave_print_i.rsp.data = s_data_tx;
+  //assign tcdm_slave_print_i.rsp.data = s_data_tx;
   assign tcdm_slave_print_i.rsp.valid = rsp_valid_q;
   assign tcdm_slave_print_i.rsp.err = 1'b0;
   assign tcdm_slave_print_i.rsp.gnt = rstn_i && s_data_tx_ready && tcdm_slave_print_i.req.req;
@@ -91,7 +90,23 @@ module isolde_uart_top #(
       .tx_done_o      (s_tx_done)
   );
 
+        
+  logic [31:0] status_reg;
 
+  // bit[0] = busy flag
+  assign status_reg[0] = s_uart_status[0];
+  assign status_reg[31:1] = '0;
+
+  // Replace rsp.data assignment with conditional version
+  always_comb begin
+    if (tcdm_slave_print_i.req.req && !tcdm_slave_print_i.req.we) begin
+      // Read access → return status
+      tcdm_slave_print_i.rsp.data = status_reg;
+    end else begin
+      // Write or default → echo last TX data (legacy behavior)
+      tcdm_slave_print_i.rsp.data = s_data_tx;
+    end
+  end
 
 
 endmodule  // isolde_uart_top
