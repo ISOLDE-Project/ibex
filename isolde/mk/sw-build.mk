@@ -137,10 +137,10 @@ RISCV_CFLAGS += $(TEST_CFLAGS)
 	python $(SCRIPTS_DIR)/addr_offset.py   $@  $*-d.hex 0x00100000
 #	python $(SCRIPTS_DIR)/hex2bin_split.py $@  $*-instr.bin $*-data.bin
 	python $(SCRIPTS_DIR)/hex2ihex_split.py  --input $@ \
-											--instr-base 0x00100000 --instr-size 0x8000 \
-											--data-base  0x00110000 --data-size 0x30000 \
-											--instr-out instr.hex \
-											--data-out data.hex \
+											--instr-base 0x00100000 --instr-size 0x40000 \
+											--data-base  0x00100000 --data-size  0x40000 \
+											--instr-out $*_ihex-i.hex \
+											--data-out  $*_ihex-m.hex \
 											--verbose
 	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-readelf -a $< > $*.readelf
 	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objdump   \
