@@ -9,9 +9,9 @@
 
 // see tb/core/mm_ram.sv
 void _exit(int exit_code){
-#ifndef WFI_LOOP
+
 DEV_WRITE(MMADDR_EXIT, (uint32_t)exit_code); 
-#endif
+
  while (1) {
         asm volatile ("wfi");
     }
@@ -43,7 +43,7 @@ void puthex(uint32_t h) {
 }
 
 
-void sim_halt() { DEV_WRITE(MMADDR_EXIT, 1); }
+void sim_halt() { _exit ((uint32_t)0xDEADBEEF); }
 
 void pcount_reset() {
   asm volatile(

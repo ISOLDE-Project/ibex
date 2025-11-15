@@ -142,8 +142,8 @@ RISCV_CFLAGS += $(TEST_CFLAGS)
 # 											--instr-out $*_ihex-i.hex \
 # 											--data-out  $*_ihex-m.hex \
 # 											--verbose
-	python $(SCRIPTS_DIR)/hex2ihex.py --input $*-m.hex --base 0x00100000 --output $*_ihex-i.hex 
-	python $(SCRIPTS_DIR)/hex2ihex.py --input $*-d.hex --base 0x00110000 --output $*_ihex-d.hex 
+	python $(SCRIPTS_DIR)/hex2ihex.py --input $*-m.hex --base 0x00100000 --region_size 0x1404 --output $*_ihex-i.hex 
+	python $(SCRIPTS_DIR)/hex2ihex.py --input $*-d.hex --base 0x00110000 --region_size 0x30000 --output $*_ihex-d.hex 
 	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-readelf -a $< > $*.readelf
 	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objdump   \
 		-fhSD \

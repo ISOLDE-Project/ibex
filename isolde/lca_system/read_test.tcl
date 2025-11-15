@@ -17,7 +17,8 @@ set width 32
 ##################    
 set tests {
     {0x00100000 {0x0badc0de 0xdeadbeaf}}
-    {0x00110000 {0x12345678 0xabcdef01}}
+    {0x00110000 {0x12345678 0xabcdef01 0xdeadbeef 0xfeedface}}
+    {0x00110080 {0xa5a5a5a5 0xfaceabee 0xa5a6a6a6 0x4a4a4a4a}}
     {0x00140000 {0xa5a5a5a5 0x5a5a5a5a}}
     {0x80001000 {0xdeafbeaf 0xfaceabee}}
 }
@@ -29,7 +30,7 @@ foreach test $tests {
     set expected_values [lindex $test 1]
 
     puts "---------------------------------------------"
-    puts "Writing memory at $addr..."
+    puts "Writing memory at $addr : $expected_values"
     write_memory $addr $width $expected_values phys
 
     puts "Reading memory at $addr..."
@@ -47,18 +48,18 @@ foreach test $tests {
     }
 
     if {$match} {
-        puts "SUCCESS: Memory at $addr matches expected values."
+        puts "✅ $addr PASSED."
     } else {
-        puts "FAILURE: Memory verification failed at $addr."
+        puts "❌ $addr FAILED"
         set overall_match 0
     }
 }
 
 puts "============================================="
 if {$overall_match} {
-    puts "ALL TESTS PASSED."
+    puts "✅ ALL TESTS PASSED."
 } else {
-    puts "ONE OR MORE TESTS FAILED."
+    puts "❌ ONE OR MORE TESTS FAILED."
 }
 
-shutdown
+#shutdown
