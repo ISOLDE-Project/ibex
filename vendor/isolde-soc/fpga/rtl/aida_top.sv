@@ -43,7 +43,7 @@ module aida_top
     // === JTAG port ===
     input jtag_pkg::jtag_req_t soc_jtag_in,
     output jtag_pkg::jtag_rsp_t soc_jtag_out
-       
+
 );
 
 
@@ -99,7 +99,10 @@ module aida_top
   /********************************************************/
   /**     Stack memory                                   **/
   /*******************************************************/
-  tcdm_mem #() i_dummy_stack_memory (
+  tcdm_mem #(
+      .MEMORY_SIZE(2048),
+      .MEMORY_PRIMITIVE("ultra")
+  ) i_dummy_stack_memory (
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(aida_stack_memory)
@@ -163,7 +166,7 @@ module aida_top
       .aida_data_memory(aida_data_memory),
       .aida_stack_memory(aida_stack_memory),
       .aida_instr_memory(aida_instr_memory),
-      
+
       .pads_o(pads_o),
 
       .spm_req_o(mem_req),

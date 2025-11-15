@@ -19,6 +19,8 @@ set hello_world {
     0x00000072
     0x0000006C
     0x00000064
+    0x0000000A 
+    0x0000000D
 }
 
 foreach word $hello_world {
