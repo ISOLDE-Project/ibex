@@ -24,23 +24,25 @@ module aida_io
   localparam logic [31:0] MMADDR_PRINT = MMIO_ADDR + 32'h4;
   localparam logic [31:0] MMADDR_PERF = MMIO_ADDR + 32'hC;
 
-  /********************************************************/
-  /**          Router configurations                     **/
+  /*******************************************************/
+  /**          Router configurations                    **/
   /*******************************************************/
 
   typedef enum {
     IO_EXIT_IDX,
     IO_PRINT_IDX,
+    IO_PERF_IDX,
     IO_LAST_IDX
   } mmio_map_idx_t;
 
   // 
   localparam addr_range_t mmio_map[IO_LAST_IDX] = '{
       '{start_addr: MMADDR_EXIT, end_addr: MMADDR_EXIT + 32'h4},
-      '{start_addr: MMADDR_PRINT, end_addr: MMADDR_PRINT + 32'h4}
+      '{start_addr: MMADDR_PRINT, end_addr: MMADDR_PRINT + 32'h4},
+      '{start_addr: MMADDR_PERF,  end_addr: MMADDR_PERF  + 32'h4}
   };
 
-  // /********************************************************/
+  // /*******************************************************/
   // /**           Interface Definitions                   **/
   // /*******************************************************/
 
@@ -48,7 +50,7 @@ module aida_io
   isolde_tcdm_pkg::req_t mmio_reqs[IO_LAST_IDX];
   isolde_tcdm_pkg::rsp_t mmio_rsps[IO_LAST_IDX];
 
-  /********************************************************/
+  /*******************************************************/
   /**           MUX                                     **/
   /*******************************************************/
   isolde_mux_tcdm i_mux_dm_data_mmio (
@@ -63,8 +65,8 @@ module aida_io
 
   // assign  tcdm_mmio_muxed.req =dm_sba_req;
   // assign dm_sba_rsp= tcdm_mmio_muxed.rsp;
-  /********************************************************/
-  /**           Router(s)                                **/
+  /*******************************************************/
+  /**           Router(s)                               **/
   /*******************************************************/
 
   isolde_router #(
@@ -78,8 +80,8 @@ module aida_io
       .rsp_i       (mmio_rsps)
   );
 
-  /********************************************************/
-  /**          EXIT CODE                               **/
+  /*******************************************************/
+  /**          EXIT CODE                                **/
   /*******************************************************/
 
 
@@ -117,8 +119,8 @@ module aida_io
   end
 
 
-  /********************************************************/
-  /**           UART                             **/
+  /*******************************************************/
+  /**           UART                                    **/
   /*******************************************************/
 
   isolde_tcdm_if tcdm_mmio_print ();
@@ -137,5 +139,40 @@ module aida_io
       .tcdm_slave_print_i(tcdm_mmio_print)
 
   );
+
+
+  /********************************************************/
+  /**           Performance counter (read-only)          **/
+  /********************************************************/
+
+  isolde_tcdm_if tcdm_mmio_perf ();
+  assign tcdm_mmio_perf.req = mmio_reqs[IO_PERF_IDX];
+  assign mmio_rsps[IO_PERF_IDX] = tcdm_mmio_perf.rsp;
+
+  logic [31:0] cycle_counter_q;  // 32-bit count which is aprox 430 seconds at 10 MHz
+  logic        perf_rsp_valid_q;
+
+  // Cycle counter increments every clock
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      cycle_counter_q  <= '0;
+      perf_rsp_valid_q <= 1'b0;
+    end else begin
+      cycle_counter_q <= cycle_counter_q + 1;
+      perf_rsp_valid_q <= 1'b0;
+
+      // When CPU accesses the performance counter MMIO address
+      if (tcdm_mmio_perf.req.req && !tcdm_mmio_perf.req.we) begin
+        perf_rsp_valid_q <= 1'b1;
+      end
+    end
+  end
+
+  // Return 32-bit cycle counter on reads
+  assign tcdm_mmio_perf.rsp.data  = cycle_counter_q;
+  assign tcdm_mmio_perf.rsp.valid = perf_rsp_valid_q;
+  assign tcdm_mmio_perf.rsp.err   = 1'b0;
+  assign tcdm_mmio_perf.rsp.gnt   = tcdm_mmio_perf.req.req && rst_ni;
+
 
 endmodule

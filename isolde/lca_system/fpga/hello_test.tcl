@@ -1,3 +1,7 @@
+# ===============================================
+# UART transmission test: send "hello" over UART
+# ===============================================
+
 reset halt
 riscv set_mem_access sysbus
 
