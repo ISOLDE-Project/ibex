@@ -33,7 +33,7 @@ endif
 
 
 
-
+verilator_target := vanilla
 
 REDMULE_COMPLEX := 1
 export REDMULE_COMPLEX

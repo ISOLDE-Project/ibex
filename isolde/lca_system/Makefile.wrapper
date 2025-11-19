@@ -4,4 +4,4 @@
 	  $(tb_target)
 	 make DBG_MODULE=1 ENABLE_SPM=1 \
 		BENDER_EXTRA_TARGET="-t fpga_sim" \
-	 	TEST=redmule_test $@
+	 	TEST=hello_test $@

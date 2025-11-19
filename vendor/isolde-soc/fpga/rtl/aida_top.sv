@@ -74,9 +74,9 @@ module aida_top
   /**     Data memory                                    **/
   /*******************************************************/
   tcdm_mem #(
-      .MEMORY_SIZE(2048),
+      .MEMORY_SIZE(DMEM_SIZE_I32),
       .MEMORY_PRIMITIVE("ultra")
-  ) i_dummy_dmemory (
+  ) i_dmemory (
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(aida_data_memory)
@@ -86,10 +86,9 @@ module aida_top
   /**     Instruction memory                             **/
   /*******************************************************/
   tcdm_mem #(
-      .MEMORY_SIZE(2048),
-      //.DELAY_CYCLES(IMEM_LATENCY),
+      .MEMORY_SIZE(IMEM_SIZE_I32),
       .MEMORY_PRIMITIVE("ultra")
-  ) i_dummy_imemory (
+  ) i_imemory (
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(aida_instr_memory)
@@ -100,9 +99,9 @@ module aida_top
   /**     Stack memory                                   **/
   /*******************************************************/
   tcdm_mem #(
-      .MEMORY_SIZE(2048),
+      .MEMORY_SIZE(SMEM_SIZE_I32),
       .MEMORY_PRIMITIVE("ultra")
-  ) i_dummy_stack_memory (
+  ) i_stack_memory (
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(aida_stack_memory)

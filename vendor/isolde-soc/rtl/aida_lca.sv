@@ -315,8 +315,8 @@ aida_io #(
   /*******************************************************/
 
   isolde_addr_shim_wrp #(
-      .START_ADDR(IMEM_ADDR),  // Set start address
-      .END_ADDR(IMEM_ADDR + GMEM_SIZE)  // Set end address
+      .START_ADDR(DMEM_ADDR),  // Set start address
+      .END_ADDR(DMEM_ADDR + DMEM_SIZE)  // Set end address
   ) i_dmem_shim (
       .tcdm_slave_i (tcdm_dmem_muxed),
       .tcdm_master_o(aida_data_memory)
@@ -329,7 +329,7 @@ aida_io #(
 
   isolde_addr_shim_wrp #(
       .START_ADDR(IMEM_ADDR),  // Set start address
-      .END_ADDR(IMEM_ADDR + GMEM_SIZE)  // Set end address
+      .END_ADDR(IMEM_ADDR + IMEM_SIZE)  // Set end address
   ) i_imem_shim (
       .tcdm_slave_i (tcdm_imem_muxed),
       .tcdm_master_o(aida_instr_memory)

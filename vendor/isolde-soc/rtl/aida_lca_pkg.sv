@@ -11,14 +11,22 @@ MEMORY
     stack       : ORIGIN = 0x00140000, LENGTH = 0x30000
 }
 */
+// instructon memory size in 32-bit words
+  localparam int unsigned IMEM_SIZE_I32 = 32'h0006_0000;
+  // data memory size in 32-bit words
+  localparam int unsigned DMEM_SIZE_I32 = 32'h0006_0000;
+  // stack memory size in 32-bit words
+  localparam int unsigned SMEM_SIZE_I32 = 32'hC000;
+  
+
   localparam rule_addr_t ROM_BOOT_ADDR = 32'h0000_0080;
   localparam int unsigned ROM_BOOT_SIZE = 32'h16;
   localparam rule_addr_t IMEM_ADDR = 32'h0010_0000;
-  localparam int unsigned IMEM_SIZE = 32'h08000;
+  localparam int unsigned IMEM_SIZE = 32'h4 * IMEM_SIZE_I32;
   localparam rule_addr_t DMEM_ADDR = 32'h00110000;
-  localparam int unsigned DMEM_SIZE = 32'h30000;
+  localparam int unsigned DMEM_SIZE = 32'h4* DMEM_SIZE_I32;
   localparam rule_addr_t SMEM_ADDR = 32'h00140000;
-  localparam int unsigned SMEM_SIZE = 32'h30000;
+  localparam int unsigned SMEM_SIZE = 32'h4* SMEM_SIZE_I32;
   localparam int unsigned GMEM_SIZE = SMEM_ADDR + SMEM_SIZE - IMEM_ADDR;
   //  see reset vector in bsp/crt0.S
   localparam rule_addr_t RV_BOOT_ADDR = 32'h00100080;
