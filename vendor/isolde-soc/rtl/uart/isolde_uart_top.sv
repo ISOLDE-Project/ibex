@@ -65,6 +65,9 @@ module isolde_uart_top #(
       s_data_tx_valid <= 1'b0;
       if (tcdm_slave_print_i.rsp.gnt) begin
         if (tcdm_slave_print_i.req.we) begin
+          `ifdef TARGET_VERILATOR 
+          $write("%c", tcdm_slave_print_i.req.data[7:0]);
+          `endif
           s_data_tx <= tcdm_slave_print_i.req.data;
           s_data_tx_valid <= 1'b1;
         end

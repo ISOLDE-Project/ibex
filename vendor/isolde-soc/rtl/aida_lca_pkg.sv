@@ -16,30 +16,30 @@ MEMORY
   // data memory size in 32-bit words
   localparam int unsigned DMEM_SIZE_I32 = 32'h0000_0800;
   // stack memory size in 32-bit words
-  localparam int unsigned SMEM_SIZE_I32 = 32'h512;
+  localparam int unsigned SMEM_SIZE_I32 = 32'h200;
   
 
   localparam rule_addr_t ROM_BOOT_ADDR = 32'h0000_0080;
   localparam int unsigned ROM_BOOT_SIZE = 32'h16;
   localparam rule_addr_t IMEM_ADDR = 32'h0010_0000;
   localparam int unsigned IMEM_SIZE = 32'h4 * IMEM_SIZE_I32;
-  localparam rule_addr_t DMEM_ADDR = 32'h00110000;
+  localparam rule_addr_t DMEM_ADDR = 32'h0011_0000;
   localparam int unsigned DMEM_SIZE = 32'h4* DMEM_SIZE_I32;
-  localparam rule_addr_t SMEM_ADDR = 32'h00140000;
+  localparam rule_addr_t SMEM_ADDR = 32'h0014_0000;
   localparam int unsigned SMEM_SIZE = 32'h4* SMEM_SIZE_I32;
-  localparam int unsigned GMEM_SIZE = SMEM_ADDR + SMEM_SIZE - IMEM_ADDR;
+  //localparam int unsigned GMEM_SIZE = SMEM_ADDR + SMEM_SIZE - IMEM_ADDR;
   //  see reset vector in bsp/crt0.S
-  localparam rule_addr_t RV_BOOT_ADDR = 32'h00100080;
-  localparam rule_addr_t PERIPH_ADDR = 32'h00001000;
+  localparam rule_addr_t RV_BOOT_ADDR = 32'h0010_0080;
+  localparam rule_addr_t PERIPH_ADDR =  32'h0000_1000;
   //see bsp/simple_system_regs.h
-  localparam rule_addr_t MMIO_ADDR = 32'h8000_0000;
+  localparam rule_addr_t MMIO_ADDR =     32'h8000_0000;
   localparam rule_addr_t MMIO_ADDR_END = 32'h8000_0080;
 
   // === debugger module parameters ===
-  localparam rule_addr_t DEBUG_ADDR = 32'h1A11_0000;
+  localparam rule_addr_t DEBUG_ADDR =  32'h1A11_0000;
   localparam int unsigned DEBUG_SIZE = 32'h0000_1000;
   // === spm narrow port start ====
-  localparam rule_addr_t SPM_NARROW_ADDR = 32'h8000_1000;
+  localparam rule_addr_t SPM_NARROW_ADDR =  32'h8000_1000;
   localparam int unsigned SPM_NARROW_SIZE = 32'h0000_1000;  //4kB
 
   // === hardware accelerator parameters ===
