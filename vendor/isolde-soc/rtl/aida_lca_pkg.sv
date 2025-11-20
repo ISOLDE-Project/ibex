@@ -12,11 +12,11 @@ MEMORY
 }
 */
 // instructon memory size in 32-bit words
-  localparam int unsigned IMEM_SIZE_I32 = 32'h0006_0000;
+  localparam int unsigned IMEM_SIZE_I32 = 32'h0000_0800;
   // data memory size in 32-bit words
-  localparam int unsigned DMEM_SIZE_I32 = 32'h0006_0000;
+  localparam int unsigned DMEM_SIZE_I32 = 32'h0000_0800;
   // stack memory size in 32-bit words
-  localparam int unsigned SMEM_SIZE_I32 = 32'hC000;
+  localparam int unsigned SMEM_SIZE_I32 = 32'h512;
   
 
   localparam rule_addr_t ROM_BOOT_ADDR = 32'h0000_0080;

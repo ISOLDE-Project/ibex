@@ -25,6 +25,30 @@ def load_original_hex(filename):
 
     return memory
 
+def compute_trimmed_end(memory, start_addr, user_end_addr, align=16):
+    """
+    Find the last non-zero byte within the requested range and align
+    the resulting end address upward to the given alignment.
+
+    If the whole range is zero, return start_addr aligned upward.
+    """
+    last_nonzero = None
+
+    # search backwards for last non-zero location
+    for addr in range(user_end_addr, start_addr - 1, -1):
+        if memory.get(addr, 0) != 0:
+            last_nonzero = addr
+            break
+
+    if last_nonzero is None:
+        # everything is zero → minimal aligned region
+        return (start_addr + (align - 1)) & ~(align - 1)
+
+    # align upward
+    last_address = (last_nonzero + (align - 1)) & ~(align - 1)
+    # print(f"@{last_address:08X}\n")
+    return last_address
+
 
 def save_original_format(filename, memory, start, end):
     """
@@ -78,7 +102,8 @@ def main():
     end_addr  = int(args.end, 16)
 
     memory = load_original_hex(args.input)
-
+    end_addr=compute_trimmed_end(memory=memory, start_addr=start_addr, user_end_addr=end_addr)
+    byte_count = end_addr-start_addr
     # Output: original format
     out_original = args.output_base + ".hex"
     save_original_format(out_original, memory, start_addr, end_addr)
@@ -88,8 +113,10 @@ def main():
     save_intel_hex(out_ihex, memory, start_addr, end_addr)
 
     print("Generated files:")
-    print(f"  {out_original}")
-    print(f"  {out_ihex}")
+    print(f"⚠️  {byte_count//4} words ({byte_count} bytes) → 0x{start_addr:08X} - 0x{end_addr - 1:08X}")
+    print(f"📦  {out_original}")
+    print(f"📦  {out_ihex}")
+    print(f"✅ \n")
 
 
 if __name__ == "__main__":

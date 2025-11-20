@@ -10,7 +10,7 @@ riscv set_mem_access sysbus
 puts "\n⚠️ instr mem head"
 puts " @0x00100000: [read_memory 0x00100000 32 4 phys]"
 puts " @0x00100080: [read_memory 0x00100080 32 4 phys]"
-#verify_image $INSTR_IMG 
+verify_image $INSTR_IMG 
 echo  " ----"
 puts "\n⚠️ data mem head!"
 puts " @0x00110000: [read_memory 0x00110000 32 4 phys]"

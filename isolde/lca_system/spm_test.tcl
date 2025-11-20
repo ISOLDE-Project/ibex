@@ -41,10 +41,10 @@ proc run_mem_test {access_mode base_addr width test_data} {
         puts "Verifying memory contents at [format 0x%08X $addr]..."
         set actual [lindex $read_values 0]
         if {$value != $actual} {
-            puts "ERROR: Mismatch at [format 0x%08X $addr]: expected $value, got $actual"
+            puts "❌ ERROR: Mismatch at [format 0x%08X $addr]: expected $value, got $actual"
             set overall_match 0
         } else {
-            puts "SUCCESS: Memory at [format 0x%08X $addr] matches expected value."
+            puts "✅ SUCCESS: Memory at [format 0x%08X $addr] matches expected value."
         }
 
         # Increment address by word size (bytes)
@@ -52,9 +52,9 @@ proc run_mem_test {access_mode base_addr width test_data} {
     }
 
     if {$overall_match} {
-        puts "ALL TESTS PASSED for $access_mode."
+        puts "✅ ALL TESTS PASSED for $access_mode."
     } else {
-        puts "ONE OR MORE TESTS FAILED for $access_mode."
+        puts "❌ ONE OR MORE TESTS FAILED for $access_mode."
     }
     return $overall_match
 }
@@ -65,9 +65,9 @@ set result_progbuf  [run_mem_test progbuf  $base_addr $width $test_data]
 
 puts "============================================="
 if {$result_sysbus && $result_progbuf} {
-    puts "ALL TESTS PASSED (sysbus + progbuf)."
+    puts "✅ ALL TESTS PASSED (sysbus + progbuf)."
 } else {
-    puts "ONE OR MORE TESTS FAILED (sysbus and/or progbuf)."
+    puts "❌ ONE OR MORE TESTS FAILED (sysbus and/or progbuf)."
 }
 
-shutdown
+#shutdown

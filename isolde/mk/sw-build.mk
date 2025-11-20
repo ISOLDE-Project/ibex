@@ -133,7 +133,7 @@ RISCV_CFLAGS += $(TEST_CFLAGS)
 	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objcopy -O verilog \
 		$< \
 		$@
-	python $(SCRIPTS_DIR)/hex_fragment.py   $@  0x00100000  0x00110000 $*-m 
+	python $(SCRIPTS_DIR)/hex_fragment.py   $@  0x00100000  0x0010FFFF $*-m 
 	python $(SCRIPTS_DIR)/hex_fragment.py   $@  0x00110000  0x00140000 $*-d  		
 # 	python $(SCRIPTS_DIR)/addr_offset.py   $@  $*-m.hex 0x00100000
 # 	python $(SCRIPTS_DIR)/addr_offset.py   $@  $*-d.hex 0x00100000
