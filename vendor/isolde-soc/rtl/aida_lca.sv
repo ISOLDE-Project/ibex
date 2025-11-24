@@ -58,7 +58,7 @@ module aida_lca
   // DATA
   typedef enum {
 
-    PERIPH_IDX,
+    //PERIPH_IDX,
     DATA_IDX,
     STACK_IDX,
     MMIO_IDX,
@@ -72,7 +72,7 @@ module aida_lca
   localparam int unsigned NoRules = LAST_IDX;
   // 
   localparam addr_range_t addr_map[NoRules] = '{
-      '{start_addr: PERIPH_ADDR, end_addr: IMEM_ADDR},
+      //'{start_addr: PERIPH_ADDR, end_addr: IMEM_ADDR},
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},           
       '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
@@ -480,23 +480,23 @@ aida_io #(
   /**     Hardware Engine HWE                            **/
   /*******************************************************/
 
-  assign redmule_ctrl.req = noc_data_reqs[PERIPH_IDX];
-  assign noc_data_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
+//   assign redmule_ctrl.req = noc_data_reqs[PERIPH_IDX];
+//   assign noc_data_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
 
-  isolde_redmule_top #(
-      .ID_WIDTH (ID),
-      .N_CORES  (NC),
-      .DW       (HCI_DW),  // TCDM port dimension (in bits
-      .AddrWidth(HCI_AW)
-  ) i_redmule_top (
-      .clk_i         (clk_i),
-      .rst_ni        (rst_ni),
-      .test_mode_i   (REDMULE_TEST_MODE),
-      .fetch_enable_i(fetch_enable_i),
-      .evt_o         (evt),
-      .m_hci_core    (redmule_hci),
-      .s_tcdm_ctrl   (redmule_ctrl)
-  );
+//   isolde_redmule_top #(
+//       .ID_WIDTH (ID),
+//       .N_CORES  (NC),
+//       .DW       (HCI_DW),  // TCDM port dimension (in bits
+//       .AddrWidth(HCI_AW)
+//   ) i_redmule_top (
+//       .clk_i         (clk_i),
+//       .rst_ni        (rst_ni),
+//       .test_mode_i   (REDMULE_TEST_MODE),
+//       .fetch_enable_i(fetch_enable_i),
+//       .evt_o         (evt),
+//       .m_hci_core    (redmule_hci),
+//       .s_tcdm_ctrl   (redmule_ctrl)
+//   );
 
 `ifdef TARGET_VERILATOR   
   isolde_hci_monitor #(

@@ -90,9 +90,6 @@ module aida_io
   logic [31:0] exit_code;
   logic        rsp_valid_q;
 
-  assign tcdm_mmio_exit.req = mmio_reqs[IO_EXIT_IDX];
-  assign mmio_rsps[IO_EXIT_IDX] = tcdm_mmio_exit.rsp;
-
   // Output register connections
   assign tcdm_mmio_exit.rsp.data = exit_code;
   assign tcdm_mmio_exit.rsp.valid = rsp_valid_q;

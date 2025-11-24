@@ -47,36 +47,49 @@ module isolde_uart_top #(
   logic       rsp_valid_q;
 
 
+
+
+
+
+
+
   // Output register connections
-  assign tcdm_slave_print_i.rsp.data = s_data_tx;
+  assign tcdm_slave_print_i.rsp.data  = {24'h0, s_data_tx};
   assign tcdm_slave_print_i.rsp.valid = rsp_valid_q;
-  assign tcdm_slave_print_i.rsp.err = 1'b0;
-  assign tcdm_slave_print_i.rsp.gnt = rstn_i && s_data_tx_ready && tcdm_slave_print_i.req.req;
+  assign tcdm_slave_print_i.rsp.err   = 1'b0;
+  //assign tcdm_slave_print_i.rsp.gnt   = rstn_i && tcdm_slave_print_i.req.req;
 
-
+  always_comb begin
+    if (rstn_i && tcdm_slave_print_i.req.req)
+      tcdm_slave_print_i.rsp.gnt = (s_data_tx_ready) ? tcdm_slave_print_i.req.req : 0;
+    else tcdm_slave_print_i.rsp.gnt = 0;
+  end
 
   always_ff @(posedge sys_clk_i or negedge rstn_i) begin
     if (!rstn_i) begin
       s_data_tx <= '0;
-      rsp_valid_q  <= 1'b0;
+      rsp_valid_q <= 1'b0;
+      s_data_tx_valid <= 1'b0;
     end else begin
       // default: no response unless we accept a request this cycle
       rsp_valid_q <= 1'b0;
       s_data_tx_valid <= 1'b0;
       if (tcdm_slave_print_i.rsp.gnt) begin
         if (tcdm_slave_print_i.req.we) begin
-          `ifdef TARGET_VERILATOR 
-          $write("%c", tcdm_slave_print_i.req.data[7:0]);
-          `endif
-          s_data_tx <= tcdm_slave_print_i.req.data;
           s_data_tx_valid <= 1'b1;
+          s_data_tx <= tcdm_slave_print_i.req.data[7:0];
+`ifdef TARGET_VERILATOR
+          $write("%c", tcdm_slave_print_i.req.data[7:0]);
+`endif
         end
         rsp_valid_q <= 1'b1;
       end
     end
   end
 
-
+`ifdef NO_UART_TX
+  assign s_data_tx_ready = 1'b1;
+`else
   udma_uart_tx u_uart_tx (
       .clk_i          (sys_clk_i),
       .rstn_i         (rstn_i),
@@ -93,8 +106,10 @@ module isolde_uart_top #(
       .tx_done_o      (s_tx_done)
   );
 
-        
-  
+`endif
+
+
+
 
 
 endmodule  // isolde_uart_top

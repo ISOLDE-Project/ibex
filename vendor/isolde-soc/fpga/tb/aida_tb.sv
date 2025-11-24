@@ -141,7 +141,7 @@ module tb_lca_system (
       $finish;
     end else begin
       $display("[TESTBENCH] @ t=%0t: loading %0s into imemory", $time, stim_instr);
-      $readmemh(stim_instr, tb_lca_system.i_aida_top.i_imemory.u_tcdm_mem.memory);
+    //  $readmemh(stim_instr, tb_lca_system.i_aida_top.i_imemory.u_tcdm_mem.memory);
     end
 
     if (!$value$plusargs("STIM_DATA=%s", stim_data)) begin
@@ -149,7 +149,7 @@ module tb_lca_system (
       $finish;
     end else begin
       $display("[TESTBENCH] @ t=%0t: loading %0s into dmemory", $time, stim_data);
-      $readmemh(stim_data, tb_lca_system.i_aida_top.i_dmemory.u_tcdm_mem.memory);
+      //$readmemh(stim_data, tb_lca_system.i_aida_top.i_dmemory.u_tcdm_mem.memory);
     end
 
 
