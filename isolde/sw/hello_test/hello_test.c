@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     printf("***  Hello World from ISOLDE!\n");
     printf("***  \n");
 
-    return 0xBADC0FFE;
+    return 0x123C0FFE;
     
 
 }

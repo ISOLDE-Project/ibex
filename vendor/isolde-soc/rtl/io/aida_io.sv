@@ -36,8 +36,8 @@ module aida_io
 
   // 
   localparam addr_range_t mmio_map[IO_LAST_IDX] = '{
-      '{start_addr: MMADDR_EXIT, end_addr: MMADDR_EXIT + 32'h4},
-      '{start_addr: MMADDR_PRINT, end_addr: MMADDR_PRINT + 32'h4}
+      '{start_addr: MMADDR_EXIT, end_addr: MMADDR_EXIT + 32'h3},
+      '{start_addr: MMADDR_PRINT, end_addr: MMADDR_PRINT + 32'h3}
   };
 
   // /********************************************************/
@@ -54,10 +54,10 @@ module aida_io
   isolde_mux_tcdm i_mux_dm_data_mmio (
       .clk_i,
       .rst_ni,
-      .req_2_i(dm_sba_req),
-      .req_1_i(data_req),
-      .rsp_2_o(dm_sba_rsp),
-      .rsp_1_o(data_rsp),
+      .req_1_i(dm_sba_req),
+      .req_2_i(data_req),
+      .rsp_1_o(dm_sba_rsp),
+      .rsp_2_o(data_rsp),
       .tcdm_master_o(tcdm_mmio_muxed)
   );
 

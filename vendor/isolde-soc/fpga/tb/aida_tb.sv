@@ -34,25 +34,27 @@ module tb_lca_system (
 
 
 
-  
+
   string stim_instr, stim_data;
 
   /********************************************************/
   /**  JTAG Static connection signals                   **/
   /*******************************************************/
-  logic                 [31:0] sim_jtag_exit;
+  logic [31:0] sim_jtag_exit;
   // === JTAG simulation parameters
   localparam int unsigned OPENOCD_PORT = 9999;
   jtag_pkg::jtag_req_t jtag_req;
   jtag_pkg::jtag_rsp_t jtag_rsp;
+  // === IO pads outputs
+  aida_io_pkg::aida_pads_o_t pads_o;
 
   // Internal clock and reset signals
   wire ref_clk;
   wire sys_mb_reset;
-  
 
-assign ref_clk = clk_i;
-assign sys_mb_reset = ~rst_ni;
+
+  assign ref_clk = clk_i;
+  assign sys_mb_reset = ~rst_ni;
 
 
 
@@ -114,23 +116,24 @@ assign sys_mb_reset = ~rst_ni;
       .rst_ni        (~sys_mb_reset),  // Use system reset controller output
       .fetch_enable_i(fetch_enable),
 
+      .pads_o,  
       // JTAG port
       .soc_jtag_in (jtag_req),
       .soc_jtag_out(jtag_rsp)
   );
 
-  
-    // Declare the task with an input parameter for errors
+
+  // Declare the task with an input parameter for errors
   task endSimulation(input int errors);
 
-    
-      $display("[AIDA TB] @ t=%0t - Finish!", $time);
-    
+
+    $display("[AIDA TB] @ t=%0t - Finish!", $time);
+
     $finish;
   endtask
 
   initial begin
- 
+
 
     // Load instruction and data memory
     if (!$value$plusargs("STIM_INSTR=%s", stim_instr)) begin

@@ -9,13 +9,12 @@ __DYNAMIC  =  0;
 
 MEMORY
 {
-    instrram    : ORIGIN = 0x00100000, LENGTH = 0x8000
-    dataram     : ORIGIN = 0x00110000, LENGTH = 0x30000
-    stack       : ORIGIN = 0x00140000, LENGTH = 0x30000
+    instrram    : ORIGIN = 0x00100000, LENGTH = 0x2000
+    dataram     : ORIGIN = 0x00110000, LENGTH = 0x2000
+    stack       : ORIGIN = 0x00140000, LENGTH = 0x800
 }
 
 /* Stack information variables */
-_min_stack      = 0x1000;   /* 4K - minimum stack space to reserve */
 _stack_len     = LENGTH(stack);
 _stack_start   = ORIGIN(stack) + LENGTH(stack);
 
@@ -119,7 +118,7 @@ SECTIONS
     /* ensure there is enough room for stack */
     .stack (NOLOAD): {
         . = ALIGN(4);
-        . = . + _min_stack ;
+        . = . + _stack_len ;
         . = ALIGN(4);
         stack = . ;
         _stack = . ;
