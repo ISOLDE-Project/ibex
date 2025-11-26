@@ -51,6 +51,8 @@ VLT_TOP_MODULE_PARAMS := -GIMEM_LATENCY=$(IMEM_LATENCY)
 DBG_MODULE   ?= 0
 ENABLE_SPM   ?= 0
 
+REDMULE_COMPLEX ?= 1
+export REDMULE_COMPLEX
 
 verilator_target := vanilla
 # Select testbench target 

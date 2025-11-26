@@ -137,7 +137,7 @@ module aida_top
   /**    aida core                                      **/
   /*******************************************************/
 
-  aida_lca #(
+  aida #(
       .SecureIbex      (SecureIbex),
       .ICacheScramble  (ICacheScramble),
       .PMPEnable       (PMPEnable),

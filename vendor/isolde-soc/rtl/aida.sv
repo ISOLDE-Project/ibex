@@ -1,4 +1,4 @@
-module aida_lca
+module aida
   import ibex_pkg::*;
   import redmule_pkg::*;
   import isolde_tcdm_pkg::*;
@@ -381,7 +381,7 @@ aida_io #(
       .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
   ) itf_core_xif ();
 
-`ifdef SIMULATION
+`ifdef TARGET_VERILATOR
   xif_monitor_cpu_issue xif_monitor_cpu_issue_i (
       clk_i,
       itf_core_xif
@@ -479,6 +479,27 @@ aida_io #(
   /********************************************************/
   /**     Hardware Engine HWE                            **/
   /*******************************************************/
+  `ifdef TARGET_REDMULE_COMPLEX
+
+    isolde_redmule_top #(
+      .ID_WIDTH (ID),
+      .N_CORES  (NC),
+      .DW       (HCI_DW),  // TCDM port dimension (in bits
+      .AddrWidth(HCI_AW)
+  ) i_redmule_top (
+      .clk_i         (clk_i),
+      .rst_ni        (rst_ni),
+      .test_mode_i   (REDMULE_TEST_MODE),
+      .fetch_enable_i(fetch_enable_i),
+      .evt_o         (evt),
+      .m_hci_core    (redmule_hci),
+      .xif_issue_if_i     (itf_core_xif.coproc_issue),
+      .xif_result_if_o    (itf_core_xif.coproc_result),
+      .xif_compressed_if_i(itf_core_xif.coproc_compressed),
+      .xif_mem_if_o       (itf_core_xif.coproc_mem)
+  );
+
+`elsif TARGET_REDMULE_HWPE
 
 //   assign redmule_ctrl.req = noc_data_reqs[PERIPH_IDX];
 //   assign noc_data_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
@@ -498,16 +519,21 @@ aida_io #(
 //       .s_tcdm_ctrl   (redmule_ctrl)
 //   );
 
-// `ifdef TARGET_VERILATOR   
-//   isolde_hci_monitor #(
-//       .AW  (HCI_AW),
-//       .DW  (HCI_DW),
-//       .NAME("spm_hci_monitor")
-//   ) i_hci_monitor (
-//       .clk_i,
-//       .rst_ni,
-//       .hci_core(redmule_hci)
-//   );
-// `endif
+`endif
+
+
+
+
+`ifdef TARGET_VERILATOR   
+  isolde_hci_monitor #(
+      .AW  (HCI_AW),
+      .DW  (HCI_DW),
+      .NAME("spm_hci_monitor")
+  ) i_hci_monitor (
+      .clk_i,
+      .rst_ni,
+      .hci_core(redmule_hci)
+  );
+`endif
 
 endmodule

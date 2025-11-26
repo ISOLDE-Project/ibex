@@ -38,7 +38,8 @@ sources:
     - rtl/ibex_rst.sv
     ##level 3
     - rtl/aida_lca.sv
-    - target: all(tb_dm,redmule_test_hwpe)
+    - rtl/aida.sv
+    - target: any(tb_dm,redmule_test_hwpe, redmule_complex,redmule_test_complex)
       files:
         - tb/tb_tcdm_mem.sv
         - tb/monitor/perfCounters.sv
@@ -67,4 +68,5 @@ sources:
         - fpga/rtl/aida_top.sv
         - fpga/sim/tcdm_mem.sv
         - fpga/tb/aida_tb.sv
+        - fpga/tb/aida_lca_tb.sv
     

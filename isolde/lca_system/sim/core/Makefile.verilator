@@ -77,12 +77,13 @@ $(VERI_OBJ_DIR)/V$(VLT_TOP_MODULE).mk:  $(TBSRC_VERI)
 		$(VLT_FLAGS)   \
 		-f verilator_waivers.f \
 		 $(TBSRC_VERI) \
+		--top-module $(VLT_TOP_MODULE) \
 		-f $(CV_CORE_MANIFEST) \
 		-f $(PE_MANIFEST) \
 		--Mdir $(VERI_OBJ_DIR) \
 		-CFLAGS "$(VLT_CFLAGS)"  \
 		-LDFLAGS "-pthread -lutil -lelf" \
-		$(VERI_COMPILE_FLAGS)
+		
 
 
 # verilator specific cleanup
