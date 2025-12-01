@@ -40,6 +40,10 @@ module aida
     // === JTAG port ===
     input  jtag_pkg::jtag_req_t   aida_jtag_in,
     output jtag_pkg::jtag_rsp_t   aida_jtag_out
+`ifdef TARGET_VERILATOR
+    ,output logic[31:0] sim_exit_code_o,
+    output logic sim_exit_valid_o    
+`endif    
 
 );
 
@@ -51,14 +55,16 @@ module aida
 
    assign BOOT_ADDR =  BootROMEnable? ROM_BOOT_ADDR : RV_BOOT_ADDR;
 
+
   /********************************************************/
   /**          Router configurations                     **/
   /*******************************************************/
 
   // DATA
   typedef enum {
-
-    //PERIPH_IDX,
+`ifdef TARGET_REDMULE_HWPE
+    PERIPH_IDX,
+`endif
     DATA_IDX,
     STACK_IDX,
     MMIO_IDX,
@@ -72,7 +78,9 @@ module aida
   localparam int unsigned NoRules = LAST_IDX;
   // 
   localparam addr_range_t addr_map[NoRules] = '{
-      //'{start_addr: PERIPH_ADDR, end_addr: IMEM_ADDR},
+  `ifdef TARGET_REDMULE_HWPE  
+      '{start_addr: PERIPH_ADDR, end_addr: IMEM_ADDR},
+   `endif   
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},           
       '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
@@ -91,9 +99,9 @@ module aida
     INSTR_LAST_IDX
   } instr_map_idx_t;
 
-  localparam int unsigned InstrNoRules = INSTR_LAST_IDX;
+  
   // 
-  localparam addr_range_t instr_map[InstrNoRules] = '{
+  localparam addr_range_t instr_map[INSTR_LAST_IDX] = '{
       '{start_addr: ROM_BOOT_ADDR, end_addr: ROM_BOOT_ADDR + ROM_BOOT_SIZE},
       '{start_addr: IMEM_ADDR, end_addr: IMEM_ADDR + IMEM_SIZE},
       '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
@@ -117,6 +125,13 @@ module aida
       '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + SPM_NARROW_SIZE}
       
   };
+ `else
+    // If debug module is not enabled, define empty parameters
+  typedef enum {
+    INSTR_MEM_IDX,
+    INSTR_LAST_IDX
+  } instr_map_idx_t;
+  
 `endif
   /********************************************************/
   /**           Interface Definitions                   **/
@@ -153,9 +168,12 @@ module aida
   // === Instruction Network on Chip NoC interfaces ===
   isolde_tcdm_pkg::req_t noc_instr_reqs[INSTR_LAST_IDX];
   isolde_tcdm_pkg::rsp_t noc_instr_rsps[INSTR_LAST_IDX];
+
+`ifdef TARGET_RV_DEBUG
   // === Debug module System Bus Access (dm_sba) Network on Chip NoC interfaces ===
   isolde_tcdm_pkg::req_t noc_dm_sba_reqs[DM_SBA_LAST_IDX];
   isolde_tcdm_pkg::rsp_t noc_dm_sba_rsps[DM_SBA_LAST_IDX];
+`endif
 
   /********************************************************/
   /**           Router(s)                                **/
@@ -171,9 +189,10 @@ module aida
       .req_o       (noc_data_reqs),
       .rsp_i       (noc_data_rsps)
   );
+`ifdef TARGET_RV_DEBUG
 
   isolde_router #(
-      .N_RULES(InstrNoRules),
+      .N_RULES(INSTR_LAST_IDX),
       .ADDR_RANGES(instr_map)
   ) i_isolde_instr_router (
       .clk_i,
@@ -193,7 +212,11 @@ module aida
       .req_o       (noc_dm_sba_reqs),
       .rsp_i       (noc_dm_sba_rsps)
   );
-
+`else
+    // If debug module is not enabled, tie off dm_sba NoC interfaces
+    assign  noc_instr_reqs[INSTR_MEM_IDX]  = tcdm_core_inst.req;
+    assign  tcdm_core_inst.rsp = noc_instr_rsps[INSTR_MEM_IDX] ;
+`endif
   /********************************************************/
   /**           memory mapped I/O                        **/
   /*******************************************************/
@@ -206,14 +229,21 @@ aida_io #(
     //
     .pads_o(pads_o),
     //
+`ifdef TARGET_RV_DEBUG  
     .dm_sba_req(noc_dm_sba_reqs[DM_SBA_MMIO_IDX]),
     .dm_sba_rsp(noc_dm_sba_rsps[DM_SBA_MMIO_IDX]),
+`endif    
     //  
     .data_req(noc_data_reqs[MMIO_IDX]),
     .data_rsp(noc_data_rsps[MMIO_IDX])
+`ifdef TARGET_VERILATOR
+    ,.sim_exit_code_o,
+    .sim_exit_valid_o    
+`endif    
 );
 
 
+`ifdef TARGET_RV_DEBUG  
   /********************************************************/
   /**     RV Debug Module                                **/
   /*******************************************************/
@@ -283,8 +313,20 @@ aida_io #(
       .jtag_out(aida_jtag_out),
       .debug_req_o(debug_req)
   );
-
-
+`else
+// === tcdm_spm_dma_muxed assignment ===
+    assign tcdm_spm_dma_muxed.req = noc_data_reqs[SPM_IDX];
+    assign noc_data_rsps[SPM_IDX] = tcdm_spm_dma_muxed.rsp;
+// === tcdm_dmem_muxed assignment ===
+    assign tcdm_dmem_muxed.req = noc_data_reqs[DATA_IDX];
+    assign noc_data_rsps[DATA_IDX] = tcdm_dmem_muxed.rsp;
+// === tcdm_imem_muxed assignment ===
+    assign tcdm_imem_muxed.req = noc_instr_reqs[INSTR_MEM_IDX];
+    assign noc_instr_rsps[INSTR_MEM_IDX] = tcdm_imem_muxed.rsp;    
+// === tcdm_stack_muxed assignment ===
+    assign tcdm_stack_muxed.req = noc_data_reqs[STACK_IDX];
+    assign noc_data_rsps[STACK_IDX] = tcdm_stack_muxed.rsp;    
+`endif
   /********************************************************/
   /**     TCDM                                           **/
   /*******************************************************/
@@ -352,7 +394,7 @@ aida_io #(
   /********************************************************/
   /**     BOOT ROM memory                                **/
   /*******************************************************/
-
+`ifdef TARGET_RV_DEBUG  
 
     generate
     if (BootROMEnable) begin : boot_rom_block
@@ -365,7 +407,7 @@ aida_io #(
         );
     end
     endgenerate
-
+`endif
 
   /********************************************************/
   /**     CV-X-IF                                        **/
@@ -501,23 +543,23 @@ aida_io #(
 
 `elsif TARGET_REDMULE_HWPE
 
-//   assign redmule_ctrl.req = noc_data_reqs[PERIPH_IDX];
-//   assign noc_data_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
+  assign redmule_ctrl.req = noc_data_reqs[PERIPH_IDX];
+  assign noc_data_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
 
-//   isolde_redmule_top #(
-//       .ID_WIDTH (ID),
-//       .N_CORES  (NC),
-//       .DW       (HCI_DW),  // TCDM port dimension (in bits
-//       .AddrWidth(HCI_AW)
-//   ) i_redmule_top (
-//       .clk_i         (clk_i),
-//       .rst_ni        (rst_ni),
-//       .test_mode_i   (REDMULE_TEST_MODE),
-//       .fetch_enable_i(fetch_enable_i),
-//       .evt_o         (evt),
-//       .m_hci_core    (redmule_hci),
-//       .s_tcdm_ctrl   (redmule_ctrl)
-//   );
+  isolde_redmule_top #(
+      .ID_WIDTH (ID),
+      .N_CORES  (NC),
+      .DW       (HCI_DW),  // TCDM port dimension (in bits
+      .AddrWidth(HCI_AW)
+  ) i_redmule_top (
+      .clk_i         (clk_i),
+      .rst_ni        (rst_ni),
+      .test_mode_i   (REDMULE_TEST_MODE),
+      .fetch_enable_i(fetch_enable_i),
+      .evt_o         (evt),
+      .m_hci_core    (redmule_hci),
+      .s_tcdm_ctrl   (redmule_ctrl)
+  );
 
 `endif
 

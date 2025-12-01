@@ -11,12 +11,19 @@ module aida_io
     input logic rst_ni,
     //
     output aida_io_pkg::aida_pads_o_t pads_o,
+    `ifdef TARGET_RV_DEBUG
     //
     input isolde_tcdm_pkg::req_t dm_sba_req,
     output isolde_tcdm_pkg::rsp_t dm_sba_rsp,
+    `endif
     //  
     input isolde_tcdm_pkg::req_t data_req,
     output isolde_tcdm_pkg::rsp_t data_rsp
+    `ifdef TARGET_VERILATOR
+    ,output logic[31:0] sim_exit_code_o,
+    output logic sim_exit_valid_o    
+`endif    
+
 );
 
   // Internal MMIO address mapping
@@ -51,6 +58,7 @@ module aida_io
   /********************************************************/
   /**           MUX                                     **/
   /*******************************************************/
+  `ifdef TARGET_RV_DEBUG
   isolde_mux_tcdm i_mux_dm_data_mmio (
       .clk_i,
       .rst_ni,
@@ -60,7 +68,10 @@ module aida_io
       .rsp_2_o(data_rsp),
       .tcdm_master_o(tcdm_mmio_muxed)
   );
-
+`else
+  assign tcdm_mmio_muxed.req =data_req;
+  assign data_rsp= tcdm_mmio_muxed.rsp;
+`endif
   // assign  tcdm_mmio_muxed.req =dm_sba_req;
   // assign dm_sba_rsp= tcdm_mmio_muxed.rsp;
   /********************************************************/
@@ -95,6 +106,12 @@ module aida_io
   assign tcdm_mmio_exit.rsp.valid = rsp_valid_q;
   assign tcdm_mmio_exit.rsp.err = 1'b0;
   assign tcdm_mmio_exit.rsp.gnt = rst_ni && tcdm_mmio_exit.req.req;
+
+`ifdef TARGET_VERILATOR
+  assign sim_exit_code_o  = exit_code; 
+  assign sim_exit_valid_o = rsp_valid_q;
+`endif    
+
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin

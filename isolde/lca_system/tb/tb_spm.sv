@@ -49,36 +49,44 @@ class MyCallback extends MemStatisticsCallback;
   endfunction
 endclass
 
-module tb_lca_system (
+module tb_lca_system
+  import ibex_pkg::*;
+  import redmule_pkg::*;
+  import isolde_tcdm_pkg::*;
+  import aida_lca_package::*;
+#(
+    //ibex parameters
+    parameter bit RV32E           = 1'b0,
+    parameter bit ICacheScramble  = 1'b0,
+    parameter bit ICache          = 1'b0,
+    parameter bit ICacheECC       = 1'b0,
+    parameter bit BranchTargetALU = 1'b0,
+    parameter bit WritebackStage  = 1'b0,
+    parameter bit SecureIbex      = 1'b0,
+    parameter bit BranchPredictor = 1'b0,
+    parameter bit DbgTriggerEn    = 1'b0,
+
+    parameter bit          PMPEnable        = 1'b0,
+    parameter int unsigned PMPGranularity   = 0,
+    parameter int unsigned PMPNumRegions    = 4,
+    parameter int unsigned MHPMCounterNum   = 0,
+    parameter int unsigned MHPMCounterWidth = 40,
+
+    parameter rv32m_e   RV32M   = RV32MSingleCycle,
+    parameter rv32b_e   RV32B   = RV32BNone,
+    parameter regfile_e RegFile = RegFileFPGA,
+
+    parameter int unsigned DmHaltAddr      = 32'h1A11_0800,
+    parameter int unsigned DmExceptionAddr = 32'h1A11_0808,
+    parameter bit          BootROMEnable   = 1'b1,
+    //simulation only
+    parameter int unsigned IMEM_LATENCY    = 0
+) (
     input logic clk_i,
     input logic rst_ni,
     input logic fetch_enable_i
 
 );
-  import redmule_pkg::*;
-  import isolde_tcdm_pkg::*;
-  import aida_lca_package::*;
-  //ibex parameters
-  parameter bit SecureIbex = 1'b0;
-  parameter bit ICacheScramble = 1'b0;
-  parameter bit PMPEnable = 1'b0;
-  parameter int unsigned PMPGranularity = 0;
-  parameter int unsigned PMPNumRegions = 4;
-  parameter int unsigned MHPMCounterNum = 0;
-  parameter int unsigned MHPMCounterWidth = 40;
-  parameter bit RV32E = 1'b0;
-  parameter ibex_pkg::rv32m_e RV32M = `RV32M;
-  parameter ibex_pkg::rv32b_e RV32B = `RV32B;
-  parameter ibex_pkg::regfile_e RegFile = `RegFile;
-  parameter bit BranchTargetALU = 1'b0;
-  parameter bit WritebackStage = 1'b0;
-  parameter bit ICache = 1'b0;
-  parameter bit DbgTriggerEn = 1'b0;
-  parameter bit ICacheECC = 1'b0;
-  parameter bit BranchPredictor = 1'b0;
-  parameter int unsigned IMEM_LATENCY = 0;
-  parameter bit BootROMEnable = 1'b1;  // enable booting from ROM
-
 
 
   int fh;  //filehandle
@@ -87,8 +95,8 @@ module tb_lca_system (
   // global signals
   string stim_instr, stim_data;
 
-  logic                        sim_exit;
   logic                 [31:0] sim_exit_code;
+  logic                        sim_exit_valid_o;
   MemStatisticsCallback        mem_stats_cb;
 
 
@@ -140,26 +148,14 @@ module tb_lca_system (
   // === stack memory port ===
   isolde_tcdm_if aida_stack_memory ();
 
-  // === memory mapped I/O ports ===
-  isolde_tcdm_if aida_mmio ();
 
   /********************************************************/
-  /**           Performance counters                     **/
+  /**          Simulation end                            **/
   /*******************************************************/
-  perfCounters #(
-      .MMIO_ADDR(MMIO_ADDR)
-  ) i_perfcnt (
-      .clk_i,
-      .rst_ni,
-      .tcdm_slave_i(aida_mmio),
-      .sim_exit_o(sim_exit),
-      .sim_exit_code_o(sim_exit_code),
-      .mem_statistics_cb(mem_stats_cb)
 
-  );
 `ifndef TARGET_RV_DEBUG
   always_comb begin
-    if (sim_exit) begin
+    if (sim_exit_valid) begin
       endSimulation(sim_exit_code);
     end
   end
@@ -196,7 +192,7 @@ module tb_lca_system (
   /**     Data memory                                    **/
   /*******************************************************/
   tb_tcdm_mem #(
-      .MEMORY_SIZE(GMEM_SIZE)
+      .MEMORY_SIZE(DMEM_SIZE)
   ) i_dummy_dmemory (
       .clk_i,
       .rst_ni,
@@ -207,7 +203,7 @@ module tb_lca_system (
   /**     Instruction memory                             **/
   /*******************************************************/
   tb_tcdm_mem #(
-      .MEMORY_SIZE (GMEM_SIZE),
+      .MEMORY_SIZE (IMEM_SIZE),
       .DELAY_CYCLES(IMEM_LATENCY)
   ) i_dummy_imemory (
       .clk_i,
@@ -257,8 +253,7 @@ module tb_lca_system (
   /********************************************************/
   /**    aida core                                      **/
   /*******************************************************/
-
-  aida_lca #(
+  aida #(
       .SecureIbex      (SecureIbex),
       .ICacheScramble  (ICacheScramble),
       .PMPEnable       (PMPEnable),
@@ -276,21 +271,27 @@ module tb_lca_system (
       .WritebackStage  (WritebackStage),
       .BranchPredictor (BranchPredictor),
       .DbgTriggerEn    (DbgTriggerEn),
-      .DmHaltAddr      (32'h1A11_0800),     //TODO make a param here
-      .DmExceptionAddr (32'h1A11_0808),     //TODO make a param here
+      .DmHaltAddr      (DmHaltAddr),
+      .DmExceptionAddr (DmExceptionAddr),
       .BootROMEnable   (BootROMEnable)
   ) i_aida_lca (
-      .clk_i,
-      .rst_ni,
-      .fetch_enable_i,
-      .aida_data_memory,
-      .aida_stack_memory,
-      .aida_instr_memory,
-      .aida_mmio,
+      .clk_i(clk_i),
+      .rst_ni(rst_ni),
+      .fetch_enable_i(fetch_enable_i),
+      .aida_data_memory(aida_data_memory),
+      .aida_stack_memory(aida_stack_memory),
+      .aida_instr_memory(aida_instr_memory),
+
+      .pads_o(pads_o),
+
       .spm_req_o(mem_req),
       .spm_rsp_i(mem_rsp),
-      .aida_jtag_in(jtag_in),
-      .aida_jtag_out(jtag_out)
+      .aida_jtag_in(soc_jtag_in),
+      .aida_jtag_out(soc_jtag_out)
+`ifdef TARGET_VERILATOR,
+      .sim_exit_code_o(sim_exit_code),
+      .sim_exit_valid_o(sim_exit_valid)
+`endif
 
   );
 
