@@ -28,7 +28,7 @@ module tb_tca_system (
   parameter ibex_pkg::regfile_e RegFile = `RegFile;
   parameter bit BranchTargetALU = 1'b0;
   parameter bit WritebackStage = 1'b0;
-  parameter bit ICache = 1'b0;
+  parameter bit ICache = 1'b1;
   parameter bit DbgTriggerEn = 1'b0;
   parameter bit ICacheECC = 1'b0;
   parameter bit BranchPredictor = 1'b0;

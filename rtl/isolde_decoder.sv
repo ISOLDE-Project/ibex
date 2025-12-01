@@ -126,7 +126,7 @@ module isolde_decoder
               end else begin
                 isolde_decoder_illegal_instr_q                 <= 1;
                 read_ptr                                       <= 0;
-                //isolde_decoder_exec_bus.isolde_decoder_stalled <= 0;
+                isolde_decoder_exec_bus.isolde_decoder_stalled <= 0;
               end
             end
             FETCH_REST: begin

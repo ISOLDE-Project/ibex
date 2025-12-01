@@ -68,24 +68,25 @@ int main(int argc, char *argv[]) {
   elems = y_size;
   spm_next_addr = spm_write(spm_addr, src, elems);
 
+  printf("[SPM TCA ] x_spm_addr= 0x%08x, w_spm_addr= 0x%08x, y_spm_addr= 0x%08x.\n", x_spm_addr, w_spm_addr,
+         y_spm_addr);
+  printf("[SPM TCA ] Starting test. Godspeed!\n");
 
-  //printf("[SPM TCA ] Starting test. Godspeed!\n");
-
-  //asm volatile("addi t0, %0, 0" ::"r"(x_spm_addr));
-  //asm volatile("addi t1, %0, 0" ::"r"(w_spm_addr));
-  //asm volatile("addi t2, %0, 0" ::"r"(y_spm_addr));
-  //asm volatile("redmule.gemm t0,t1,t2,0x10,0xc,0x10");
+  asm volatile("addi t0, %0, 0" ::"r"(x_spm_addr));
+  asm volatile("addi t1, %0, 0" ::"r"(w_spm_addr));
+  asm volatile("addi t2, %0, 0" ::"r"(y_spm_addr));
+  asm volatile("redmule.gemm t0,t1,t2,0x10,0xc,0x10");
 
   
     // Wait for end of computation
-  //asm volatile("wfi" ::: "memory");
+  asm volatile("wfi" ::: "memory");
   
   
   elems = sizeof(y_flat) / sizeof(y_flat[0]);
   spm_read(y_flat, y_spm_addr, elems);
   errors = redmule16_compare_int(y_flat, golden, M_SIZE * K_SIZE / 2);
 
-  //printf("[SPM TCA] Terminated test with %d errors. See you!\n", errors);
+  printf("[SPM TCA 128b ] Terminated test with %d errors. See you!\n", errors);
 
   return errors ?  0xBADC0FFE :0x0;
 
