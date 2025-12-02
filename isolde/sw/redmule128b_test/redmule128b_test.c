@@ -79,12 +79,12 @@ int main(int argc, char *argv[]) {
 
   
     // Wait for end of computation
-  asm volatile("wfi" ::: "memory");
+  //asm volatile("wfi" ::: "memory");
   
   
   elems = sizeof(y_flat) / sizeof(y_flat[0]);
   spm_read(y_flat, y_spm_addr, elems);
-  errors = redmule16_compare_int(y_flat, golden, M_SIZE * K_SIZE / 2);
+  errors = redmule16_compare_int(y_flat, y_inp, M_SIZE * K_SIZE / 2);
 
   printf("[SPM TCA 128b ] Terminated test with %d errors. See you!\n", errors);
 

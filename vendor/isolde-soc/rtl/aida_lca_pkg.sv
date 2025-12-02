@@ -14,7 +14,7 @@ MEMORY
 // instructon memory size in 32-bit words
   localparam int unsigned IMEM_SIZE_I32 = 32'h0000_0800;
   // data memory size in 32-bit words
-  localparam int unsigned DMEM_SIZE_I32 = 32'h0000_0800;
+  localparam int unsigned DMEM_SIZE_I32 = 32'h0000_1000;
   // stack memory size in 32-bit words
   localparam int unsigned SMEM_SIZE_I32 = 32'h200;
   
