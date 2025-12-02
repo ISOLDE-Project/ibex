@@ -31,17 +31,17 @@ parameters:
     paramtype: vlogdefine
     description: "Bitmanip implementation parameter enum. See the ibex_pkg::rv32b_e enum in ibex_pkg.sv for permitted values."
 
-  RegFile:
-    datatype: str
-    default: ibex_pkg::RegFileFF
-    paramtype: vlogdefine
-    description: "Register file implementation parameter enum. See the ibex_pkg::regfile_e enum in ibex_pkg.sv for permitted values."
+#  RegFile:
+#    datatype: str
+#    default: ibex_pkg::RegFileFF
+#    paramtype: vlogdefine
+#    description: "Register file implementation parameter enum. See the ibex_pkg::regfile_e enum in ibex_pkg.sv for permitted values."
 
-  ICache:
-    datatype: int
-    default: 0
-    paramtype: vlogparam
-    description: "Enable instruction cache"
+#  ICache:
+#    datatype: int
+#    default: 0
+#    paramtype: vlogparam
+#    description: "Enable instruction cache"
 
   ICacheECC:
     datatype: int
@@ -129,8 +129,8 @@ targets:
       - RV32E
       - RV32M
       - RV32B
-      - RegFile
-      - ICache
+#      - RegFile
+#      - ICache
       - ICacheScramble
       - ICacheECC
       - BranchTargetALU

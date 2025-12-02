@@ -111,7 +111,9 @@ module tb_system (
   );
 
   // Main AIDA top-level instance
-  aida_top i_aida_top (
+  aida_top #(
+      .RegFile         (ibex_pkg::RegFileFF)
+  )i_aida_top (
       .clk_i         (ref_clk),
       .rst_ni        (~sys_mb_reset),  // Use system reset controller output
       .fetch_enable_i(fetch_enable),

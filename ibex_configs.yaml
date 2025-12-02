@@ -199,7 +199,7 @@ isolde:
   RV32E                    : 0
   RV32M                    : "ibex_pkg::RV32MSingleCycle"
   RV32B                    : "ibex_pkg::RV32BNone"
-  RegFile                  : "ibex_pkg::RegFileFF"
+  #RegFile                  : "ibex_pkg::RegFileFF"
   BranchTargetALU          : 0
   WritebackStage           : 0
   #ICache                   : 1
