@@ -47,6 +47,7 @@ module isolde_decoder
   logic [4:0] rd;
 
   isolde_opcode_e isolde_opcode_d, isolde_opcode_q;
+  isolde_decoded_t isolde_decoded_instr;
 
   logic [2:0] vlen_instr_words_d, vlen_instr_words_q;  // Instruction length in words
   logic [2:0] read_ptr;
@@ -60,11 +61,17 @@ module isolde_decoder
 
   assign isolde_decoder_illegal_instr_o = isolde_decoder_illegal_instr_q & isolde_decoder_illegal_instr_d;
 
+  assign isolde_decoded_instr = decode_isolde_opcode(
+      isolde_decoder_instr_batch_i[0][6:0],  //opcode
+      isolde_decoder_instr_batch_i[0][14:12],  //nnn
+      isolde_decoder_instr_batch_i[0][31:25]  //func7
+  );
+  assign isolde_opcode_d = isolde_decoded_instr.opcode;
+  assign vlen_instr_words_d = isolde_decoded_instr.vlen_words;
+
   always_comb begin
-    decode_isolde_opcode(isolde_decoder_instr_batch_i[0][6:0],  //opcode
-                         isolde_decoder_instr_batch_i[0][14:12],  //nnn
-                         isolde_decoder_instr_batch_i[0][31:25],  //func7
-                         isolde_opcode_d, vlen_instr_words_d);
+
+
     isolde_decoder_illegal_instr_d = (isolde_opcode_d == isolde_opcode_invalid) ? 1 : 0;
   end
 
