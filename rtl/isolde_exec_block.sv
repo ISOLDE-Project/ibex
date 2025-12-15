@@ -96,10 +96,11 @@ module isolde_exec_block
 
 
   always_comb begin
+    exec_dne = 0;
+    exec_gnt = 0;
+    isolde_exec_busy_o = 0;
     case (ievli_state)
       IDLE: begin
-        exec_dne = 0;
-        exec_gnt = 0;
         if (exec_req) begin
           exec_gnt = 1;
           ievli_next = START;
@@ -108,7 +109,6 @@ module isolde_exec_block
       end
 
       START: begin
-        exec_gnt = 0;
         isolde_exec_busy_o = 1;
         ievli_next = WAIT;
       end
@@ -261,7 +261,7 @@ module isolde_exec_block
             isolde_rf_bus.rdata_0[3]);
 `endif
     begin
-      xif_issue_if.issue_req.instr <= 32'h087332ff; //hack to simplify redmule instruction decoder
+      xif_issue_if.issue_req.instr <= 32'h087332ff;  //hack to simplify redmule instruction decoder
       xif_issue_if.issue_req.rs[0] <= x_rf_bus.rdata_0;  //rs1
       xif_issue_if.issue_req.rs[1] <= x_rf_bus.rdata_1;  // rs2
       xif_issue_if.issue_req.rs[2] <= x_rf_bus.rdata_2;  // rs3
@@ -269,7 +269,8 @@ module isolde_exec_block
       xif_issue_if.issue_req.imm32[0] <= isolde_rf_bus.rdata_0[1];
       xif_issue_if.issue_req.imm32[1] <= isolde_rf_bus.rdata_0[2];
       xif_issue_if.issue_req.imm32[2] <= isolde_rf_bus.rdata_0[3];
-      xif_issue_if.issue_req.imm32_valid <= 3'b111;;
+      xif_issue_if.issue_req.imm32_valid <= 3'b111;
+      ;
       xif_issue_if.issue_valid <= 1;
       //
       ievli_state <= DONE;
