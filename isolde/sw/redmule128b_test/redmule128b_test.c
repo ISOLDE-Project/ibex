@@ -68,8 +68,9 @@ int main(int argc, char *argv[]) {
   elems = y_size;
   spm_next_addr = spm_write(spm_addr, src, elems);
 
-  printf("[SPM TCA ] x_spm_addr= 0x%08x, w_spm_addr= 0x%08x, y_spm_addr= 0x%08x.\n", x_spm_addr, w_spm_addr,
+  printf("[SPM TCA ] x_spm_addr= 0x%08x\n, w_spm_addr= 0x%08x\n, y_spm_addr= 0x%08x\n", x_spm_addr, w_spm_addr,
          y_spm_addr);
+
   printf("[SPM TCA ] Starting test. Godspeed!\n");
 
   asm volatile("addi t0, %0, 0" ::"r"(x_spm_addr));
