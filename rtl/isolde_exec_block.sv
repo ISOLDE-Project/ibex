@@ -33,14 +33,19 @@ module isolde_exec_block
     $fclose(log_fh);
   end
 `endif
+  typedef struct packed {
+    logic [2:0] cnt_max;  // 0 => immediate
+  } isolde_exec_action_t;
 
   // FSM states
   typedef enum logic [2:0] {
     IDLE,
     START,  //start execution
-    WAIT,   //wait for completion
-    DONE
+    WAIT   //wait for completion
   } state_t;
+
+  localparam isolde_exec_action_t EXEC_NOP = '{3'd0};
+  isolde_exec_action_t exec_action;
 
   state_t ievli_state, ievli_next;
   logic clk;
@@ -68,38 +73,39 @@ module isolde_exec_block
       ievli_state <= ievli_next;
       case (ievli_next)
         START: begin
-          cnt <= 1;
+          cnt <= 0;
           case (isolde_opcode_dec)
-            isolde_opcode_nop: start_nop();
-            isolde_opcode_redmule: start_nop_redmule();
-            isolde_opcode_R_type: start_nop_RType();
-            isolde_opcode_vle32_4: start_vle32_4();
-            isolde_opcode_gemm: start_gemm();
-            isolde_opcode_conv2d: start_conv2d();
-            isolde_opcode_redmule_gemm: start_redmule_gemm();
-            isolde_opcode_redmule_gemm1: start_redmule_gemm1();
+            isolde_opcode_nop: exec_action = start_nop();
+            isolde_opcode_redmule:exec_action =  start_nop_redmule();
+            isolde_opcode_R_type:exec_action =  start_nop_RType();
+            isolde_opcode_vle32_4:exec_action =  start_vle32_4();
+            isolde_opcode_gemm: exec_action = start_gemm();
+            isolde_opcode_conv2d: exec_action = start_conv2d();
+            isolde_opcode_redmule_gemm: exec_action = start_redmule_gemm();
+            isolde_opcode_redmule_gemm1: exec_action = start_redmule_gemm1();
             default: begin
-              cnt_max <= 4;  //dummy value
+              exec_action = EXEC_NOP;
             end
           endcase
+          cnt_max <= exec_action.cnt_max;
         end
         WAIT: begin
           cnt <= cnt + 1;
-        end
-        DONE: begin
           xif_issue_if.issue_valid <= 0;
-          ievli_state <= IDLE;
         end
+        
       endcase
     end
   end
 
 
   always_comb begin
+    exec_dne = 0;
+    exec_gnt = 0;
+    isolde_exec_busy_o = 0;
+    ievli_next = IDLE;
     case (ievli_state)
       IDLE: begin
-        exec_dne = 0;
-        exec_gnt = 0;
         if (exec_req) begin
           exec_gnt = 1;
           ievli_next = START;
@@ -108,7 +114,6 @@ module isolde_exec_block
       end
 
       START: begin
-        exec_gnt = 0;
         isolde_exec_busy_o = 1;
         ievli_next = WAIT;
       end
@@ -120,26 +125,21 @@ module isolde_exec_block
           ievli_next = IDLE;
         end
       end
-      DONE: begin
-        isolde_exec_busy_o = 0;
-        exec_dne = 1;
-        ievli_next = DONE;
-      end
     endcase
   end
 
 
 
-  task static start_nop;
+  function automatic isolde_exec_action_t start_nop();
 `ifndef SYNTHESIS
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_nop");
 `endif
     begin
-      ievli_state <= DONE;  // resume with next cycle
+      return EXEC_NOP;  // resume with next cycle
     end
-  endtask
+  endfunction
 
-  task static start_vle32_4;
+  function automatic isolde_exec_action_t start_vle32_4();
 `ifndef SYNTHESIS
     $fwrite(log_fh, " --- %s\n", "isolde_exec_block::start_vle32_4");
     $fwrite(log_fh, "    @rd=%d: [ %d, %d, %d, %d ]\n", isolde_rf_bus.waddr_0,
@@ -147,13 +147,13 @@ module isolde_exec_block
             isolde_rf_bus.echo_0[3]);
 `endif
     begin
-      ievli_state <= DONE;  // resume with next cycle
+      return EXEC_NOP;  // resume with next cycle
     end
-  endtask
+  endfunction
 
 
 
-  task static start_nop_RType;
+  function automatic isolde_exec_action_t start_nop_RType();
 `ifndef SYNTHESIS
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_nop_RType");
     $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
@@ -169,12 +169,12 @@ module isolde_exec_block
       xif_issue_if.issue_req.rs_valid <= 3'b111;
       xif_issue_if.issue_valid <= 1;
       //
-      ievli_state <= DONE;
+      return EXEC_NOP;  // resume with next cycle
     end
-  endtask
+  endfunction
 
 
-  task static start_nop_redmule;
+  function automatic isolde_exec_action_t start_nop_redmule();
 `ifndef SYNTHESIS
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_nop_redmule");
     $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
@@ -190,12 +190,12 @@ module isolde_exec_block
       xif_issue_if.issue_req.rs_valid <= 3'b111;
       xif_issue_if.issue_valid <= 1;
       //
-      ievli_state <= DONE;
+      return EXEC_NOP;  // resume with next cycle
     end
-  endtask
+  endfunction
 
 
-  task static start_gemm;
+  function automatic isolde_exec_action_t start_gemm();
 `ifndef SYNTHESIS
     //  $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_gemm");
@@ -214,11 +214,11 @@ module isolde_exec_block
 
 `endif
     begin
-      cnt_max <= 4;  // wait cycles time for completion
+      return '{cnt_max: 3'd4};  // wait cycles time for completion
     end
-  endtask
+  endfunction
 
-  task static start_redmule_gemm;
+  function automatic isolde_exec_action_t start_redmule_gemm();
 `ifndef SYNTHESIS
     //  $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_redmule_gemm");
@@ -243,11 +243,11 @@ module isolde_exec_block
       xif_issue_if.issue_req.imm32_valid <= isolde_exec_from_decoder.isolde_decoder_imm32_valid;
       xif_issue_if.issue_valid <= 1;
       //
-      ievli_state <= DONE;
+      return EXEC_NOP;  // resume with next cycle
     end
-  endtask
+  endfunction
 
-  task static start_redmule_gemm1;
+  function automatic isolde_exec_action_t start_redmule_gemm1();
 `ifndef SYNTHESIS
     $display(" --- @t=%t    %s\n", $time, "isolde_exec_block::start_redmule_gemm1");
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_redmule_gemm1");
@@ -261,7 +261,7 @@ module isolde_exec_block
             isolde_rf_bus.rdata_0[3]);
 `endif
     begin
-      xif_issue_if.issue_req.instr <= 32'h087332ff; //hack to simplify redmule instruction decoder
+      xif_issue_if.issue_req.instr <= 32'h087332ff;  //hack to simplify redmule instruction decoder
       xif_issue_if.issue_req.rs[0] <= x_rf_bus.rdata_0;  //rs1
       xif_issue_if.issue_req.rs[1] <= x_rf_bus.rdata_1;  // rs2
       xif_issue_if.issue_req.rs[2] <= x_rf_bus.rdata_2;  // rs3
@@ -269,15 +269,15 @@ module isolde_exec_block
       xif_issue_if.issue_req.imm32[0] <= isolde_rf_bus.rdata_0[1];
       xif_issue_if.issue_req.imm32[1] <= isolde_rf_bus.rdata_0[2];
       xif_issue_if.issue_req.imm32[2] <= isolde_rf_bus.rdata_0[3];
-      xif_issue_if.issue_req.imm32_valid <= 3'b111;;
+      xif_issue_if.issue_req.imm32_valid <= 3'b111;
       xif_issue_if.issue_valid <= 1;
       //
-      ievli_state <= DONE;
+      return EXEC_NOP;  // resume with next cycle
     end
-  endtask
+  endfunction
 
 
-  task static start_conv2d;
+  function automatic isolde_exec_action_t start_conv2d();
 `ifndef SYNTHESIS
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_conv2d");
     $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
@@ -306,9 +306,9 @@ module isolde_exec_block
 
 `endif
     begin
-      cnt_max <= 4;  // wait cycles time for completion
+      return '{cnt_max: 3'd4};  // wait cycles time for completion
     end
-  endtask
+  endfunction
 
 
 endmodule

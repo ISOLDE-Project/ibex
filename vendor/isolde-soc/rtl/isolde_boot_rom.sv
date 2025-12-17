@@ -35,7 +35,7 @@ module isolde_boot_rom #(
   localparam logic [31:0] instr_jalr = jalr(5'h0, 5'h1, BASE_ADDR[11:0]);
 
 
-  logic [1:0] misalignment;
+
   logic [1:0] index;
 
 

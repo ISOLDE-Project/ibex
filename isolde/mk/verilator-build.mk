@@ -89,17 +89,45 @@ veri-run: $(BIN_DIR)/verilator_executable
 	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/rtl_debug_trace.log"
 	@echo "*                              *.vcd: $(VERI_LOG_DIR)"
 	@echo "$(BANNER)"
+	# === Create/clean-up destination log folder ===
 	mkdir -p $(VERI_LOG_DIR)
-	rm -f $(VERI_LOG_DIR)/verilator_tb.vcd
+	rm -f $(VERI_LOG_DIR)/*
 	@echo "TEE_CMD=$(TEE_CMD)"
+
+	# === Check for required input files ===
+	@if [ ! -f "$(test-program)-m.hex" ]; then \
+		echo "ERROR: Missing file: $(test-program)-m.hex"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(test-program)-d.hex" ]; then \
+		echo "ERROR: Missing file: $(test-program)-d.hex"; \
+		exit 1; \
+	fi
+
 	$(BIN_DIR)/verilator_executable  \
 		$(VERI_FLAGS) \
 		"+STIM_INSTR=$(test-program)-m.hex" \
 		"+STIM_DATA=$(test-program)-d.hex" \
 		$(TEE_CMD)
+
+	# === Check for expected output files ===
+	@if [ ! -f "verilator_tb.vcd" ]; then \
+		echo "ERROR: Output file missing: verilator_tb.vcd"; \
+		exit 1; \
+	fi
+	@if [ ! -f "rtl_debug_trace.log" ]; then \
+		echo "ERROR: Output file missing: rtl_debug_trace.log"; \
+		exit 1; \
+	fi
+
 	mv verilator_tb.vcd $(VERI_LOG_DIR)/$(TEST).vcd
 	mv rtl_debug_trace.log $(VERI_LOG_DIR)
-	mv perfcnt.csv $(VERI_LOG_DIR)/$(TEST).csv
+
+	@if [  -f "perfcnt.csv" ]; then \
+		mv perfcnt.csv $(VERI_LOG_DIR)/$(TEST).csv; \
+	fi
+
+	
 
 .PHONY: veri-run-u-test
 veri-run-u-test: $(BIN_DIR)/verilator_executable 

@@ -1,0 +1,7 @@
+
+%:
+	 @echo  $(MAKECMDGOALS)
+	 make DBG_MODULE=1 ENABLE_SPM=1 \
+	    VLT_TOP_MODULE=tb_system     \
+		BENDER_EXTRA_TARGET="-t fpga_sim" \
+	 	TEST=redmule128b_test $@

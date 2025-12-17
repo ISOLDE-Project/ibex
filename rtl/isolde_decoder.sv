@@ -47,6 +47,7 @@ module isolde_decoder
   logic [4:0] rd;
 
   isolde_opcode_e isolde_opcode_d, isolde_opcode_q;
+  isolde_decoded_t isolde_decoded_instr;
 
   logic [2:0] vlen_instr_words_d, vlen_instr_words_q;  // Instruction length in words
   logic [2:0] read_ptr;
@@ -60,11 +61,17 @@ module isolde_decoder
 
   assign isolde_decoder_illegal_instr_o = isolde_decoder_illegal_instr_q & isolde_decoder_illegal_instr_d;
 
+  assign isolde_decoded_instr = decode_isolde_opcode(
+      isolde_decoder_instr_batch_i[0][6:0],  //opcode
+      isolde_decoder_instr_batch_i[0][14:12],  //nnn
+      isolde_decoder_instr_batch_i[0][31:25]  //func7
+  );
+  assign isolde_opcode_d = isolde_decoded_instr.opcode;
+  assign vlen_instr_words_d = isolde_decoded_instr.vlen_words;
+
   always_comb begin
-    decode_isolde_opcode(isolde_decoder_instr_batch_i[0][6:0],  //opcode
-                         isolde_decoder_instr_batch_i[0][14:12],  //nnn
-                         isolde_decoder_instr_batch_i[0][31:25],  //func7
-                         isolde_opcode_d, vlen_instr_words_d);
+
+
     isolde_decoder_illegal_instr_d = (isolde_opcode_d == isolde_opcode_invalid) ? 1 : 0;
   end
 
@@ -74,7 +81,6 @@ module isolde_decoder
       read_ptr <= 0;
       isolde_rf_bus.we_0 <= 1'b0;
       isolde_decoder_illegal_instr_q <= 1;
-      //isolde_decoder_busy_o <= 0;
     end else begin
 
       if (~isolde_decoder_instr_exec_i) begin
@@ -101,7 +107,6 @@ module isolde_decoder
                 isolde_decoder_exec_bus.func3         <= isolde_decoder_instr_batch_i[0][14:12];
                 //isolde_decoder_exec_bus.rd            <= isolde_decoder_instr_batch_i[0][11:7];
                 if (1 == vlen_instr_words_d) begin
-                  //isolde_decoder_exec_bus.isolde_decoder_stalled <= 1;
                   isolde_decoder_exec_bus.isolde_decoder_instr <= isolde_decoder_instr_batch_i[0];
                   case (isolde_opcode_d)
                     isolde_opcode_R_type: begin
@@ -124,9 +129,8 @@ module isolde_decoder
                 end  /*else isolde_decoder_exec_bus.isolde_decoder_stalled <= 0;*/
 
               end else begin
-                isolde_decoder_illegal_instr_q                 <= 1;
-                read_ptr                                       <= 0;
-                //isolde_decoder_exec_bus.isolde_decoder_stalled <= 0;
+                isolde_decoder_illegal_instr_q <= 1;
+                read_ptr                       <= 0;
               end
             end
             FETCH_REST: begin
@@ -141,7 +145,7 @@ module isolde_decoder
                 isolde_opcode_redmule_gemm: begin
                   decode_redmule_gemm();
                 end
-                isolde_opcode_conv2d:begin
+                isolde_opcode_conv2d: begin
                   decode_conv_2d();
                 end
               endcase
@@ -168,21 +172,20 @@ module isolde_decoder
   end
 
   always_comb begin
-
+    isolde_decoder_busy_o = 0;
+    isolde_decoder_exec_bus.isolde_decoder_stalled = 0;
+    isolde_decoder_exec_bus.isolde_exec_req = 0;
     idvli_next = idvli_state;
     case (idvli_state)
       BOOT: begin
         if (read_ptr == 3'h6) begin
           idvli_next = FETCH_COMPUTE;
-          isolde_decoder_busy_o = 0;
         end
       end
 
       FETCH_COMPUTE: begin
         if (~isolde_decoder_illegal_instr_d)
           isolde_decoder_exec_bus.isolde_decoder_stalled = (1 == vlen_instr_words_d) ? 1 : 0;
-        else isolde_decoder_exec_bus.isolde_decoder_stalled = 0;
-        isolde_decoder_exec_bus.isolde_exec_req = 0;
       end
 
       FETCH_REST: begin
@@ -240,7 +243,7 @@ module isolde_decoder
   endtask
 
   task static decode_conv_2d;
-  /**
+    /**
   (v4i32 QPR:$rd2),  ( IntOp (  iPTR     GPR:$rd1)
                                                   ,(  iPTR     GPR:$rs1)
                                                   ,(  v4i32    QPR:$rs3)
@@ -257,21 +260,21 @@ module isolde_decoder
     begin
 
       if (3'h2 == read_ptr) begin
-                //first 32 bits
+        //first 32 bits
         isolde_decoder_exec_bus.isolde_decoder_instr <= isolde_decoder_instr_batch_i[3];
         x_rf_bus.raddr_2 <= isolde_decoder_instr_batch_i[2][24:20];  //rs2
         x_rf_bus.raddr_1 <= isolde_decoder_instr_batch_i[2][19:15];  //rs1
         x_rf_bus.raddr_0 <= isolde_decoder_instr_batch_i[2][11:7];  //rd1    
-          //
-        x_rf_bus.raddr_3      <= isolde_decoder_instr_batch_i[1][29:25];  //rs5  
+        //
+        x_rf_bus.raddr_3 <= isolde_decoder_instr_batch_i[1][29:25];  //rs5  
         isolde_rf_bus.raddr_2 <= isolde_decoder_instr_batch_i[1][24:20];  //rs4
         isolde_rf_bus.raddr_1 <= isolde_decoder_instr_batch_i[1][19:15];  //rs3
         isolde_rf_bus.raddr_0 <= isolde_decoder_instr_batch_i[1][11:7];  //rd2    
         // 
         isolde_rf_bus.raddr_4 <= isolde_decoder_instr_batch_i[0][24:20];  //rs7
         isolde_rf_bus.raddr_3 <= isolde_decoder_instr_batch_i[0][19:15];  //rs6
-        
-      end 
+
+      end
     end
   endtask
 

@@ -4,11 +4,13 @@ module aida_padframe (
     output jtag_pkg::jtag_req_t pad2soc_jtag_o,
     input jtag_pkg::jtag_rsp_t soc2pad_jtag_i,
     input wire internal_jtag_trstn,
+    input aida_io_pkg::aida_pads_o_t soc2pads_i,
     // Landing Pads
     input wire pad_jtag_tms,
     input wire pad_jtag_tdi,
     inout wire pad_jtag_tdo,
-    input wire pad_jtag_tck
+    input wire pad_jtag_tck,
+    output wire pad_uart_tx
 
 );
 
@@ -49,13 +51,15 @@ module aida_padframe (
   // TDO : Test Data Output (bidirectional)
   //  - Uses IOBUF
   //  - No internal pull-up (recommended external 10 kΩ)
+  //
+  // https://docs.amd.com/r/en-US/ug953-vivado-7series-libraries/IOBUF
   // ------------------------------------------------------------------------
   (* IOSTANDARD = "LVCMOS33" *)
   IOBUF tdo_iobuf_inst (
       .I (soc2pad_jtag_i.tdo),     // internal signal to drive TDO
       .O (),                       // not used internally
       .IO(pad_jtag_tdo),           // physical FPGA pin
-      .T (~soc2pad_jtag_i.tdo_oe)  // tri-state control
+      .T (~soc2pad_jtag_i.tdo_oe)  // tri-state control // 1 => Hi-Z; 0 => drive I onto IO
   );
 
   // ------------------------------------------------------------------------
@@ -70,4 +74,25 @@ module aida_padframe (
       .O(tck_ibuf_out)
   );
   assign pad2soc_jtag_o.tck = tck_ibuf_out;
+
+
+
+
+  // ------------------------------------------------------------------------
+  //UART TX
+  //  - Uses IOBUF
+  //  - Internal pull-up 
+  // References:
+  // https://docs.amd.com/r/en-US/ug953-vivado-7series-libraries/OBUFT
+  // ------------------------------------------------------------------------
+  OBUFT #(
+      .DRIVE(8),  // Specify the output drive strength
+      .IOSTANDARD("DEFAULT"),  // Specify the output I/O standard
+      .SLEW("SLOW")  // Specify the output slew rate
+  ) uart_tx_obuft_inst (
+      .O(pad_uart_tx),           // physical FPGA pin
+      .I(soc2pads_i.uart_tx_o),  // internal signal to drive pad_uart_tx
+      .T(1'b0)                   // tri-state control // 1 => Hi-Z; 0 => drive I onto IO
+  );
+
 endmodule : aida_padframe

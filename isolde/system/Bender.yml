@@ -1,0 +1,32 @@
+# Copyleft 2024
+# Solderpad Hardware License, Version 0.51, see LICENSE for details.
+# SPDX-License-Identifier: SHL-0.51
+package:
+  name: lca_ibex_system
+  authors:
+    - daro <daro@tsr>
+
+dependencies:
+  isolde-soc:         {path: ../../vendor/isolde-soc}  
+  isolde-dm:          {path: ../../vendor/isolde-dm}
+  
+
+# *                matches any target
+# name             matches the target "name"
+# all(T1, ..., TN) matches if all of the targets T1 to TN match (boolean AND)
+# any(T1, ..., TN) matches if any of the targets T1 to TN match (boolean OR)
+# not(T)           matches if target T does not match (boolean NOT)
+sources: 
+   - target: all(all(not(spm),not(fpga_sim)), all(tb_dm ,redmule_hwpe ,rtl ,redmule_test_hwpe))
+     files:
+        - tb/tb_dm.sv
+   - target: all(vanilla_lca,redmule_test_hwpe, rtl, redmule_hwpe)
+     files:
+       - tb/tb_lca_system.sv 
+   - target: all (not(fpga_sim),any(spm, redmule_hwpe,redmule_complex, redmule_test_hwpe))
+     files:
+       - tb/tb_spm.sv
+   - target: xilinx
+     files:
+     - fpga/rtl/xilinx_aida.sv
+     

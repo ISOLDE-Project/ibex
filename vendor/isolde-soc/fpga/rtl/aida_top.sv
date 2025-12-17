@@ -13,7 +13,7 @@ module aida_top
     //ibex parameters
     parameter bit RV32E           = 1'b0,
     parameter bit ICacheScramble  = 1'b0,
-    parameter bit ICache          = 1'b0,
+    parameter bit ICache          = 1'b1,
     parameter bit ICacheECC       = 1'b0,
     parameter bit BranchTargetALU = 1'b0,
     parameter bit WritebackStage  = 1'b0,
@@ -38,9 +38,12 @@ module aida_top
     input logic clk_i,
     input logic rst_ni,
     input logic fetch_enable_i,
+    // === output ports ===
+    output aida_io_pkg::aida_pads_o_t pads_o,
     // === JTAG port ===
     input jtag_pkg::jtag_req_t soc_jtag_in,
     output jtag_pkg::jtag_rsp_t soc_jtag_out
+
 );
 
 
@@ -65,20 +68,15 @@ module aida_top
   // === stack memory port ===
   isolde_tcdm_if aida_stack_memory ();
 
-`ifdef TARGET_AIDA_MMIO  
-  // === memory mapped I/O ports ===
-  isolde_tcdm_if aida_mmio ();
-`endif
-
 
 
   /********************************************************/
   /**     Data memory                                    **/
   /*******************************************************/
   tcdm_mem #(
-      .MEMORY_SIZE(2048),
+      .MEMORY_SIZE(DMEM_SIZE_I32),
       .MEMORY_PRIMITIVE("ultra")
-  ) i_dummy_dmemory (
+  ) i_dmemory (
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(aida_data_memory)
@@ -88,10 +86,9 @@ module aida_top
   /**     Instruction memory                             **/
   /*******************************************************/
   tcdm_mem #(
-      .MEMORY_SIZE(2048),
-      //.DELAY_CYCLES(IMEM_LATENCY),
+      .MEMORY_SIZE(IMEM_SIZE_I32),
       .MEMORY_PRIMITIVE("ultra")
-  ) i_dummy_imemory (
+  ) i_imemory (
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(aida_instr_memory)
@@ -101,7 +98,10 @@ module aida_top
   /********************************************************/
   /**     Stack memory                                   **/
   /*******************************************************/
-  tcdm_mem #() i_dummy_stack_memory (
+  tcdm_mem #(
+      .MEMORY_SIZE(SMEM_SIZE_I32),
+      .MEMORY_PRIMITIVE("ultra")
+  ) i_stack_memory (
       .clk_i,
       .rst_ni,
       .tcdm_slave_i(aida_stack_memory)
@@ -126,7 +126,7 @@ module aida_top
           .req_data(mem_req[i].data),
           .gnt(mem_rsp[i].gnt),
           .valid(mem_rsp[i].valid),
-          .err(mem_rsp[i].err),
+          //.err(mem_rsp[i].err),
           .rsp_data(mem_rsp[i].data)
       );
     end
@@ -137,7 +137,7 @@ module aida_top
   /**    aida core                                      **/
   /*******************************************************/
 
-  aida_lca #(
+  aida #(
       .SecureIbex      (SecureIbex),
       .ICacheScramble  (ICacheScramble),
       .PMPEnable       (PMPEnable),
@@ -150,7 +150,7 @@ module aida_top
       .RV32B           (RV32B),
       .RegFile         (RegFile),
       .BranchTargetALU (BranchTargetALU),
-      .ICache          (ICache),
+      .ICache          (1'b1),
       .ICacheECC       (ICacheECC),
       .WritebackStage  (WritebackStage),
       .BranchPredictor (BranchPredictor),
@@ -165,9 +165,9 @@ module aida_top
       .aida_data_memory(aida_data_memory),
       .aida_stack_memory(aida_stack_memory),
       .aida_instr_memory(aida_instr_memory),
-`ifdef TARGET_AIDA_MMIO            
-      .aida_mmio(aida_mmio),
-`endif      
+
+      .pads_o(pads_o),
+
       .spm_req_o(mem_req),
       .spm_rsp_i(mem_rsp),
       .aida_jtag_in(soc_jtag_in),

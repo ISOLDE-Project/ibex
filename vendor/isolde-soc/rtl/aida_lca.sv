@@ -15,7 +15,7 @@ module aida_lca
     parameter regfile_e    RegFile          = RegFileFF,
     parameter bit          BranchTargetALU  = 1'b0,
     parameter bit          WritebackStage   = 1'b0,
-    parameter bit          ICache           = 1'b0,
+    parameter bit          ICache           = 1'b1,
     parameter bit          ICacheECC        = 1'b0,
     parameter bit          BranchPredictor  = 1'b0,
     parameter bit          DbgTriggerEn     = 1'b0,
@@ -31,9 +31,9 @@ module aida_lca
            isolde_tcdm_if.master  aida_data_memory,
            isolde_tcdm_if.master  aida_stack_memory,
            isolde_tcdm_if.master  aida_instr_memory,
-`ifdef TARGET_AIDA_MMIO          
-           isolde_tcdm_if.master  aida_mmio,
-`endif           
+    //
+    output aida_io_pkg::aida_pads_o_t pads_o,
+        
     // ===  Scratchpad Memory (SPM) banks  connections ===
     output isolde_tcdm_pkg::req_t spm_req_o        [N_TCDM_BANKS-1:0],
     input  isolde_tcdm_pkg::rsp_t spm_rsp_i        [N_TCDM_BANKS-1:0],
@@ -58,12 +58,10 @@ module aida_lca
   // DATA
   typedef enum {
 
-    PERIPH_IDX,
+    //PERIPH_IDX,
     DATA_IDX,
     STACK_IDX,
-`ifdef TARGET_AIDA_MMIO              
     MMIO_IDX,
-`endif   
     SPM_IDX,
 `ifdef TARGET_RV_DEBUG
     DEBUG_IDX,
@@ -74,12 +72,10 @@ module aida_lca
   localparam int unsigned NoRules = LAST_IDX;
   // 
   localparam addr_range_t addr_map[NoRules] = '{
-      '{start_addr: PERIPH_ADDR, end_addr: IMEM_ADDR},
+      //'{start_addr: PERIPH_ADDR, end_addr: IMEM_ADDR},
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
-      '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
-`ifdef TARGET_AIDA_MMIO                
+      '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},           
       '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
-`endif      
       '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + SPM_NARROW_SIZE}
 `ifdef TARGET_RV_DEBUG
       , '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
@@ -107,6 +103,7 @@ module aida_lca
     DM_SBA_IMEM_IDX,  //instructions
     DM_SBA_DMEM_IDX,  //data
     DM_SBA_SMEM_IDX,  //stack
+    DM_SBA_MMIO_IDX,   // memory mapped I/O
     DM_SBA_SPM_IDX,   // scratchpad memory
     DM_SBA_LAST_IDX
   } sba_map_idx_t;
@@ -116,7 +113,9 @@ module aida_lca
       '{start_addr: IMEM_ADDR, end_addr: IMEM_ADDR + IMEM_SIZE},
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
+      '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
       '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + SPM_NARROW_SIZE}
+      
   };
 `endif
   /********************************************************/
@@ -198,10 +197,21 @@ module aida_lca
   /********************************************************/
   /**           memory mapped I/O                        **/
   /*******************************************************/
-`ifdef TARGET_AIDA_MMIO          
-  assign aida_mmio.req = noc_data_reqs[MMIO_IDX];
-  assign noc_data_rsps[MMIO_IDX] = aida_mmio.rsp;
-`endif
+      
+aida_io #(
+    .MMIO_ADDR(MMIO_ADDR)
+) i_aida_io(
+    .clk_i,
+    .rst_ni,
+    //
+    .pads_o(pads_o),
+    //
+    .dm_sba_req(noc_dm_sba_reqs[DM_SBA_MMIO_IDX]),
+    .dm_sba_rsp(noc_dm_sba_rsps[DM_SBA_MMIO_IDX]),
+    //  
+    .data_req(noc_data_reqs[MMIO_IDX]),
+    .data_rsp(noc_data_rsps[MMIO_IDX])
+);
 
 
   /********************************************************/
@@ -305,8 +315,8 @@ module aida_lca
   /*******************************************************/
 
   isolde_addr_shim_wrp #(
-      .START_ADDR(IMEM_ADDR),  // Set start address
-      .END_ADDR(IMEM_ADDR + GMEM_SIZE)  // Set end address
+      .START_ADDR(DMEM_ADDR),  // Set start address
+      .END_ADDR(DMEM_ADDR + DMEM_SIZE)  // Set end address
   ) i_dmem_shim (
       .tcdm_slave_i (tcdm_dmem_muxed),
       .tcdm_master_o(aida_data_memory)
@@ -319,7 +329,7 @@ module aida_lca
 
   isolde_addr_shim_wrp #(
       .START_ADDR(IMEM_ADDR),  // Set start address
-      .END_ADDR(IMEM_ADDR + GMEM_SIZE)  // Set end address
+      .END_ADDR(IMEM_ADDR + IMEM_SIZE)  // Set end address
   ) i_imem_shim (
       .tcdm_slave_i (tcdm_imem_muxed),
       .tcdm_master_o(aida_instr_memory)
@@ -470,34 +480,34 @@ module aida_lca
   /**     Hardware Engine HWE                            **/
   /*******************************************************/
 
-  assign redmule_ctrl.req = noc_data_reqs[PERIPH_IDX];
-  assign noc_data_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
+//   assign redmule_ctrl.req = noc_data_reqs[PERIPH_IDX];
+//   assign noc_data_rsps[PERIPH_IDX] = redmule_ctrl.rsp;
 
-  isolde_redmule_top #(
-      .ID_WIDTH (ID),
-      .N_CORES  (NC),
-      .DW       (HCI_DW),  // TCDM port dimension (in bits
-      .AddrWidth(HCI_AW)
-  ) i_redmule_top (
-      .clk_i         (clk_i),
-      .rst_ni        (rst_ni),
-      .test_mode_i   (REDMULE_TEST_MODE),
-      .fetch_enable_i(fetch_enable_i),
-      .evt_o         (evt),
-      .m_hci_core    (redmule_hci),
-      .s_tcdm_ctrl   (redmule_ctrl)
-  );
+//   isolde_redmule_top #(
+//       .ID_WIDTH (ID),
+//       .N_CORES  (NC),
+//       .DW       (HCI_DW),  // TCDM port dimension (in bits
+//       .AddrWidth(HCI_AW)
+//   ) i_redmule_top (
+//       .clk_i         (clk_i),
+//       .rst_ni        (rst_ni),
+//       .test_mode_i   (REDMULE_TEST_MODE),
+//       .fetch_enable_i(fetch_enable_i),
+//       .evt_o         (evt),
+//       .m_hci_core    (redmule_hci),
+//       .s_tcdm_ctrl   (redmule_ctrl)
+//   );
 
-`ifdef TARGET_VERILATOR   
-  isolde_hci_monitor #(
-      .AW  (HCI_AW),
-      .DW  (HCI_DW),
-      .NAME("spm_hci_monitor")
-  ) i_hci_monitor (
-      .clk_i,
-      .rst_ni,
-      .hci_core(redmule_hci)
-  );
-`endif
+// `ifdef TARGET_VERILATOR   
+//   isolde_hci_monitor #(
+//       .AW  (HCI_AW),
+//       .DW  (HCI_DW),
+//       .NAME("spm_hci_monitor")
+//   ) i_hci_monitor (
+//       .clk_i,
+//       .rst_ni,
+//       .hci_core(redmule_hci)
+//   );
+// `endif
 
 endmodule

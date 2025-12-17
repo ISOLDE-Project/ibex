@@ -9,7 +9,8 @@ package:
 dependencies:
   redmule:            {path: ../../vendor/redmule }
   axi:                { git: "https://github.com/pulp-platform/axi.git"               , version: 0.39.6    }
-
+  udma_core:          {git: "https://github.com/pulp-platform/udma_core.git"          , version: 2.0.0     }
+  
 export_include_dirs:
 #  - rtl/include
   - tb/include 
@@ -17,6 +18,8 @@ export_include_dirs:
 sources:
   files:   
     - rtl/common/isolde_tcdm_pkg.sv
+    - rtl/aida_lca_pkg.sv
+    - rtl/io/aida_io_pkg.sv
     - rtl/isolde_tcdm_if.sv
     - rtl/isolde_tcdm_to_axi.sv
     - rtl/isolde_addr_shim.sv
@@ -26,14 +29,17 @@ sources:
     - rtl/isolde_tcdm_interconnect.sv
     - rtl/isolde_log_interconnect.sv
     - rtl/isolde_boot_rom.sv
+    - rtl/uart/udma_uart_tx.sv
+    - rtl/uart/isolde_uart_top.sv
+    - rtl/io/aida_io.sv
     ##level 2
     - rtl/hwe/isolde_redmule_top.sv
     - rtl/noc/isolde_router.sv
     - rtl/ibex_rst.sv
     ##level 3
-    - rtl/aida_lca_package.sv
     - rtl/aida_lca.sv
-    - target: all(tb_dm,redmule_test_hwpe)
+    - rtl/aida.sv
+    - target: any(tb_dm,redmule_test_hwpe, redmule_complex,redmule_test_complex)
       files:
         - tb/tb_tcdm_mem.sv
         - tb/monitor/perfCounters.sv
@@ -51,6 +57,7 @@ sources:
         - tb/tb_isolde_hci_interconnect.sv
         - tb/tb_isolde_tcdm_interconnect.sv
         - tb/tb_isolde_boot_rom.sv
+        - tb/isolde_uart_top_tb.sv
     - target: xilinx
       files:
         - fpga/rtl/aida_padframe.sv
@@ -61,4 +68,5 @@ sources:
         - fpga/rtl/aida_top.sv
         - fpga/sim/tcdm_mem.sv
         - fpga/tb/aida_tb.sv
+        - fpga/tb/aida_lca_tb.sv
     

@@ -197,7 +197,7 @@ module rv_dm
       .master_be_o     (m_sba.req.be),
       .master_gnt_i    (m_sba.rsp.gnt),
       .master_r_valid_i(m_sba.rsp.valid),
-      .master_r_err_i  (m_sba.rsp.err),
+      .master_r_err_i  (1'b0),
       //.master_r_other_err_i  (host_r_other_err    ),
       .master_r_rdata_i(m_sba.rsp.data),
       //  DMI -> DM

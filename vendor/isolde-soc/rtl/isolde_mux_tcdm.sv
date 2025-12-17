@@ -1,82 +1,61 @@
 // Copyleft 2025 ISOLDE
 
 module isolde_mux_tcdm (
-    input  logic                  clk_i,         // Clock input, positive edge triggered
-    input  logic                  rst_ni,        // Asynchronous reset, active low
-    // Input1 
+    input  logic                  clk_i,
+    input  logic                  rst_ni,
+
+    // Slave interfaces (LSUs)
     input  isolde_tcdm_pkg::req_t req_1_i,
     output isolde_tcdm_pkg::rsp_t rsp_1_o,
-    // Input2 higher priority
+
     input  isolde_tcdm_pkg::req_t req_2_i,
     output isolde_tcdm_pkg::rsp_t rsp_2_o,
-           isolde_tcdm_if.master  tcdm_master_o  // Output
 
+    // Master TCDM interface
+    isolde_tcdm_if.master         tcdm_master_o
 );
 
-  logic [1:0] slv_req, slv_rsp;
-  assign slv_req[0] = req_1_i.req;
-  assign slv_req[1] = req_2_i.req;
+  // 1-bit owner: 1 = LSU2, 0 = LSU1
+  logic owner_d, owner_q;
 
-  fifo_v3 #(
-      .DATA_WIDTH(2),
-      .DEPTH(4)
-  ) i_slv_fifo (
-      .clk_i(clk_i),
-      .rst_ni(rst_ni),
-      .flush_i(1'b0),
-      .testmode_i(1'b0),
-      .full_o(),
-      .empty_o(),
-      .usage_o(),
-      // Onehot mask.
-      .data_i(slv_req),
-      .push_i(tcdm_master_o.rsp.gnt),
-      .data_o(slv_rsp),
-      .pop_i(tcdm_master_o.rsp.valid)
-  );
-
+  //-----------------------------
+  // Request arbitration (combinational)
+  //-----------------------------
   always_comb begin
-    tcdm_master_o.req.req = 1'b0;
-    if (slv_req[1]) begin
-      tcdm_master_o.req.req  = 1'b1;
-      tcdm_master_o.req.addr = req_2_i.addr;
-      tcdm_master_o.req.we   = req_2_i.we;
-      tcdm_master_o.req.be   = req_2_i.be;
-      tcdm_master_o.req.data = req_2_i.data;
-
-    end else if (slv_req[0]) begin
-      tcdm_master_o.req.req  = 1'b1;
-      tcdm_master_o.req.addr = req_1_i.addr;
-      tcdm_master_o.req.we   = req_1_i.we;
-      tcdm_master_o.req.be   = req_1_i.be;
-      tcdm_master_o.req.data = req_1_i.data;
-    end
+    if (req_2_i.req)
+      owner_d = 1'b1;
+    else if (req_1_i.req)
+      owner_d = 1'b0;
+    else
+      owner_d = owner_q; // no request, maintain previous
   end
 
+  // Forward selected request to TCDM
+  assign tcdm_master_o.req = owner_d ? req_2_i : req_1_i;
 
-  always_comb begin
-    rsp_1_o.gnt = '0;
-    rsp_2_o.gnt = '0;
-    if (slv_req[1]) begin
-      rsp_2_o.gnt = tcdm_master_o.rsp.gnt;
-    end else if (slv_req[0]) begin
-      rsp_1_o.gnt = tcdm_master_o.rsp.gnt;
-    end
+  //-----------------------------
+  // Capture which requester was granted (one outstanding request!)
+  //-----------------------------
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni)
+      owner_q <= 1'b0;
+    else if (tcdm_master_o.rsp.gnt)
+      owner_q <= owner_d;   // Store requester associated with the transaction
   end
 
-  always_comb begin
-    rsp_1_o.valid = '0;
-    rsp_2_o.valid = '0;
-    rsp_1_o.data  = 32'hDEADBEAF;
-    rsp_2_o.data  = 32'hDEADBEAF;
-    if (slv_rsp[1]) begin
-      rsp_2_o.valid = tcdm_master_o.rsp.valid;
-      rsp_2_o.data  = tcdm_master_o.rsp.data;
-    end else if (slv_rsp[0]) begin
-      rsp_1_o.valid = tcdm_master_o.rsp.valid;
-      rsp_1_o.data  = tcdm_master_o.rsp.data;
-    end
-  end
+  //-----------------------------
+  // Grant routing
+  //-----------------------------
+  assign rsp_1_o.gnt = (owner_d == 1'b0) ? tcdm_master_o.rsp.gnt : 1'b0;
+  assign rsp_2_o.gnt = (owner_d == 1'b1) ? tcdm_master_o.rsp.gnt : 1'b0;
 
+  //-----------------------------
+  // Response routing
+  //-----------------------------
+  assign rsp_1_o.valid = (owner_q == 1'b0) ? tcdm_master_o.rsp.valid : 1'b0;
+  assign rsp_2_o.valid = (owner_q == 1'b1) ? tcdm_master_o.rsp.valid : 1'b0;
+
+  assign rsp_1_o.data  = tcdm_master_o.rsp.data;
+  assign rsp_2_o.data  = tcdm_master_o.rsp.data;
 
 endmodule

@@ -20,9 +20,9 @@ module isolde_redmule_top
     parameter int unsigned DW = DATA_W,
     parameter int unsigned AddrWidth = 32,
     // Number of PEs within a row
-    localparam int unsigned Height = ARRAY_HEIGHT,
+    parameter int unsigned Height = ARRAY_HEIGHT,
     // Number of parallel rows
-    localparam int unsigned Width = ARRAY_WIDTH
+    parameter int unsigned Width = ARRAY_WIDTH
     // Number of bits for the given format
 ) (
     input  logic                    clk_i,
@@ -32,11 +32,14 @@ module isolde_redmule_top
     // evnets
     output logic [N_CORES-1:0][1:0] evt_o,
 
-    hci_core_intf.master m_hci_core,
+    hci_core_intf.master             m_hci_core,
 `ifdef TARGET_REDMULE_COMPLEX
-    isolde_cv_x_if       core_xif
+    isolde_cv_x_if.coproc_issue      xif_issue_if_i,
+    isolde_cv_x_if.coproc_result     xif_result_if_o,
+    isolde_cv_x_if.coproc_compressed xif_compressed_if_i,
+    isolde_cv_x_if.coproc_mem        xif_mem_if_o
 `elsif TARGET_REDMULE_HWPE
-    isolde_tcdm_if.slave s_tcdm_ctrl
+    isolde_tcdm_if.slave             s_tcdm_ctrl
 `endif
 );
 
@@ -47,7 +50,7 @@ module isolde_redmule_top
   logic s_clk, s_clk_en;
 
 `ifdef TARGET_REDMULE_HWPE
-  hwpe_ctrl_intf_periph#( .ID_WIDTH  (ID_WIDTH) )  periph (.clk(clk_i));
+  hwpe_ctrl_intf_periph #(.ID_WIDTH(ID_WIDTH)) periph (.clk(clk_i));
 
   always_comb begin : bind_periph
     periph.req = s_tcdm_ctrl.req.req;
@@ -78,6 +81,7 @@ module isolde_redmule_top
       .clk_o    (s_clk)
   );
 
+`ifdef TARGET_REDMULE_COMPLEX
   redmule_top #(
       .ID_WIDTH    (ID_WIDTH),
       .N_CORES     (1),
@@ -86,20 +90,34 @@ module isolde_redmule_top
       .SysInstWidth(SysInstWidth),
       .SysDataWidth(SysDataWidth)
   ) i_redmule_top (
-      .clk_i              (s_clk),
-      .rst_ni             (rst_ni),
-      .test_mode_i        (test_mode_i),
-      .evt_o              (evt_o),
-      .busy_o             (busy),
-      .tcdm               (m_hci_core),
-`ifdef TARGET_REDMULE_COMPLEX
-      .xif_issue_if_i     (core_xif.coproc_issue),
-      .xif_result_if_o    (core_xif.coproc_result),
-      .xif_compressed_if_i(core_xif.coproc_compressed),
-      .xif_mem_if_o       (core_xif.coproc_mem)
+      .clk_i      (s_clk),
+      .rst_ni     (rst_ni),
+      .test_mode_i(test_mode_i),
+      .evt_o      (evt_o),
+      .busy_o     (busy),
+      .tcdm       (m_hci_core),
+      .xif_issue_if_i,
+      .xif_result_if_o,
+      .xif_compressed_if_i,
+      .xif_mem_if_o
+  );
 `elsif TARGET_REDMULE_HWPE
-      .periph             (periph)
-`endif
+  redmule_top #(
+      .ID_WIDTH    (ID_WIDTH),
+      .N_CORES     (1),
+      .DW          (DW),
+      .X_EXT       (1'b1),
+      .SysInstWidth(SysInstWidth),
+      .SysDataWidth(SysDataWidth)
+  ) i_redmule_top (
+      .clk_i      (s_clk),
+      .rst_ni     (rst_ni),
+      .test_mode_i(test_mode_i),
+      .evt_o      (evt_o),
+      .busy_o     (busy),
+      .tcdm       (m_hci_core),
+      .periph     (periph)
   );
 
+`endif
 endmodule : isolde_redmule_top
