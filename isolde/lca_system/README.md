@@ -12,17 +12,32 @@ in folder **isolde/lca_system**:
 ```sh
 make rtl-update
 ```
-### Build scratchpad memory simulation (SPM)
+make sure you have simulation data for the hardware accelerator
 ```sh
-make ENABLE_SPM=1 veri-clean verilate
 make TEST=redmule_test golden
-make TEST=redmule_test test-clean test-build veri-run
 ```
+### Build scratchpad memory simulation (SPM, NO JTAG )
+it will execute *isolde/sw/redmule128b_test*
+```sh
+make -f ./Makefile.systca  veri-clean verilate test-build veri-run
+```
+for a different test from *isolde/sw/<app_test>*:
+```sh
+make -f ./Makefile.systca TEST=xmas_test veri-clean verilate test-build veri-run
+```
+
+### Build scratchpad memory simulation (SPM, JTAG simulation)
+it will load into system memmories *isolde/sw/redmule128b_test*
+```sh
+make -f ./Makefile.wrapper veri-clean verilate veri-run
+```
+for a different test from *isolde/sw/<app_test>*, use openocd scripts(JTAG), i.e. *isolde/lca_system/load_and_run.tcl*
+
+
 ### Build simple system(no scratchpad memory)
 ```sh
 make  veri-clean verilate
-make TEST=redmule_test golden
-make PE=redmule TEST=redmule test-clean test-build veri-run
+make TEST=redmule test-clean test-build veri-run
 ```
 or, with code memory latency
 ```sh
