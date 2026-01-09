@@ -32,6 +32,9 @@ export CXX=g++-11
 source $MINICONDA
 conda activate $MINICONDA_ENV
 
+export OSS_CAD_TOOLS=$ROOT_DIR/install/oss-cad-suite/bin
+export YOSYS=$OSS_CAD_TOOLS/yosys
+
 export PATH=~/eth/bin:~/verible/bin:$ROOT_DIR/install/verilator/bin:$ROOT_DIR/install/openocd/bin:$GCC_TOOLCHAIN:$PATH
 source ~/vivado.sh
 

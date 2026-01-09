@@ -6,18 +6,19 @@ VLT_CXX := /usr/bin/clang++
 VLT_CC  := /usr/bin/clang
 
 
-INSTALL_PREFIX          ?= install
-INSTALL_DIR             ?= $(prj_path)/${INSTALL_PREFIX}
-GCC_INSTALL_DIR         ?= ${INSTALL_DIR}/riscv-gcc
-LLVM_INSTALL_DIR        ?= ${INSTALL_DIR}/riscv-llvm
-ISA_SIM_INSTALL_DIR     ?= ${INSTALL_DIR}/riscv-isa-sim
-ISA_SIM_MOD_INSTALL_DIR ?= ${INSTALL_DIR}/riscv-isa-sim-mod
-OPENOCD_INSTALL_DIR     ?= ${INSTALL_DIR}/openocd
-VERIL_SRC_ROOT          ?= $(prj_path)/vendor
-VERIL_INSTALL_DIR       ?= ${INSTALL_DIR}/verilator
-VERIL_VERSION           ?= v5.036
-BENDER_DOWNLOAD_LINK    ?= https://github.com/pulp-platform/bender/releases/download/v0.28.0/bender-0.28.0-x86_64-linux-gnu-ubuntu22.04.tar.gz
-BENDER_ARCH_FILE        ?= $(shell basename $(BENDER_DOWNLOAD_LINK))
+INSTALL_PREFIX            ?= install
+INSTALL_DIR               ?= $(prj_path)/${INSTALL_PREFIX}
+GCC_INSTALL_DIR           ?= ${INSTALL_DIR}/riscv-gcc
+LLVM_INSTALL_DIR          ?= ${INSTALL_DIR}/riscv-llvm
+ISA_SIM_INSTALL_DIR       ?= ${INSTALL_DIR}/riscv-isa-sim
+ISA_SIM_MOD_INSTALL_DIR   ?= ${INSTALL_DIR}/riscv-isa-sim-mod
+OPENOCD_INSTALL_DIR       ?= ${INSTALL_DIR}/openocd
+OSS_CAD_SUITE_INSTALL_DIR ?= ${INSTALL_DIR}/oss-cad-suite
+VERIL_SRC_ROOT            ?= $(prj_path)/vendor
+VERIL_INSTALL_DIR         ?= ${INSTALL_DIR}/verilator
+VERIL_VERSION             ?= v5.036
+BENDER_DOWNLOAD_LINK      ?= https://github.com/pulp-platform/bender/releases/download/v0.28.0/bender-0.28.0-x86_64-linux-gnu-ubuntu22.04.tar.gz
+BENDER_ARCH_FILE          ?= $(shell basename $(BENDER_DOWNLOAD_LINK))
 
 all: dev-dep verilator riscv32-gcc riscv32-llvm  openocd
 # Verilator
@@ -92,8 +93,25 @@ vendor/xpack-openocd.tar.gz: vendor/xpack-openocd.url
 	touch $@
 
 .PHONY: openocd
+## Install OpenOCD from xpack
 openocd: vendor/xpack-openocd.tar.gz
 	mkdir -p $(OPENOCD_INSTALL_DIR)
 	cd vendor && \
 	tar -xzvf xpack-openocd.tar.gz  --strip-components=1 -C $(OPENOCD_INSTALL_DIR)/ 
 	touch  $(OPENOCD_INSTALL_DIR)
+
+vendor/oss-cad-suite-linux-x64-20260109.tgz: vendor/oss-cad-suite.url
+	cd vendor && \
+	wget `cat $(CURDIR)/$<` -O oss-cad-suite-linux-x64-20260109.tgz 
+	touch $@
+
+.PHONY: oss-cad-suite
+## Install yosys from YosysHQ/oss-cad-suite
+oss-cad-suite: vendor/oss-cad-suite-linux-x64-20260109.tgz
+	mkdir -p $(OSS_CAD_SUITE_INSTALL_DIR)
+	cd vendor && \
+	tar -xzvf oss-cad-suite-linux-x64-20260109.tgz  --strip-components=1 -C $(OSS_CAD_SUITE_INSTALL_DIR)/ 
+	touch  $(OSS_CAD_SUITE_INSTALL_DIR)
+
+
+include common.mk

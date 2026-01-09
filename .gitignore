@@ -27,6 +27,7 @@ install
 sim.fst
 *.txt
 *.tar.*
+*.tgz
 logs*/
 log/
 *.log
