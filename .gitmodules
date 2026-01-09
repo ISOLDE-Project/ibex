@@ -7,3 +7,6 @@
 [submodule "vendor/riscv-dbg"]
 	path = vendor/riscv-dbg
 	url = https://github.com/ISOLDE-Project/riscv-dbg.git
+[submodule "ihp13/pdk"]
+	path = ihp13/pdk
+	url = https://github.com/IHP-GmbH/IHP-Open-PDK.git
