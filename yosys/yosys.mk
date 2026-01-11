@@ -16,7 +16,7 @@ YOSYS_TMP		:= $(YOSYS_DIR)/tmp
 YOSYS_REPORTS	:= $(YOSYS_DIR)/reports
 
 # top level to be synthesized
-TOP_DESIGN		?= ibex_top
+TOP_DESIGN		?= isolde_top
 
 # file containing include dirs, defines and paths to all source files
 SV_FLIST    	:= $(YOSYS_DIR)/../yosys.flist

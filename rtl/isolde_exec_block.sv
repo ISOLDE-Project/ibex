@@ -21,6 +21,22 @@ module isolde_exec_block
            isolde_cv_x_if.cpu_result     xif_result_if
 );
 
+  /********************************************************/
+  /**   tie-off unused interfaces                        **/
+  /********************************************************/
+  // Compressed interface
+  assign xif_compressed_if.compressed_valid = 0;
+  assign xif_compressed_if.compressed_req = '0;
+  // Commit interface
+  // NA
+  // Memory (request/response) interface
+  assign xif_mem_if.mem_ready = 0;
+  assign xif_mem_if.mem_resp = '0;
+  // Memory result interface
+  assign xif_mem_result_if.mem_result_valid = 0;
+  assign xif_mem_result_if.mem_result = '0;
+  // Result interface
+  assign xif_result_if.result_ready = 0;
 
 `ifndef SYNTHESIS
   integer log_fh;
@@ -41,7 +57,7 @@ module isolde_exec_block
   typedef enum logic [2:0] {
     IDLE,
     START,  //start execution
-    WAIT   //wait for completion
+    WAIT    //wait for completion
   } state_t;
 
   localparam isolde_exec_action_t EXEC_NOP = '{3'd0};
@@ -76,9 +92,9 @@ module isolde_exec_block
           cnt <= 0;
           case (isolde_opcode_dec)
             isolde_opcode_nop: exec_action = start_nop();
-            isolde_opcode_redmule:exec_action =  start_nop_redmule();
-            isolde_opcode_R_type:exec_action =  start_nop_RType();
-            isolde_opcode_vle32_4:exec_action =  start_vle32_4();
+            isolde_opcode_redmule: exec_action = start_nop_redmule();
+            isolde_opcode_R_type: exec_action = start_nop_RType();
+            isolde_opcode_vle32_4: exec_action = start_vle32_4();
             isolde_opcode_gemm: exec_action = start_gemm();
             isolde_opcode_conv2d: exec_action = start_conv2d();
             isolde_opcode_redmule_gemm: exec_action = start_redmule_gemm();
@@ -93,7 +109,7 @@ module isolde_exec_block
           cnt <= cnt + 1;
           xif_issue_if.issue_valid <= 0;
         end
-        
+
       endcase
     end
   end
