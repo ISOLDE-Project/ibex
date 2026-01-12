@@ -87,6 +87,12 @@ foreach p $::yosys_params {
 }
 
 foreach d $::yosys_defines {
+    if {[string match "RVFI*" $d]} {
+        continue
+    }
+    if {[string match "FPGA_*" $d]} {
+        continue
+    }
     puts $f "+define+$d"
 }
 
