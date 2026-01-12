@@ -364,7 +364,7 @@ module ibex_top
       .rf_rdata_b_ecc_i (rf_rdata_b_ecc_buf),
       //ISOLDE RF
       .isolde_rf_bus    (isolde_rf_bus.cpu),
-      .x_rf_bus         (x_rf_bus),
+      .x_rf_bus         (x_rf_bus.cpu),
 
       .ic_tag_req_o      (ic_tag_req),
       .ic_tag_write_o    (ic_tag_write),
@@ -472,7 +472,7 @@ module ibex_top
         .wdata_a_i     (rf_wdata_wb_ecc),
         .we_a_i        (rf_we_wb),
         .err_o         (rf_alert_major_internal),
-        .extended_ports(x_rf_bus)
+        .extended_ports(x_rf_bus.rf)
     );
   end else if (RegFile == RegFileFPGA) begin : gen_regfile_fpga
     ibex_register_file_fpga #(

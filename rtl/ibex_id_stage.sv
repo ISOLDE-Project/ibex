@@ -178,7 +178,7 @@ module ibex_id_stage
 
     //ISOLDE Register file interface
     isolde_register_file_if.cpu   isolde_rf_bus,
-    isolde_x_register_file_if x_rf_bus,
+    isolde_x_register_file_if.cpu x_rf_bus,
 
     output logic                     en_wb_o,
     output ibex_pkg::wb_instr_type_e instr_type_wb_o,

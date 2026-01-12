@@ -1,30 +1,40 @@
 // Copyleft 2024
 
-// Macro to generate read port signals for a given CHANNEL
-`define GEN_X_RF_READ_PORT(CHANNEL) \
-  logic [RegAddrWidth-1:0] raddr_``CHANNEL;    /* Read address */ \
-  logic [RegDataWidth-1:0] rdata_``CHANNEL;    /* Read data output */
-
 // Interface definition
 interface isolde_x_register_file_if #(
     parameter int unsigned RegDataWidth = 32,  // Default register data width
-    parameter int unsigned RegAddrWidth = 5    // Default register address width
+    parameter int unsigned RegAddrWidth = 5,   // Default register address width
+    parameter int unsigned NumReadPorts = 4
 );
 
-  // Generate four read ports using the macro
-  `GEN_X_RF_READ_PORT(0)
-  `GEN_X_RF_READ_PORT(1)
-  `GEN_X_RF_READ_PORT(2)
-  `GEN_X_RF_READ_PORT(3)
-  
+  typedef logic [RegAddrWidth-1:0] isolde_x_rf_addr_t;
+  typedef logic [RegDataWidth-1:0] isolde_x_rf_data_t;
 
-  // Write port W1
-  logic [RegAddrWidth-1:0] waddr_0;  // Write address
-  logic [RegDataWidth-1:0] wdata_0;  // Write data
-  logic we_0;  // Write enable signal
+  // ------------------------
+  // Parameterized number of read ports
+  // ------------------------
+  isolde_x_rf_addr_t [NumReadPorts-1:0] raddr;
+  isolde_x_rf_data_t [NumReadPorts-1:0] rdata;
+
 
   // Error detection
-  logic isolde_x_rf_err;  // Combined error signal for spurious writes or invalid reads
+  logic [NumReadPorts-1:0] isolde_x_rf_err;  // invalid reads
+
+  modport cpu(
+      // Read ports
+      output raddr,
+      input rdata,
+      // Misc
+      input isolde_x_rf_err
+  );
+
+  modport rf(
+      // Read ports
+      input raddr,
+      output rdata,
+      // Misc
+      output isolde_x_rf_err
+  );
 
 endinterface
 
