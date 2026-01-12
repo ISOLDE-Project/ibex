@@ -104,8 +104,10 @@ module isolde_fetch_vleninstr (
             end else if (nnn == RISCV_ENC_GE80_N1) begin
               _vlen_instr_words_o <= 3;  // 3-word instruction (96 bits)
             end else begin
+`ifndef SYNTHESIS
               // Assert if unknown nnn is encountered
               $fatal("Unsupported custom instruction: nnn = %0d", nnn);
+`endif
             end
           end
 

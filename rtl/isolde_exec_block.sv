@@ -7,10 +7,13 @@ module isolde_exec_block
 #(
     parameter string LogName = "isolde_exec_block.log"
 ) (
+    // Clock and Reset
+    input  logic                         clk_i,                     // Clock signal
+    input  logic                         rst_ni,                    // Active-low reset signal
     // ISOLDE register file
-           isolde_register_file_if.cpu       isolde_rf_bus,
-           isolde_x_register_file_if.cpu     x_rf_bus,
-           isolde_fetch2exec_if          isolde_exec_from_decoder,
+           isolde_register_file_if.cpu   isolde_rf_bus,
+           isolde_x_register_file_if.cpu x_rf_bus,
+           isolde_fetch2exec_if.exec     isolde_exec_from_decoder,
     output logic                         isolde_exec_busy_o,
     // eXtension interface
            isolde_cv_x_if.cpu_compressed xif_compressed_if,
@@ -64,16 +67,13 @@ module isolde_exec_block
   isolde_exec_action_t exec_action;
 
   state_t ievli_state, ievli_next;
-  logic clk;
-  logic g_rst_n;
+
+
 
   isolde_opcode_e isolde_opcode_dec;  //decoded isolde opcode
   logic [2:0] cnt, cnt_max;
 
 
-
-  assign clk = isolde_exec_from_decoder.clk_i;
-  assign g_rst_n = isolde_exec_from_decoder.rst_ni;
 
   logic exec_req, exec_gnt, exec_dne;
   assign exec_req = isolde_exec_from_decoder.isolde_exec_req;
@@ -81,8 +81,8 @@ module isolde_exec_block
   assign isolde_exec_from_decoder.isolde_exec_dne = exec_dne;
   assign isolde_opcode_dec = isolde_exec_from_decoder.isolde_opcode;
 
-  always_ff @(posedge clk or negedge g_rst_n) begin
-    if (!g_rst_n) begin
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
       cnt <= 0;
       ievli_state <= IDLE;
     end else begin

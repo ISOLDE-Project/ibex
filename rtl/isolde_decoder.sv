@@ -21,17 +21,17 @@ module isolde_decoder
     input logic rst_ni,
 
     // to/from controller
-    input  logic             isolde_decoder_instr_exec_i,
-    input  logic             isolde_decoder_instr_valid_i,
-    input  logic [4:0][31:0] isolde_decoder_instr_batch_i,    // from IF-ID pipeline registers
-    input  logic             isolde_decoder_enable_i,         // illegal instr encountered
-    output logic             isolde_decoder_illegal_instr_o,  // illegal instr encountered
-    output logic             isolde_decoder_busy_o,
-
+    input logic isolde_decoder_instr_exec_i,
+    input logic isolde_decoder_instr_valid_i,
+    input logic [4:0][31:0] isolde_decoder_instr_batch_i,  // from IF-ID pipeline registers
+    input logic isolde_decoder_enable_i,  // illegal instr encountered
+    output logic isolde_decoder_illegal_instr_o,  // illegal instr encountered
+    output logic isolde_decoder_busy_o,
+    output logic isolde_decoder_stalled_o,
     //ISOLDE Register file interface
     isolde_register_file_if.cpu isolde_rf_bus,
     isolde_x_register_file_if.cpu x_rf_bus,
-    isolde_fetch2exec_if isolde_decoder_exec_bus
+    isolde_fetch2exec_if.dec isolde_decoder_exec_bus
 );
 
   // FSM states
@@ -57,7 +57,7 @@ module isolde_decoder
   assign isolde_decoder_fsm_guard = isolde_decoder_instr_valid_i;
   //
   // assign isolde_decoder_exec_bus.isolde_decoder_enable = isolde_decoder_enable_i;
-  assign isolde_decoder_exec_bus.isolde_decoder_illegal_instr = isolde_decoder_illegal_instr_o;
+  //assign isolde_decoder_exec_bus.isolde_decoder_illegal_instr = isolde_decoder_illegal_instr_o;
 
   assign isolde_decoder_illegal_instr_o = isolde_decoder_illegal_instr_q & isolde_decoder_illegal_instr_d;
 
@@ -126,7 +126,7 @@ module isolde_decoder
                       x_rf_bus.raddr[0]      <= isolde_decoder_instr_batch_i[0][11:7];  //rd    
                     end
                   endcase
-                end  /*else isolde_decoder_exec_bus.isolde_decoder_stalled <= 0;*/
+                end  /*else isolde_decoder_stalled_o <= 0;*/
 
               end else begin
                 isolde_decoder_illegal_instr_q <= 1;
@@ -173,7 +173,7 @@ module isolde_decoder
 
   always_comb begin
     isolde_decoder_busy_o = 0;
-    isolde_decoder_exec_bus.isolde_decoder_stalled = 0;
+    isolde_decoder_stalled_o = 0;
     isolde_decoder_exec_bus.isolde_exec_req = 0;
     idvli_next = idvli_state;
     case (idvli_state)
@@ -185,7 +185,7 @@ module isolde_decoder
 
       FETCH_COMPUTE: begin
         if (~isolde_decoder_illegal_instr_d)
-          isolde_decoder_exec_bus.isolde_decoder_stalled = (1 == vlen_instr_words_d) ? 1 : 0;
+          isolde_decoder_stalled_o = (1 == vlen_instr_words_d) ? 1 : 0;
       end
 
       FETCH_REST: begin
@@ -195,7 +195,7 @@ module isolde_decoder
 
           isolde_decoder_exec_bus.isolde_exec_req = 1;
           isolde_decoder_busy_o = isolde_decoder_fsm_guard ? 0 : 1;
-          idvli_next = isolde_decoder_exec_bus.isolde_decoder_stalled? WAIT_EXEC_GNT:FETCH_COMPUTE;
+          idvli_next = isolde_decoder_stalled_o ? WAIT_EXEC_GNT : FETCH_COMPUTE;
         end else begin
           isolde_decoder_busy_o = 1;
           isolde_decoder_exec_bus.isolde_exec_req = 0;
@@ -204,7 +204,7 @@ module isolde_decoder
       end
       DONE: begin
         isolde_decoder_exec_bus.isolde_exec_req = 0;
-        isolde_decoder_exec_bus.isolde_decoder_stalled = 0;
+        isolde_decoder_stalled_o = 0;
 
         isolde_decoder_busy_o = isolde_decoder_fsm_guard ? 0 : 1;
 
