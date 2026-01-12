@@ -1,30 +1,64 @@
 // Copyleft 2024
 
-// Macro to generate read port signals for a given CHANNEL
-`define GEN_READ_PORT(CHANNEL) \
-  logic [RegAddrWidth-1:0] raddr_``CHANNEL ;                  /* Read address */ \
-  logic [RegSize-1:0][RegDataWidth-1:0] rdata_``CHANNEL;      /* Read data output */
-  
-
-// Interface definition
-interface isolde_register_file_if;
+interface isolde_register_file_if #(
+    parameter int unsigned NumReadPorts = 5
+);
   import isolde_register_file_pkg::*;
 
-  // Generate two read ports using the macro
-  `GEN_READ_PORT(0)
-  `GEN_READ_PORT(1)
-  `GEN_READ_PORT(2)
-  `GEN_READ_PORT(3)
-  `GEN_READ_PORT(4)
+  typedef struct packed {logic [RegAddrWidth-1:0] addr;} isolde_rf_addr_t;
 
-  // Write port W1
-  logic [RegAddrWidth-1:0] waddr_0;  // Write address
-  logic [RegSize-1:0][RegDataWidth-1:0] wdata_0;  // Write data
-  logic [RegSize-1:0][RegDataWidth-1:0] echo_0;  // Echo write data
-  logic we_0;  // Write enable signal
+  typedef struct packed {logic [RegSize-1:0][RegDataWidth-1:0] data;} isolde_rf_data_t;
 
-  // Error detection
-  logic isolde_rf_err;  // Combined error signal for spurious writes or invalid reads
+  // ------------------------
+  // Parameterized number of read ports
+  // ------------------------
+
+  isolde_rf_addr_t [NumReadPorts-1:0] raddr;
+  isolde_rf_data_t [NumReadPorts-1:0] rdata;
+
+  // ------------------------
+  // Write port
+  // ------------------------
+  typedef struct packed {
+    isolde_rf_addr_t addr;
+    isolde_rf_data_t data;
+    logic            we;
+  } write_port_t;
+
+  write_port_t wp;
+  isolde_rf_data_t wp_echo;
+
+  // ------------------------
+  // Error
+  // ------------------------
+  logic isolde_rf_err;
+
+  // ==========================================================
+  // Modports
+  // ==========================================================
+
+  modport cpu(
+      // Read ports
+      output raddr,
+      input rdata,
+      // Write port
+      output wp,
+      // Misc
+      input wp_echo,
+      input isolde_rf_err
+  );
+
+  modport rf(
+      // Read ports
+      input raddr,
+      output rdata,
+      // Write port
+      input wp,
+      // Misc
+      output wp_echo,
+      output isolde_rf_err
+  );
 
 endinterface
+
 

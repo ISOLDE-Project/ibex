@@ -363,7 +363,7 @@ module ibex_top
       .rf_rdata_a_ecc_i (rf_rdata_a_ecc_buf),
       .rf_rdata_b_ecc_i (rf_rdata_b_ecc_buf),
       //ISOLDE RF
-      .isolde_rf_bus    (isolde_rf_bus),
+      .isolde_rf_bus    (isolde_rf_bus.cpu),
       .x_rf_bus         (x_rf_bus),
 
       .ic_tag_req_o      (ic_tag_req),
@@ -537,7 +537,7 @@ module ibex_top
 
       .clk_i(clk),
       .rst_ni(rst_ni),
-      .isolde_rf_bus(isolde_rf_bus)
+      .isolde_rf_bus(isolde_rf_bus.rf)
 
   );
 

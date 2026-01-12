@@ -177,7 +177,7 @@ module ibex_id_stage
     input logic        rf_write_wb_i,
 
     //ISOLDE Register file interface
-    isolde_register_file_if   isolde_rf_bus,
+    isolde_register_file_if.cpu   isolde_rf_bus,
     isolde_x_register_file_if x_rf_bus,
 
     output logic                     en_wb_o,
