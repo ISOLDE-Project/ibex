@@ -27,7 +27,7 @@ yosys-flist:
 	make -C $(SYS_DIR)  ibex_synth.tcl
 	tclsh $(ROOT_DIR)/yosys/scripts/vivado_tcl_to_yosys_f.tcl $(SYS_DIR)/ibex_synth.tcl
 	echo $(ROOT_DIR)/yosys/rtl/isolde_top.sv >> $(ROOT_DIR)/yosys.flist
-	
+	echo $(ROOT_DIR)/ihp13/icg.sv            >> $(ROOT_DIR)/yosys.flist
 
 include yosys/yosys.mk
 
