@@ -9,6 +9,7 @@ set ::yosys_files {}
 set ::yosys_defines {}
 set ::yosys_params {}
 set ::yosys_incdirs {}
+set ::blacklist {prim_generic_clock_gating.sv}
 
 # ---------------------------------------------------------
 # Vivado command stubs (we intercept instead of executing)
@@ -97,6 +98,14 @@ foreach d $::yosys_defines {
 }
 
 foreach fsrc $::yosys_files {
+    # Extract filename from full path
+    set fname [file tail $fsrc]
+
+    # If filename is in blacklist, skip it
+    if {[lsearch -exact $::blacklist $fname] != -1} {
+        continue
+    }
+
     puts $f $fsrc
 }
 
