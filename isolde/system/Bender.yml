@@ -29,4 +29,8 @@ sources:
    - target: xilinx
      files:
      - fpga/rtl/xilinx_aida.sv
+   - target: yosys
+     files:
+     - asic/ihp13/icg.sv
+     - asic/rtl/isolde_top.sv
      

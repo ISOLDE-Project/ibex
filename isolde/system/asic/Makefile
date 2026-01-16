@@ -30,10 +30,10 @@ yosys-flist:
 	                   ENABLE_SPM=1 \
 					   BENDER_EXTRA_TARGET="-t yosys" \
 					   yosys-manifest.flist
-	cat  ibex-yosys.flist $(SYS_DIR)/yosys-manifest.flist >$(ROOT_DIR)/yosys.flist
+	cat  ibex-yosys.flist $(SYS_DIR)/yosys-manifest.flist >yosys.flist
 
 
-include yosys/yosys.mk
+include $(ROOT_DIR)/yosys/yosys.mk
 
 
 ###########
@@ -43,7 +43,7 @@ include yosys/yosys.mk
 ## Delete generated files and directories
 clean: 
 	$(MAKE) ys_clean
-	rm -f $(SYS_DIR)/ibex_synth.tcl
+	rm -f ibex-yosys.flist
 	rm -f $(SYS_DIR)/yosys-manifest.flist
 	rm -f yosys.flist
 
@@ -55,4 +55,4 @@ clean-redmule:
 	git reset --hard  && \
 	git clean -xfdxf
 
-include common.mk
+include $(ROOT_DIR)/common.mk
