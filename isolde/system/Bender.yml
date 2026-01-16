@@ -17,13 +17,13 @@ dependencies:
 # any(T1, ..., TN) matches if any of the targets T1 to TN match (boolean OR)
 # not(T)           matches if target T does not match (boolean NOT)
 sources: 
-   - target: all(all(not(spm),not(fpga_sim)), all(tb_dm ,redmule_hwpe ,rtl ,redmule_test_hwpe))
+   - target: all(all(not(spm),not(any(fpga_sim,yosys))), all(tb_dm ,redmule_hwpe ,rtl ,redmule_test_hwpe))
      files:
         - tb/tb_dm.sv
    - target: all(vanilla_lca,redmule_test_hwpe, rtl, redmule_hwpe)
      files:
        - tb/tb_lca_system.sv 
-   - target: all (not(fpga_sim),any(spm, redmule_hwpe,redmule_complex, redmule_test_hwpe))
+   - target: all (not(any(fpga_sim,yosys)),any(spm, redmule_hwpe,redmule_complex, redmule_test_hwpe))
      files:
        - tb/tb_spm.sv
    - target: xilinx

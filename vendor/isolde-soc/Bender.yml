@@ -39,7 +39,7 @@ sources:
     ##level 3
     - rtl/aida_lca.sv
     - rtl/aida.sv
-    - target: any(tb_dm,redmule_test_hwpe, redmule_complex,redmule_test_complex)
+    - target: all(not(any(fpga_sim,yosys)),any(tb_dm,redmule_test_hwpe, redmule_complex,redmule_test_complex))
       files:
         - tb/tb_tcdm_mem.sv
         - tb/monitor/perfCounters.sv

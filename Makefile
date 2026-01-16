@@ -26,7 +26,10 @@ VSIM      ?= vsim
 yosys-flist:  
 	make -C $(SYS_DIR)  ibex_synth.tcl
 	tclsh $(ROOT_DIR)/yosys/scripts/vivado_tcl_to_yosys_f.tcl $(SYS_DIR)/ibex_synth.tcl
-	make -C $(SYS_DIR) -f Makefile.wrapper yosys-manifest.flist
+	make -C $(SYS_DIR) DBG_MODULE=1 \
+	                   ENABLE_SPM=1 \
+					   BENDER_EXTRA_TARGET="-t yosys" \
+					   yosys-manifest.flist
 	cat  ibex-yosys.flist $(SYS_DIR)/yosys-manifest.flist >$(ROOT_DIR)/yosys.flist
 	echo $(ROOT_DIR)/yosys/rtl/isolde_top.sv >> $(ROOT_DIR)/yosys.flist
 	echo $(ROOT_DIR)/ihp13/icg.sv            >> $(ROOT_DIR)/yosys.flist
