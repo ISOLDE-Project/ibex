@@ -17,8 +17,7 @@ OSS_CAD_SUITE_INSTALL_DIR ?= ${INSTALL_DIR}/oss-cad-suite
 VERIL_SRC_ROOT            ?= $(prj_path)/vendor
 VERIL_INSTALL_DIR         ?= ${INSTALL_DIR}/verilator
 VERIL_VERSION             ?= v5.036
-BENDER_DOWNLOAD_LINK      ?= https://github.com/pulp-platform/bender/releases/download/v0.28.0/bender-0.28.0-x86_64-linux-gnu-ubuntu22.04.tar.gz
-BENDER_ARCH_FILE          ?= $(shell basename $(BENDER_DOWNLOAD_LINK))
+BENDER_INSTALL_DIR        ?= ${INSTALL_DIR}/bender
 
 all: dev-dep verilator riscv32-gcc riscv32-llvm  openocd
 # Verilator
@@ -80,12 +79,14 @@ $(HOME)/eth/$(BENDER_ARCH_FILE):
 	mkdir -p $(HOME)/eth && cd $(HOME)/eth       &&  \
 	wget $(BENDER_DOWNLOAD_LINK)                 
 
-bender: $(HOME)/eth/$(BENDER_ARCH_FILE)
-	cd $(HOME)/eth                               &&  \
-	tar xzf $(BENDER_ARCH_FILE)                  &&  \
-	mkdir -p bin && mv bender bin/ 				 &&  \
-	mkdir -p doc && cd doc						     &&  \
-	wget https://github.com/pulp-platform/bender/blob/master/README.md
+.PHONY: bender
+## Install Bender
+bender: 
+	@echo "Installing Bender..."
+	mkdir -p $(BENDER_INSTALL_DIR)
+	cd $(BENDER_INSTALL_DIR) &&  \
+	curl --proto '=https' --tlsv1.2 https://pulp-platform.github.io/bender/init -sSf | sh
+	
 
 vendor/xpack-openocd.tar.gz: vendor/xpack-openocd.url
 	cd vendor && \

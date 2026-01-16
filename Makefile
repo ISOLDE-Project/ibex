@@ -26,6 +26,8 @@ VSIM      ?= vsim
 yosys-flist:  
 	make -C $(SYS_DIR)  ibex_synth.tcl
 	tclsh $(ROOT_DIR)/yosys/scripts/vivado_tcl_to_yosys_f.tcl $(SYS_DIR)/ibex_synth.tcl
+	make -C $(SYS_DIR) -f Makefile.wrapper yosys-manifest.flist
+	cat  ibex-yosys.flist $(SYS_DIR)/yosys-manifest.flist >$(ROOT_DIR)/yosys.flist
 	echo $(ROOT_DIR)/yosys/rtl/isolde_top.sv >> $(ROOT_DIR)/yosys.flist
 	echo $(ROOT_DIR)/ihp13/icg.sv            >> $(ROOT_DIR)/yosys.flist
 
@@ -39,6 +41,8 @@ include yosys/yosys.mk
 ## Delete generated files and directories
 clean: 
 	$(MAKE) ys_clean
+	rm -f $(SYS_DIR)/ibex_synth.tcl
+	rm -f $(SYS_DIR)/yosys-manifest.flist
 	rm -f yosys.flist
 
 .PHONY: clean

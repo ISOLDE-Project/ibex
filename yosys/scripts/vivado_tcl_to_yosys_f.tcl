@@ -9,7 +9,7 @@ set ::yosys_files {}
 set ::yosys_defines {}
 set ::yosys_params {}
 set ::yosys_incdirs {}
-set ::blacklist {prim_generic_clock_gating.sv}
+set ::blacklist {prim_generic_clock_gating.sv ibex_top_tracing.sv ibex_tracer_pkg.sv ibex_tracer.sv}
 
 # ---------------------------------------------------------
 # Vivado command stubs (we intercept instead of executing)
@@ -70,7 +70,7 @@ if {[info exists ibex_include_dirs]} {
 # Emit Yosys filelist
 # ---------------------------------------------------------
 
-set out "yosys.flist"
+set out "ibex-yosys.flist"
 set f [open $out w]
 
 puts $f "# Auto-generated from Vivado Tcl"
