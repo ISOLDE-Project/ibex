@@ -16,7 +16,7 @@ YOSYS_TMP		:= $(YOSYS_DIR)/tmp
 YOSYS_REPORTS	:= $(YOSYS_DIR)/reports
 
 # top level to be synthesized
-TOP_DESIGN		?= isolde_top
+TOP_DESIGN		?= rv_top
 
 # file containing include dirs, defines and paths to all source files
 SV_FLIST    	:= $(YOSYS_DIR)/../yosys.flist
@@ -44,6 +44,21 @@ $(NETLIST) $(NETLIST_DEBUG):  $(SV_FLIST)
 		     | tee "$(YOSYS_DIR)/$(TOP_DESIGN).log" \
 		     | gawk -f $(YOSYS_DIR)/scripts/filter_output.awk;
 		
+
+yosys-check:
+	@mkdir -p $(YOSYS_OUT)
+	@mkdir -p $(YOSYS_TMP)
+	@mkdir -p $(YOSYS_REPORTS)
+	cd $(YOSYS_DIR) && \
+	SV_FLIST="$(SV_FLIST)" \
+	TOP_DESIGN="$(TOP_DESIGN)" \
+	TMP="$(YOSYS_TMP)" \
+	OUT="$(YOSYS_OUT)" \
+	REPORTS="$(YOSYS_REPORTS)" \
+	$(YOSYS) -c $(YOSYS_DIR)/scripts/yosys_check.tcl \
+		2>&1 | TZ=UTC gawk '{ print strftime("[%Y-%m-%d %H:%M %Z]"), $$0 }' \
+		     | tee "$(YOSYS_DIR)/$(TOP_DESIGN).log" \
+		     | gawk -f $(YOSYS_DIR)/scripts/filter_output.awk;
 
 ys_clean:
 	rm -rf $(YOSYS_OUT)

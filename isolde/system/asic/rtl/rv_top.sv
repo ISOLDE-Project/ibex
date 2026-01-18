@@ -1,7 +1,7 @@
 /**
  * Top level module of the ibex RISC-V core
  */
-module isolde_top
+module rv_top
   import ibex_pkg::*;
 #(
     parameter bit PMPEnable = 1'b0,
@@ -22,14 +22,8 @@ module isolde_top
     parameter int unsigned DbgHwBreakNum = 1,
     parameter bit SecureIbex = 1'b0,
     parameter bit ICacheScramble = 1'b0,
-    parameter int unsigned ICacheScrNumPrinceRoundsHalf = 2,
-    parameter lfsr_seed_t RndCnstLfsrSeed = RndCnstLfsrSeedDefault,
-    parameter lfsr_perm_t RndCnstLfsrPerm = RndCnstLfsrPermDefault,
     parameter int unsigned DmHaltAddr = 32'h1A110800,
-    parameter int unsigned DmExceptionAddr = 32'h1A110808,
-    // Default seed and nonce for scrambling
-    parameter logic [SCRAMBLE_KEY_W-1:0] RndCnstIbexKey = RndCnstIbexKeyDefault,
-    parameter logic [SCRAMBLE_NONCE_W-1:0] RndCnstIbexNonce = RndCnstIbexNonceDefault
+    parameter int unsigned DmExceptionAddr = 32'h1A110808
 ) (
     // Clock and Reset
     input logic clk_i,

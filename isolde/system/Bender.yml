@@ -32,5 +32,5 @@ sources:
    - target: yosys
      files:
      - asic/ihp13/icg.sv
-     - asic/rtl/isolde_top.sv
+     - asic/rtl/rv_top.sv
      

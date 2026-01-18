@@ -83,19 +83,19 @@ foreach d $::yosys_incdirs {
 }
 
 # Slang/Yosys does NOT support parameter
-foreach p $::yosys_params {
-    puts $f "+define+$p"  
-}
+# foreach p $::yosys_params {
+#     puts $f "+define+$p"  
+# }
 
-foreach d $::yosys_defines {
-    if {[string match "RVFI*" $d]} {
-        continue
-    }
-    if {[string match "FPGA_*" $d]} {
-        continue
-    }
-    puts $f "+define+$d"
-}
+# foreach d $::yosys_defines {
+#     if {[string match "RVFI*" $d]} {
+#         continue
+#     }
+#     if {[string match "FPGA_*" $d]} {
+#         continue
+#     }
+#     puts $f "+define+$d"
+# }
 
 foreach fsrc $::yosys_files {
     # Extract filename from full path

@@ -69,4 +69,7 @@ sources:
         - fpga/sim/tcdm_mem.sv
         - fpga/tb/aida_tb.sv
         - fpga/tb/aida_lca_tb.sv
+    - target: yosys
+      files:
+        - asic/rtl/aida_top.sv
     

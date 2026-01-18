@@ -13,7 +13,7 @@ module aida_top
     //ibex parameters
     parameter bit RV32E           = 1'b0,
     parameter bit ICacheScramble  = 1'b0,
-    parameter bit ICache          = 1'b1,
+    parameter bit ICache          = 1'b0,
     parameter bit ICacheECC       = 1'b0,
     parameter bit BranchTargetALU = 1'b0,
     parameter bit WritebackStage  = 1'b0,
@@ -38,8 +38,6 @@ module aida_top
     input logic clk_i,
     input logic rst_ni,
     input logic fetch_enable_i,
-    // === output ports ===
-    output aida_io_pkg::aida_pads_o_t pads_o,
     // === JTAG port ===
     input jtag_pkg::jtag_req_t soc_jtag_in,
     output jtag_pkg::jtag_rsp_t soc_jtag_out
@@ -70,67 +68,6 @@ module aida_top
 
 
 
-  /********************************************************/
-  /**     Data memory                                    **/
-  /*******************************************************/
-  tcdm_mem #(
-      .MEMORY_SIZE(DMEM_SIZE_I32),
-      .MEMORY_PRIMITIVE("ultra")
-  ) i_dmemory (
-      .clk_i,
-      .rst_ni,
-      .tcdm_slave_i(aida_data_memory)
-  );
-
-  /********************************************************/
-  /**     Instruction memory                             **/
-  /*******************************************************/
-  tcdm_mem #(
-      .MEMORY_SIZE(IMEM_SIZE_I32),
-      .MEMORY_PRIMITIVE("ultra")
-  ) i_imemory (
-      .clk_i,
-      .rst_ni,
-      .tcdm_slave_i(aida_instr_memory)
-  );
-
-
-  /********************************************************/
-  /**     Stack memory                                   **/
-  /*******************************************************/
-  tcdm_mem #(
-      .MEMORY_SIZE(SMEM_SIZE_I32),
-      .MEMORY_PRIMITIVE("ultra")
-  ) i_stack_memory (
-      .clk_i,
-      .rst_ni,
-      .tcdm_slave_i(aida_stack_memory)
-  );
-
-
-  /********************************************************/
-  /**     TCDM                                           **/
-  /*******************************************************/
-
-  // === Memory banks ===
-  generate
-    for (genvar i = 0; i < N_TCDM_BANKS; i++) begin : gen_mem
-      // Instantiate memory bank
-      tcdm_mem_wrapper #() i_bank (
-          .clk_i(clk_i),
-          .rst_ni(rst_ni),
-          .req_req(mem_req[i].req),
-          .req_we(mem_req[i].we),
-          .req_be(mem_req[i].be),
-          .req_addr(mem_req[i].addr),
-          .req_data(mem_req[i].data),
-          .gnt(mem_rsp[i].gnt),
-          .valid(mem_rsp[i].valid),
-          //.err(mem_rsp[i].err),
-          .rsp_data(mem_rsp[i].data)
-      );
-    end
-  endgenerate
 
 
   /********************************************************/
