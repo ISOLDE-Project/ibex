@@ -60,10 +60,12 @@ yosys-check:
 		     | tee "$(YOSYS_DIR)/$(TOP_DESIGN).log" \
 		     | gawk -f $(YOSYS_DIR)/scripts/filter_output.awk;
 
-ys_clean:
+
+
+yosys-clean:
 	rm -rf $(YOSYS_OUT)
 	rm -rf $(YOSYS_TMP)
 	rm -rf $(YOSYS_REPORTS) 
 	rm -f $(YOSYS_DIR)/$(TOP_DESIGN).log
 
-.PHONY: ys_clean yosys
+.PHONY:  yosys	yosys-check yosys-clean

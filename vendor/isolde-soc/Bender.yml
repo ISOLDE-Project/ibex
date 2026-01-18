@@ -29,6 +29,7 @@ sources:
     - rtl/isolde_tcdm_interconnect.sv
     - rtl/isolde_log_interconnect.sv
     - rtl/isolde_boot_rom.sv
+    - rtl/rv_domain.sv
     - rtl/uart/udma_uart_tx.sv
     - rtl/uart/isolde_uart_top.sv
     - rtl/io/aida_io.sv
@@ -72,4 +73,5 @@ sources:
     - target: yosys
       files:
         - asic/rtl/aida_top.sv
+        - asic/rtl/rv_domain_top.sv
     

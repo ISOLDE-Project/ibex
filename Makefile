@@ -42,7 +42,7 @@ include yosys/yosys.mk
 
 ## Delete generated files and directories
 clean: 
-	$(MAKE) ys_clean
+	$(MAKE) yosys-clean
 	rm -f $(SYS_DIR)/ibex_synth.tcl
 	rm -f $(SYS_DIR)/yosys-manifest.flist
 	rm -f yosys.flist
