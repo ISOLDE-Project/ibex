@@ -90,6 +90,13 @@ git commit -m "Squash merge tmp/exp into isolde/dev using theirs strategy"
 ```
 
 # Open EDA
+apply patches from isolde/system/patches by running
+```sh
+make -C isolde/system/patches 
+```
+output is generated in  
+- yosys/out
+- yosys/reports  
 
 ## RISC-V Domain (rv_domain)
 ibex+debug-module+uart-tx-only
@@ -97,6 +104,7 @@ ibex+debug-module+uart-tx-only
 make clean yosys-flist 
 make TOP_DESIGN=rv_domain_top    yosys-clean yosys
 ```
+**snippet** from *yosys/reports/rv_domain_top_area.rpt*
 ```
 === rv_domain_top ===
 
@@ -117,6 +125,7 @@ ibex
 ```sh
 make clean yosys-flist yosys
 ```
+**snippet** from *yosys/reports/rv_top_area.rpt*:  
 ```
 === rv_top ===
 
