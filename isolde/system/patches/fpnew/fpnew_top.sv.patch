@@ -1,0 +1,14 @@
+diff --git a/src/fpnew_top.sv b/src/fpnew_top.sv
+index 9cea0ec..b381057 100644
+--- a/src/fpnew_top.sv
++++ b/src/fpnew_top.sv
+@@ -99,7 +99,8 @@ module fpnew_top #(
+ 
+   // Filter out the mask if not used
+   MaskType simd_mask;
+-  assign simd_mask = simd_mask_i | ~{NumLanes{EnableSIMDMask}};
++  //assign simd_mask = simd_mask_i | ~{NumLanes{EnableSIMDMask}};
++  assign simd_mask = EnableSIMDMask ? simd_mask_i : '1;
+ 
+   // -------------------------
+   // Generate Operation Blocks
