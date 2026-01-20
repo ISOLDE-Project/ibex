@@ -1,0 +1,13 @@
+diff --git a/rtl/fifo/hwpe_stream_fifo_passthrough.sv b/rtl/fifo/hwpe_stream_fifo_passthrough.sv
+index 53c58e1..6f111cb 100644
+--- a/rtl/fifo/hwpe_stream_fifo_passthrough.sv
++++ b/rtl/fifo/hwpe_stream_fifo_passthrough.sv
+@@ -13,7 +13,7 @@
+  * specific language governing permissions and limitations under the License.
+  *
+ 
+-/**
++ **
+  * The **hwpe_stream_fifo_passthrough** module implements a hardware FIFO
+  * queue for HWPE-Stream streams, used to withstand data scarcity (`valid`=0) or
+  * backpressure (`ready`=0), decoupling two architectural domains.
