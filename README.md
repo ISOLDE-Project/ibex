@@ -141,6 +141,32 @@ make clean yosys-flist yosys
     16850  2.6E+05 cells
 ```
 
+## aida (aida_top)
+ibex
+```sh
+make clean yosys-flist 
+make TOP_DESIGN=aida_top  yosys
+```
+**snippet** from *yosys/reports/aida_top_area.rpt*:  
+```
+72. Printing statistics.
+
+=== aida_top ===
+
+        +----------Local Count, excluding submodules.
+        |        +-Local Area, excluding submodules.
+        |        | 
+    41823        - wires
+    41823        - wire bits
+     6008        - public wires
+     6008        - public wire bits
+        9        - ports
+        9        - port bits
+    42986 6.35E+05 cells
+        6        -   $_DLATCH_N_
+```
+**Note**:  
+Needs fix for *$_DLATCH_N_* nodes.  
 # Ibex RISC-V Core
 
 Ibex is a production-quality open source 32-bit RISC-V CPU core written in
