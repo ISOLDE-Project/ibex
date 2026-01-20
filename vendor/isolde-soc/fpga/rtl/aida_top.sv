@@ -13,7 +13,7 @@ module aida_top
     //ibex parameters
     parameter bit RV32E           = 1'b0,
     parameter bit ICacheScramble  = 1'b0,
-    parameter bit ICache          = 1'b1,
+    parameter bit ICache          = 1'b0,
     parameter bit ICacheECC       = 1'b0,
     parameter bit BranchTargetALU = 1'b0,
     parameter bit WritebackStage  = 1'b0,
