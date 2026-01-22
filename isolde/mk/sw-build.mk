@@ -44,7 +44,8 @@
 ##
 ###############################################################################
 ## redmule config
-REDMULE_ROOT_DIR :=$(shell bender path redmule)
+#REDMULE_ROOT_DIR :=$(shell bender path redmule)
+REDMULE_ROOT_DIR :=wrong_path_to_be_overridden
 
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2))")

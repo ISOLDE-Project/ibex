@@ -66,15 +66,7 @@ module rv_top
 
 );
 
-  isolde_cv_x_if #(
-      .X_NUM_RS   (isolde_cv_x_if_pkg::X_NUM_RS),
-      .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
-      .X_MEM_WIDTH(isolde_cv_x_if_pkg::X_MEM_WIDTH),
-      .X_RFR_WIDTH(isolde_cv_x_if_pkg::X_RFR_WIDTH),
-      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH),
-      .X_MISA     (isolde_cv_x_if_pkg::X_MISA),
-      .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
-  ) itf_core_xif ();
+ 
 
   ibex_top #(
 
@@ -148,13 +140,6 @@ module rv_top
       .alert_minor_o         (),
       .alert_major_internal_o(),
       .alert_major_bus_o     (),
-      .core_sleep_o,
-      // eXtension interface
-      .xif_compressed_if     (itf_core_xif.cpu_compressed),
-      .xif_issue_if          (itf_core_xif.cpu_issue),
-      .xif_commit_if         (itf_core_xif.cpu_commit),
-      .xif_mem_if            (itf_core_xif.cpu_mem),
-      .xif_mem_result_if     (itf_core_xif.cpu_mem_result),
-      .xif_result_if         (itf_core_xif.cpu_result)
+      .core_sleep_o
   );
 endmodule

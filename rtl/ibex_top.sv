@@ -136,20 +136,14 @@ module ibex_top
 `endif
 
     // CPU Control Signals
-    input  ibex_mubi_t                   fetch_enable_i,
-    output logic                         alert_minor_o,
-    output logic                         alert_major_internal_o,
-    output logic                         alert_major_bus_o,
-    output logic                         core_sleep_o,
-    // eXtension interface
-           isolde_cv_x_if.cpu_compressed xif_compressed_if,
-           isolde_cv_x_if.cpu_issue      xif_issue_if,
-           isolde_cv_x_if.cpu_commit     xif_commit_if,
-           isolde_cv_x_if.cpu_mem        xif_mem_if,
-           isolde_cv_x_if.cpu_mem_result xif_mem_result_if,
-           isolde_cv_x_if.cpu_result     xif_result_if,
+    input  ibex_mubi_t fetch_enable_i,
+    output logic       alert_minor_o,
+    output logic       alert_major_internal_o,
+    output logic       alert_major_bus_o,
+    output logic       core_sleep_o,
+
     // DFT bypass controls
-    input  logic                         scan_rst_ni
+    input logic scan_rst_ni
 );
 
   localparam bit Lockstep = SecureIbex;
@@ -183,10 +177,6 @@ module ibex_top
   logic [RegFileDataWidth-1:0] rf_wdata_wb_ecc;
   logic [RegFileDataWidth-1:0] rf_rdata_a_ecc, rf_rdata_a_ecc_buf;
   logic [RegFileDataWidth-1:0] rf_rdata_b_ecc, rf_rdata_b_ecc_buf;
-  // Core <-> ISOLDE register file bus
-  isolde_register_file_if isolde_rf_bus ();
-  isolde_x_register_file_if x_rf_bus ();
-
 
   // Combined data and integrity for data and instruction busses
   logic [MemDataWidth-1:0] data_wdata_core;
@@ -194,17 +184,17 @@ module ibex_top
   logic [MemDataWidth-1:0] instr_rdata_core;
 
   // Core <-> RAMs signals
-  logic [IC_NUM_WAYS-1:0] ic_tag_req;
-  logic ic_tag_write;
-  logic [IC_INDEX_W-1:0] ic_tag_addr;
-  logic [TagSizeECC-1:0] ic_tag_wdata;
-  logic [TagSizeECC-1:0] ic_tag_rdata[IC_NUM_WAYS];
-  logic [IC_NUM_WAYS-1:0] ic_data_req;
-  logic ic_data_write;
-  logic [IC_INDEX_W-1:0] ic_data_addr;
-  logic [LineSizeECC-1:0] ic_data_wdata;
-  logic [LineSizeECC-1:0] ic_data_rdata[IC_NUM_WAYS];
-  logic ic_scr_key_req;
+  logic [ IC_NUM_WAYS-1:0] ic_tag_req;
+  logic                    ic_tag_write;
+  logic [  IC_INDEX_W-1:0] ic_tag_addr;
+  logic [  TagSizeECC-1:0] ic_tag_wdata;
+  logic [  TagSizeECC-1:0] ic_tag_rdata     [IC_NUM_WAYS];
+  logic [ IC_NUM_WAYS-1:0] ic_data_req;
+  logic                    ic_data_write;
+  logic [  IC_INDEX_W-1:0] ic_data_addr;
+  logic [ LineSizeECC-1:0] ic_data_wdata;
+  logic [ LineSizeECC-1:0] ic_data_rdata    [IC_NUM_WAYS];
+  logic                    ic_scr_key_req;
   // Alert signals
   logic core_alert_major_internal, core_alert_major_bus, core_alert_minor;
   logic lockstep_alert_major_internal, lockstep_alert_major_bus;
@@ -362,9 +352,6 @@ module ibex_top
       .rf_wdata_wb_ecc_o(rf_wdata_wb_ecc),
       .rf_rdata_a_ecc_i (rf_rdata_a_ecc_buf),
       .rf_rdata_b_ecc_i (rf_rdata_b_ecc_buf),
-      //ISOLDE RF
-      .isolde_rf_bus    (isolde_rf_bus.cpu),
-      .x_rf_bus         (x_rf_bus.cpu),
 
       .ic_tag_req_o      (ic_tag_req),
       .ic_tag_write_o    (ic_tag_write),
@@ -432,14 +419,7 @@ module ibex_top
       .alert_minor_o         (core_alert_minor),
       .alert_major_internal_o(core_alert_major_internal),
       .alert_major_bus_o     (core_alert_major_bus),
-      .core_busy_o           (core_busy_d),
-      // eXtension interface
-      .xif_compressed_if,
-      .xif_issue_if,
-      .xif_commit_if,
-      .xif_mem_if,
-      .xif_mem_result_if,
-      .xif_result_if
+      .core_busy_o           (core_busy_d)
   );
 
   /////////////////////////////////
@@ -464,15 +444,14 @@ module ibex_top
         .dummy_instr_id_i(dummy_instr_id),
         .dummy_instr_wb_i(dummy_instr_wb),
 
-        .raddr_a_i     (rf_raddr_a),
-        .rdata_a_o     (rf_rdata_a_ecc),
-        .raddr_b_i     (rf_raddr_b),
-        .rdata_b_o     (rf_rdata_b_ecc),
-        .waddr_a_i     (rf_waddr_wb),
-        .wdata_a_i     (rf_wdata_wb_ecc),
-        .we_a_i        (rf_we_wb),
-        .err_o         (rf_alert_major_internal),
-        .extended_ports(x_rf_bus.rf)
+        .raddr_a_i(rf_raddr_a),
+        .rdata_a_o(rf_rdata_a_ecc),
+        .raddr_b_i(rf_raddr_b),
+        .rdata_b_o(rf_rdata_b_ecc),
+        .waddr_a_i(rf_waddr_wb),
+        .wdata_a_i(rf_wdata_wb_ecc),
+        .we_a_i   (rf_we_wb),
+        .err_o    (rf_alert_major_internal)
     );
   end else if (RegFile == RegFileFPGA) begin : gen_regfile_fpga
     ibex_register_file_fpga #(
@@ -527,19 +506,6 @@ module ibex_top
         .err_o    (rf_alert_major_internal)
     );
   end
-
-
-  ////////////////////////////////////////
-  // ISOLDE Register file Instantiation //
-  ////////////////////////////////////////
-
-  isolde_register_file_ff isolde_register_file_ff_i (
-
-      .clk_i(clk),
-      .rst_ni(rst_ni),
-      .isolde_rf_bus(isolde_rf_bus.rf)
-
-  );
 
   ///////////////////////////////
   // Scrambling Infrastructure //

@@ -17,9 +17,7 @@
 `include "prim_assert.sv"
 `include "dv_fcov_macros.svh"
 
-module ibex_id_stage
-  import isolde_register_file_pkg::RegDataWidth, isolde_register_file_pkg::RegCount, isolde_register_file_pkg::RegSize, isolde_register_file_pkg::RegAddrWidth;
-#(
+module ibex_id_stage #(
     parameter bit               RV32E           = 0,
     parameter ibex_pkg::rv32m_e RV32M           = ibex_pkg::RV32MFast,
     parameter ibex_pkg::rv32b_e RV32B           = ibex_pkg::RV32BNone,
@@ -36,19 +34,18 @@ module ibex_id_stage
     output logic illegal_insn_o,
 
     // Interface to IF stage
-    input  logic              instr_valid_i,
-    input  logic [31:0]       instr_rdata_i,           // from IF-ID pipeline registers
-    input  logic [ 4:0][31:0] instr_batch_rdata_i,     // from IF-ID pipeline registers
-    input  logic [31:0]       instr_rdata_alu_i,       // from IF-ID pipeline registers
-    input  logic [15:0]       instr_rdata_c_i,         // from IF-ID pipeline registers
-    input  logic              instr_is_compressed_i,
-    input  logic              instr_bp_taken_i,
-    output logic              instr_req_o,
-    output logic              instr_first_cycle_id_o,
-    output logic              instr_valid_clear_o,     // kill instr in IF-ID reg
-    output logic              id_in_ready_o,           // ID stage is ready for next instr
-    input  logic              instr_exec_i,
-    output logic              icache_inval_o,
+    input  logic        instr_valid_i,
+    input  logic [31:0] instr_rdata_i,           // from IF-ID pipeline registers
+    input  logic [31:0] instr_rdata_alu_i,       // from IF-ID pipeline registers
+    input  logic [15:0] instr_rdata_c_i,         // from IF-ID pipeline registers
+    input  logic        instr_is_compressed_i,
+    input  logic        instr_bp_taken_i,
+    output logic        instr_req_o,
+    output logic        instr_first_cycle_id_o,
+    output logic        instr_valid_clear_o,     // kill instr in IF-ID reg
+    output logic        id_in_ready_o,           // ID stage is ready for next instr
+    input  logic        instr_exec_i,
+    output logic        icache_inval_o,
 
     // Jumps and branches
     input logic branch_decision_i,
@@ -176,10 +173,6 @@ module ibex_id_stage
     input logic [31:0] rf_wdata_fwd_wb_i,
     input logic        rf_write_wb_i,
 
-    //ISOLDE Register file interface
-    isolde_register_file_if.cpu   isolde_rf_bus,
-    isolde_x_register_file_if.cpu x_rf_bus,
-
     output logic                     en_wb_o,
     output ibex_pkg::wb_instr_type_e instr_type_wb_o,
     output logic                     instr_perf_count_id_o,
@@ -188,32 +181,20 @@ module ibex_id_stage
     input  logic                     outstanding_store_wb_i,
 
     // Performance Counters
-    output logic perf_jump_o,  // executing a jump instr
-    output logic perf_branch_o,  // executing a branch instr
-    output logic perf_tbranch_o,  // executing a taken branch instr
+    output logic perf_jump_o,        // executing a jump instr
+    output logic perf_branch_o,      // executing a branch instr
+    output logic perf_tbranch_o,     // executing a taken branch instr
     output logic perf_dside_wait_o,  // instruction in ID/EX is awaiting memory
                                      // access to finish before proceeding
     output logic perf_mul_wait_o,
     output logic perf_div_wait_o,
-    output logic instr_id_done_o,
-    // eXtension interface
-    isolde_cv_x_if.cpu_compressed xif_compressed_if,
-    isolde_cv_x_if.cpu_issue xif_issue_if,
-    isolde_cv_x_if.cpu_commit xif_commit_if,
-    isolde_cv_x_if.cpu_mem xif_mem_if,
-    isolde_cv_x_if.cpu_mem_result xif_mem_result_if,
-    isolde_cv_x_if.cpu_result xif_result_if
+    output logic instr_id_done_o
 );
 
   import ibex_pkg::*;
 
   // Decoder/Controller, ID stage internal signals
-  logic illegal_insn_dec;  //RV32+custom illegal operation
-  logic isolde_decoder_busy;
-  logic isolde_decoder_stalled;
-  logic std_decoder_rst_n;
-  logic illegal_std_instr;  //RV32 illegal operation
-  logic illegal_custom_instr;  //custom illegal operation
+  logic illegal_insn_dec;
   logic illegal_dret_insn;
   logic illegal_umode_insn;
   logic ebrk_insn;
@@ -269,18 +250,9 @@ module ibex_id_stage
   logic rf_ren_a, rf_ren_b;
   logic rf_ren_a_dec, rf_ren_b_dec;
 
-  //ISOLDE signals
-  logic isolde_exec_busy;
-  logic controller_stall_fetch;
-  logic isolde_stall_fetch;
-
-  // while ISOLDE decoder is bussy, standard decoder( ibex_decoder) shall be disable(  reset asserted)
-  assign std_decoder_rst_n = ~isolde_decoder_busy & rst_ni;
-  assign id_in_ready_o = controller_stall_fetch & isolde_stall_fetch;
-
   // Read enables should only be asserted for valid and legal instructions
-  assign rf_ren_a = instr_valid_i & ~instr_fetch_err_i & ~illegal_insn_o & rf_ren_a_dec;
-  assign rf_ren_b = instr_valid_i & ~instr_fetch_err_i & ~illegal_insn_o & rf_ren_b_dec;
+  assign rf_ren_a   = instr_valid_i & ~instr_fetch_err_i & ~illegal_insn_o & rf_ren_a_dec;
+  assign rf_ren_b   = instr_valid_i & ~instr_fetch_err_i & ~illegal_insn_o & rf_ren_b_dec;
 
   assign rf_ren_a_o = rf_ren_a;
   assign rf_ren_b_o = rf_ren_b;
@@ -457,16 +429,6 @@ module ibex_id_stage
     endcase
   end
 
-  logic [31:0] instr_rdata_std, instr_rdata_alu_std;
-  assign instr_rdata_alu_std = instr_rdata_std;
-
-  always_comb begin
-    if (~isolde_decoder_busy) begin
-      instr_rdata_std = instr_batch_rdata_i[0];
-    end else begin
-      instr_rdata_std = 32'h0x0; 
-    end
-  end
   /////////////
   // Decoder //
   /////////////
@@ -478,10 +440,10 @@ module ibex_id_stage
       .BranchTargetALU(BranchTargetALU)
   ) decoder_i (
       .clk_i (clk_i),
-      .rst_ni(std_decoder_rst_n),
+      .rst_ni(rst_ni),
 
       // controller
-      .illegal_insn_o(illegal_std_instr),
+      .illegal_insn_o(illegal_insn_dec),
       .ebrk_insn_o   (ebrk_insn),
       .mret_insn_o   (mret_insn_dec),
       .dret_insn_o   (dret_insn_dec),
@@ -493,8 +455,8 @@ module ibex_id_stage
 
       // from IF-ID pipeline register
       .instr_first_cycle_i(instr_first_cycle),
-      .instr_rdata_i      (instr_rdata_std),
-      .instr_rdata_alu_i  (instr_rdata_alu_std),
+      .instr_rdata_i      (instr_rdata_i),
+      .instr_rdata_alu_i  (instr_rdata_alu_i),
       .illegal_c_insn_i   (illegal_c_insn_i),
 
       // immediates
@@ -580,54 +542,6 @@ module ibex_id_stage
     end
   end
 
-  /////////////////////
-  // ISOLDE decoder //
-  ///////////////////
-
-  isolde_fetch2exec_if fetch_exec_conn ();
-
-  isolde_decoder isolde_decoder_i (
-      .clk_i(clk_i),
-      .rst_ni(rst_ni),
-      .isolde_decoder_instr_exec_i(instr_exec_i),
-      .isolde_decoder_instr_valid_i(instr_valid_i),
-      .isolde_decoder_instr_batch_i(instr_batch_rdata_i),
-      .isolde_decoder_enable_i(1'b1),
-      .isolde_decoder_illegal_instr_o(illegal_custom_instr),
-      .isolde_decoder_busy_o(isolde_decoder_busy),
-      .isolde_decoder_stalled_o(isolde_decoder_stalled),
-
-      //ISOLDE register file
-      .isolde_rf_bus          (isolde_rf_bus),
-      .x_rf_bus               (x_rf_bus),
-      .isolde_decoder_exec_bus(fetch_exec_conn.dec)
-  );
-
-
-  assign illegal_insn_dec   = illegal_std_instr & illegal_custom_instr;
-  assign isolde_stall_fetch = ~isolde_decoder_stalled;
-  ///////////////////////////
-  // ISOLDE  execute block //
-  ///////////////////////////
-
-
-  isolde_exec_block isolde_exec_block_i (
-      .clk_i                    (clk_i),
-      .rst_ni                   (rst_ni),
-      .isolde_rf_bus           (isolde_rf_bus),
-      .x_rf_bus                (x_rf_bus),
-      .isolde_exec_from_decoder(fetch_exec_conn.exec),
-      .isolde_exec_busy_o      (isolde_exec_busy),
-      // eXtension interface
-      .xif_compressed_if,
-      .xif_issue_if,
-      .xif_commit_if,
-      .xif_mem_if,
-      .xif_mem_result_if,
-      .xif_result_if
-  );
-
-
   ////////////////
   // Controller //
   ////////////////
@@ -675,7 +589,7 @@ module ibex_id_stage
 
       // to IF-ID pipeline
       .instr_valid_clear_o(instr_valid_clear_o),
-      .id_in_ready_o      (controller_stall_fetch),
+      .id_in_ready_o      (id_in_ready_o),
       .controller_run_o   (controller_run),
       .instr_exec_i       (instr_exec_i),
 

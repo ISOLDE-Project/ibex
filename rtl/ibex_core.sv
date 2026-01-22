@@ -15,7 +15,6 @@
  */
 module ibex_core
   import ibex_pkg::*;
-  import isolde_register_file_pkg::RegDataWidth, isolde_register_file_pkg::RegCount, isolde_register_file_pkg::RegSize, isolde_register_file_pkg::RegAddrWidth;
 #(
     parameter bit          PMPEnable         = 1'b0,
     parameter int unsigned PMPGranularity    = 0,
@@ -87,10 +86,6 @@ module ibex_core
     output logic [RegFileDataWidth-1:0] rf_wdata_wb_ecc_o,
     input  logic [RegFileDataWidth-1:0] rf_rdata_a_ecc_i,
     input  logic [RegFileDataWidth-1:0] rf_rdata_b_ecc_i,
-
-    //ISOLDE Register file interface
-    isolde_register_file_if.cpu   isolde_rf_bus,
-    isolde_x_register_file_if.cpu x_rf_bus,
 
     // RAMs interface
     output logic [IC_NUM_WAYS-1:0] ic_tag_req_o,
@@ -164,18 +159,11 @@ module ibex_core
 
     // CPU Control Signals
     // SEC_CM: FETCH.CTRL.LC_GATED
-    input  ibex_mubi_t                   fetch_enable_i,
-    output logic                         alert_minor_o,
-    output logic                         alert_major_internal_o,
-    output logic                         alert_major_bus_o,
-    output ibex_mubi_t                   core_busy_o,
-    // eXtension interface
-           isolde_cv_x_if.cpu_compressed xif_compressed_if,
-           isolde_cv_x_if.cpu_issue      xif_issue_if,
-           isolde_cv_x_if.cpu_commit     xif_commit_if,
-           isolde_cv_x_if.cpu_mem        xif_mem_if,
-           isolde_cv_x_if.cpu_mem_result xif_mem_result_if,
-           isolde_cv_x_if.cpu_result     xif_result_if
+    input  ibex_mubi_t fetch_enable_i,
+    output logic       alert_minor_o,
+    output logic       alert_major_internal_o,
+    output logic       alert_major_bus_o,
+    output ibex_mubi_t core_busy_o
 );
 
   localparam int unsigned PMPNumChan = 3;
@@ -189,9 +177,8 @@ module ibex_core
   logic instr_valid_id;
   logic instr_new_id;
   logic [31:0] instr_rdata_id;  // Instruction sampled inside IF stage
-  logic [4:0][31:0] instr_batch_rdata_id;  // Instructions sampled inside IF stage
   logic [31:0] instr_rdata_alu_id;  // Instruction sampled inside IF stage (replicated to
-  // ease fan-out)
+                                    // ease fan-out)
   logic [15:0] instr_rdata_c_id;  // Compressed instruction sampled inside IF stage
   logic instr_is_compressed_id;
   logic instr_perf_count_id;
@@ -477,7 +464,6 @@ module ibex_core
       .instr_valid_id_o        (instr_valid_id),
       .instr_new_id_o          (instr_new_id),
       .instr_rdata_id_o        (instr_rdata_id),
-      .instr_batch_rdata_id_o  (instr_batch_rdata_id),
       .instr_rdata_alu_id_o    (instr_rdata_alu_id),
       .instr_rdata_c_id_o      (instr_rdata_c_id),
       .instr_is_compressed_id_o(instr_is_compressed_id),
@@ -573,7 +559,6 @@ module ibex_core
       // from/to IF-ID pipeline register
       .instr_valid_i        (instr_valid_id),
       .instr_rdata_i        (instr_rdata_id),
-      .instr_batch_rdata_i  (instr_batch_rdata_id),
       .instr_rdata_alu_i    (instr_rdata_alu_id),
       .instr_rdata_c_i      (instr_rdata_c_id),
       .instr_is_compressed_i(instr_is_compressed_id),
@@ -707,9 +692,6 @@ module ibex_core
       .outstanding_load_wb_i (outstanding_load_wb),
       .outstanding_store_wb_i(outstanding_store_wb),
 
-      //ISOLDE register file
-      .isolde_rf_bus    (isolde_rf_bus),
-      .x_rf_bus         (x_rf_bus),
       // Performance Counters
       .perf_jump_o      (perf_jump),
       .perf_branch_o    (perf_branch),
@@ -717,14 +699,7 @@ module ibex_core
       .perf_dside_wait_o(perf_dside_wait),
       .perf_mul_wait_o  (perf_mul_wait),
       .perf_div_wait_o  (perf_div_wait),
-      .instr_id_done_o  (instr_id_done),
-      // eXtension interface
-      .xif_compressed_if,
-      .xif_issue_if,
-      .xif_commit_if,
-      .xif_mem_if,
-      .xif_mem_result_if,
-      .xif_result_if
+      .instr_id_done_o  (instr_id_done)
   );
 
   // for RVFI only

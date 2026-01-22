@@ -686,8 +686,8 @@ module ibex_decoder #(
           // non CSR related SYSTEM instructions
           unique case (instr[31:20])
             12'h000: begin  // ECALL
-              // environment (system) call
-              ecall_insn_o = 1'b1;
+            // environment (system) call
+            ecall_insn_o = 1'b1;
             end
             12'h001:  // ebreak
             // debugger trap

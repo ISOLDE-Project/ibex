@@ -89,15 +89,7 @@ module ibex_top_tracing
     output logic       alert_minor_o,
     output logic       alert_major_internal_o,
     output logic       alert_major_bus_o,
-    output logic       core_sleep_o,
-
-    // eXtension interface
-    isolde_cv_x_if.cpu_compressed xif_compressed_if,
-    isolde_cv_x_if.cpu_issue      xif_issue_if,
-    isolde_cv_x_if.cpu_commit     xif_commit_if,
-    isolde_cv_x_if.cpu_mem        xif_mem_if,
-    isolde_cv_x_if.cpu_mem_result xif_mem_result_if,
-    isolde_cv_x_if.cpu_result     xif_result_if
+    output logic       core_sleep_o
 
 );
 
@@ -282,14 +274,7 @@ module ibex_top_tracing
       .alert_minor_o,
       .alert_major_internal_o,
       .alert_major_bus_o,
-      .core_sleep_o,
-      // eXtension interface
-      .xif_compressed_if,
-      .xif_issue_if,
-      .xif_commit_if,
-      .xif_mem_if,
-      .xif_mem_result_if,
-      .xif_result_if
+      .core_sleep_o
   );
 
   ibex_tracer u_ibex_tracer (

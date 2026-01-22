@@ -25,7 +25,7 @@ module ibex_if_stage
     parameter int unsigned TagSizeECC        = IC_TAG_SIZE,
     parameter int unsigned LineSizeECC       = IC_LINE_SIZE,
     parameter bit          PCIncrCheck       = 1'b0,
-    parameter bit          ResetAll          = 1'b1,
+    parameter bit          ResetAll          = 1'b0,
     parameter lfsr_seed_t  RndCnstLfsrSeed   = RndCnstLfsrSeedDefault,
     parameter lfsr_perm_t  RndCnstLfsrPerm   = RndCnstLfsrPermDefault,
     parameter bit          BranchPredictor   = 1'b0,
@@ -62,28 +62,27 @@ module ibex_if_stage
     output logic                   ic_scr_key_req_o,
 
     // output of ID stage
-    output logic              instr_valid_id_o,          // instr in IF-ID is valid
-    output logic              instr_new_id_o,            // instr in IF-ID is new
-    output logic [31:0]       instr_rdata_id_o,          // instr for ID stage
-    output logic [ 4:0][31:0] instr_batch_rdata_id_o,    // instr for ID stage
-    output logic [31:0]       instr_rdata_alu_id_o,      // replicated instr for ID stage
-                                                         // to reduce fan-out
-    output logic [15:0]       instr_rdata_c_id_o,        // compressed instr for ID stage
-                                                         // (mtval), meaningful only if
-                                                         // instr_is_compressed_id_o = 1'b1
-    output logic              instr_is_compressed_id_o,  // compressed decoder thinks this
-                                                         // is a compressed instr
-    output logic              instr_bp_taken_o,          // instruction was predicted to be
-                                                         // a taken branch
-    output logic              instr_fetch_err_o,         // bus error on fetch
-    output logic              instr_fetch_err_plus2_o,   // bus error misaligned
-    output logic              illegal_c_insn_id_o,       // compressed decoder thinks this
-                                                         // is an invalid instr
-    output logic              dummy_instr_id_o,          // Instruction is a dummy
-    output logic [31:0]       pc_if_o,
-    output logic [31:0]       pc_id_o,
-    input  logic              pmp_err_if_i,
-    input  logic              pmp_err_if_plus2_i,
+    output logic        instr_valid_id_o,          // instr in IF-ID is valid
+    output logic        instr_new_id_o,            // instr in IF-ID is new
+    output logic [31:0] instr_rdata_id_o,          // instr for ID stage
+    output logic [31:0] instr_rdata_alu_id_o,      // replicated instr for ID stage
+                                                   // to reduce fan-out
+    output logic [15:0] instr_rdata_c_id_o,        // compressed instr for ID stage
+                                                   // (mtval), meaningful only if
+                                                   // instr_is_compressed_id_o = 1'b1
+    output logic        instr_is_compressed_id_o,  // compressed decoder thinks this
+                                                   // is a compressed instr
+    output logic        instr_bp_taken_o,          // instruction was predicted to be
+                                                   // a taken branch
+    output logic        instr_fetch_err_o,         // bus error on fetch
+    output logic        instr_fetch_err_plus2_o,   // bus error misaligned
+    output logic        illegal_c_insn_id_o,       // compressed decoder thinks this
+                                                   // is an invalid instr
+    output logic        dummy_instr_id_o,          // Instruction is a dummy
+    output logic [31:0] pc_if_o,
+    output logic [31:0] pc_id_o,
+    input  logic        pmp_err_if_i,
+    input  logic        pmp_err_if_plus2_i,
 
     // control signals
     input  logic               instr_valid_clear_i,     // clear instr valid bit in IF-ID
@@ -128,60 +127,55 @@ module ibex_if_stage
   logic instr_err, instr_intg_err;
 
   // prefetch buffer related signals
-  logic        prefetch_busy;
-  logic        branch_req;
-  logic [31:0] fetch_addr_n;
-  logic        unused_fetch_addr_n0;
+  logic                     prefetch_busy;
+  logic                     branch_req;
+  logic              [31:0] fetch_addr_n;
+  logic                     unused_fetch_addr_n0;
 
-  logic        prefetch_branch;
-  logic [31:0] prefetch_addr;
+  logic                     prefetch_branch;
+  logic              [31:0] prefetch_addr;
 
-  logic        fetch_valid_raw;
-  logic        fetch_valid;
-  logic fetch_ready, fetch_req;
-  logic              [31:0]       fetch_rdata;
-  logic              [31:0]       fetch_addr;
-  logic                           fetch_err;
-  logic                           fetch_err_plus2;
+  logic                     fetch_valid_raw;
+  logic                     fetch_valid;
+  logic                     fetch_ready;
+  logic              [31:0] fetch_rdata;
+  logic              [31:0] fetch_addr;
+  logic                     fetch_err;
+  logic                     fetch_err_plus2;
 
-  logic              [31:0]       instr_decompressed;
-  logic                           illegal_c_insn;
-  logic                           instr_is_compressed;
+  logic              [31:0] instr_decompressed;
+  logic                     illegal_c_insn;
+  logic                     instr_is_compressed;
 
-  logic                           if_instr_valid;
-  logic              [31:0]       if_instr_rdata;
-  logic              [31:0]       if_instr_addr;
-  logic                           if_instr_bus_err;
-  logic                           if_instr_pmp_err;
-  logic                           if_instr_err;
-  logic                           if_instr_err_plus2;
+  logic                     if_instr_valid;
+  logic              [31:0] if_instr_rdata;
+  logic              [31:0] if_instr_addr;
+  logic                     if_instr_bus_err;
+  logic                     if_instr_pmp_err;
+  logic                     if_instr_err;
+  logic                     if_instr_err_plus2;
 
-  logic              [31:0]       exc_pc;
+  logic              [31:0] exc_pc;
 
-  logic                           if_id_pipe_reg_we;  // IF-ID pipeline reg write enable
+  logic                     if_id_pipe_reg_we;  // IF-ID pipeline reg write enable
 
   // Dummy instruction signals
-  logic                           stall_dummy_instr;
-  logic              [31:0]       instr_out;
-  logic                           instr_is_compressed_out;
-  logic                           illegal_c_instr_out;
-  logic                           instr_err_out;
+  logic                     stall_dummy_instr;
+  logic              [31:0] instr_out;
+  logic                     instr_is_compressed_out;
+  logic                     illegal_c_instr_out;
+  logic                     instr_err_out;
 
-  logic                           predict_branch_taken;
-  logic              [31:0]       predict_branch_pc;
+  logic                     predict_branch_taken;
+  logic              [31:0] predict_branch_pc;
 
-  logic              [ 4:0]       irq_vec;
+  logic              [ 4:0] irq_vec;
 
-  ibex_pkg::pc_sel_e              pc_mux_internal;
+  ibex_pkg::pc_sel_e        pc_mux_internal;
 
-  logic              [ 7:0]       unused_boot_addr;
-  logic              [ 7:0]       unused_csr_mtvec;
-  logic                           unused_exc_cause;
-
-  logic              [ 4:0][31:0] vlen_instr;  // in-order succession of maximum 5 instr_i
-  logic              [ 2:0]       vlen_instr_words;  // instruction length in words
-  logic                           vlen_instr_ready;
-
+  logic              [ 7:0] unused_boot_addr;
+  logic              [ 7:0] unused_csr_mtvec;
+  logic                     unused_exc_cause;
 
   assign unused_boot_addr = boot_addr_i[7:0];
   assign unused_csr_mtvec = csr_mtvec_i[7:0];
@@ -265,7 +259,7 @@ module ibex_if_stage
 
   // The fetch_valid signal that comes out of the icache or prefetch buffer should be squashed if we
   // had a misprediction.
-  assign fetch_valid      = vlen_instr_ready & ~nt_branch_mispredict_i;
+  assign fetch_valid      = fetch_valid_raw & ~nt_branch_mispredict_i;
 
   // We should never see a mispredict and an incoming branch on the same cycle. The mispredict also
   // cancels any predicted branch so overall branch_req must be low.
@@ -288,7 +282,7 @@ module ibex_if_stage
         .branch_i(prefetch_branch),
         .addr_i  (prefetch_addr),
 
-        .ready_i    (fetch_req),
+        .ready_i    (fetch_ready),
         .valid_o    (fetch_valid_raw),
         .rdata_o    (fetch_rdata),
         .addr_o     (fetch_addr),
@@ -333,7 +327,7 @@ module ibex_if_stage
         .branch_i(prefetch_branch),
         .addr_i  (prefetch_addr),
 
-        .ready_i    (fetch_req),
+        .ready_i    (fetch_ready),
         .valid_o    (fetch_valid_raw),
         .rdata_o    (fetch_rdata),
         .addr_o     (fetch_addr),
@@ -412,30 +406,16 @@ module ibex_if_stage
   // since it does not matter where we decompress instructions, we do it here
   // to ease timing closure
   // ibex_compressed_decoder compressed_decoder_i (
-  //   .clk_i          (clk_i),
-  //   .rst_ni         (rst_ni),
-  //   .valid_i        (fetch_valid & ~fetch_err),
-  //   .instr_i        (if_instr_rdata),
-  //   .instr_o        (instr_decompressed),
-  //   .is_compressed_o(instr_is_compressed),
-  //   .illegal_instr_o(illegal_c_insn)
+  //     .clk_i          (clk_i),
+  //     .rst_ni         (rst_ni),
+  //     .valid_i        (fetch_valid & ~fetch_err),
+  //     .instr_i        (if_instr_rdata),
+  //     .instr_o        (instr_decompressed),
+  //     .is_compressed_o(instr_is_compressed),
+  //     .illegal_instr_o(illegal_c_insn)
   // );
 
-
-
-  isolde_fetch_vleninstr isolde_fetch_vleninstr_i (
-      .clk_i             (clk_i),
-      .rst_ni            (rst_ni),
-      .vlen_instr_req_i  (fetch_ready),
-      .word_instr_ready_i(fetch_valid_raw),
-      .word_instr_i      (if_instr_rdata),
-      .word_instr_req_o  (fetch_req),
-      .vlen_instr_o      (vlen_instr),        // in-order succession of maximum 5 instr_i
-      .vlen_instr_words_o(vlen_instr_words),  // instruction length in words
-      .vlen_instr_ready_o(vlen_instr_ready)
-  );
-
-  assign instr_decompressed = vlen_instr[0];
+  assign instr_decompressed = if_instr_rdata;
   assign instr_is_compressed = 1'b0;
   assign illegal_c_insn = 1'b0;
 
@@ -550,7 +530,6 @@ module ibex_if_stage
     always_ff @(posedge clk_i) begin
       if (if_id_pipe_reg_we) begin
         instr_rdata_id_o         <= instr_out;
-        instr_batch_rdata_id_o   <= vlen_instr;
         // To reduce fan-out and help timing from the instr_rdata_id flops they are replicated.
         instr_rdata_alu_id_o     <= instr_out;
         instr_fetch_err_o        <= instr_err_out;
