@@ -99,7 +99,7 @@ module rv_top
 
       .hart_id_i  (32'b0),
       // First instruction executed is at 0x0 + 0x80
-      .boot_addr_i(RV_BOOT_ADDR),
+      .boot_addr_i(aida_lca_package::RV_BOOT_ADDR),
       // === Instruction memory interface
       .instr_req_o,
       .instr_gnt_i,

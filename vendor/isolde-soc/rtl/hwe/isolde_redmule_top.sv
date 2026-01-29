@@ -32,14 +32,14 @@ module isolde_redmule_top
     // evnets
     output logic [N_CORES-1:0][1:0] evt_o,
 
-    hci_core_intf.master             m_hci_core,
+    hci_core_intf.master             m_hci_core
 `ifdef TARGET_REDMULE_COMPLEX
-    isolde_cv_x_if.coproc_issue      xif_issue_if_i,
+    ,isolde_cv_x_if.coproc_issue      xif_issue_if_i
     isolde_cv_x_if.coproc_result     xif_result_if_o,
     isolde_cv_x_if.coproc_compressed xif_compressed_if_i,
     isolde_cv_x_if.coproc_mem        xif_mem_if_o
 `elsif TARGET_REDMULE_HWPE
-    isolde_tcdm_if.slave             s_tcdm_ctrl
+    ,isolde_tcdm_if.slave             s_tcdm_ctrl
 `endif
 );
 
