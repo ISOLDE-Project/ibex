@@ -464,7 +464,7 @@ module ibex_id_stage
     if (~isolde_decoder_busy) begin
       instr_rdata_std = instr_batch_rdata_i[0];
     end else begin
-      instr_rdata_std = 32'h0x0; 
+      instr_rdata_std = 32'h0x0;
     end
   end
   /////////////
@@ -586,6 +586,23 @@ module ibex_id_stage
 
   isolde_fetch2exec_if fetch_exec_conn ();
 
+  isolde_register_file_pkg::isolde_rf_raddr_t isolde_rf_raddr;
+  isolde_register_file_pkg::isolde_rf_rdata_t  isolde_rf_rdata;
+  //
+  isolde_register_file_pkg::isolde_rf_waddr_t isolde_rf_wp_addr;
+  isolde_register_file_pkg::isolde_rf_wdata_t isolde_rf_wp_echo;
+  isolde_register_file_pkg::write_port_t isolde_rf_wp;
+
+  isolde_register_file_interconnect isolde_register_file_interconnect_i (
+      .isolde_rf_if(isolde_rf_bus),
+      .raddr_i(isolde_rf_raddr),
+      .rdata_o(isolde_rf_rdata),
+      .wp_i(isolde_rf_wp),
+      .waddr_o(isolde_rf_wp_addr),
+      .wp_echo_o(isolde_rf_wp_echo)
+
+  );
+
   isolde_decoder isolde_decoder_i (
       .clk_i(clk_i),
       .rst_ni(rst_ni),
@@ -598,7 +615,8 @@ module ibex_id_stage
       .isolde_decoder_stalled_o(isolde_decoder_stalled),
 
       //ISOLDE register file
-      .isolde_rf_bus          (isolde_rf_bus),
+      .isolde_rf_raddr_o      (isolde_rf_raddr),
+      .isolde_rf_wp_o         (isolde_rf_wp),
       .x_rf_bus               (x_rf_bus),
       .isolde_decoder_exec_bus(fetch_exec_conn.dec)
   );
@@ -612,9 +630,12 @@ module ibex_id_stage
 
 
   isolde_exec_block isolde_exec_block_i (
-      .clk_i                    (clk_i),
-      .rst_ni                   (rst_ni),
-      .isolde_rf_bus           (isolde_rf_bus),
+      .clk_i                   (clk_i),
+      .rst_ni                  (rst_ni),
+      .isolde_rf_raddr_i       (isolde_rf_raddr),
+      .isolde_rf_rdata_i       (isolde_rf_rdata),
+      .isolde_rf_waddr_i     (isolde_rf_wp_addr),
+      .isolde_rf_wecho_i     (isolde_rf_wp_echo),
       .x_rf_bus                (x_rf_bus),
       .isolde_exec_from_decoder(fetch_exec_conn.exec),
       .isolde_exec_busy_o      (isolde_exec_busy),

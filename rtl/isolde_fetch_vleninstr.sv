@@ -80,10 +80,12 @@ module isolde_fetch_vleninstr (
 
 
 
-  always_ff @(posedge clk_i, negedge rst_ni)
+  always_ff @(posedge clk_i, negedge rst_ni) begin
     if (!rst_ni) begin
       ifvli_state <= FETCH_COMPUTE;
       wr_ptr <= 0;
+      des_instr <= '0;
+      _vlen_instr_words_o <= 0;
     end else begin
       ifvli_state <= ifvli_next;
 
@@ -120,18 +122,8 @@ module isolde_fetch_vleninstr (
           end
         endcase
       end
-      //   end
-      //   FETCH_REST: begin
-      //     if (word_instr_ready_i) begin
-      //       des_instr[3] <= des_instr[2];
-      //       des_instr[2] <= des_instr[1];
-      //       des_instr[1] <= des_instr[0];
-      //       des_instr[0] <= word_instr_i;
-      //     end
-      //   end
-      // endcase
     end
-
+  end
 
 
 

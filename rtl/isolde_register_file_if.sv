@@ -1,32 +1,21 @@
 // Copyleft 2024
 
-interface isolde_register_file_if #(
-    parameter int unsigned NumReadPorts = 5
-);
+interface isolde_register_file_if ();
   import isolde_register_file_pkg::*;
 
-  typedef struct packed {logic [RegAddrWidth-1:0] addr;} isolde_rf_addr_t;
 
-  typedef struct packed {logic [RegSize-1:0][RegDataWidth-1:0] data;} isolde_rf_data_t;
 
   // ------------------------
-  // Parameterized number of read ports
+  //  read ports
   // ------------------------
 
-  isolde_rf_addr_t [NumReadPorts-1:0] raddr;
-  isolde_rf_data_t [NumReadPorts-1:0] rdata;
+  isolde_rf_raddr_t raddr;
+  isolde_rf_rdata_t rdata;
 
-  // ------------------------
-  // Write port
-  // ------------------------
-  typedef struct packed {
-    isolde_rf_addr_t addr;
-    isolde_rf_data_t data;
-    logic            we;
-  } write_port_t;
+
 
   write_port_t wp;
-  isolde_rf_data_t wp_echo;
+  isolde_rf_wdata_t wp_echo;
 
   // ------------------------
   // Error
@@ -61,4 +50,22 @@ interface isolde_register_file_if #(
 
 endinterface
 
+module isolde_register_file_interconnect
+  import isolde_register_file_pkg::*;
+(
+    isolde_register_file_if.cpu isolde_rf_if,
+    input isolde_rf_raddr_t raddr_i,
+    output isolde_rf_rdata_t rdata_o,
+    input write_port_t wp_i,
+    output isolde_rf_waddr_t waddr_o,
+    output isolde_rf_wdata_t wp_echo_o
+
+);
+  assign isolde_rf_if.raddr = raddr_i;
+  assign rdata_o = isolde_rf_if.rdata;
+  assign waddr_o = wp_i.addr;
+  assign wp_echo_o = isolde_rf_if.wp_echo;
+  assign isolde_rf_if.wp = wp_i;
+  
+endmodule
 

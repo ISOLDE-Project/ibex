@@ -38,15 +38,15 @@ module rv_domain_top
     input logic clk_i,
     input logic rst_ni,
     input logic fetch_enable_i,
-    // === instruction memory port ===
-    isolde_tcdm_pkg::req_t instr_req,
-    isolde_tcdm_pkg::rsp_t instr_rsp,
-    // === Data memory port ===
-    isolde_tcdm_pkg::req_t data_req,
-    isolde_tcdm_pkg::rsp_t data_rsp,
-    // === Stack memory port ===
-    isolde_tcdm_pkg::req_t stack_req,
-    isolde_tcdm_pkg::rsp_t stack_rsp,
+    // // === instruction memory port ===
+    // isolde_tcdm_pkg::req_t instr_req,
+    // isolde_tcdm_pkg::rsp_t instr_rsp,
+    // // === Data memory port ===
+    // isolde_tcdm_pkg::req_t data_req,
+    // isolde_tcdm_pkg::rsp_t data_rsp,
+    // // === Stack memory port ===
+    // isolde_tcdm_pkg::req_t stack_req,
+    // isolde_tcdm_pkg::rsp_t stack_rsp,
     // AIDA pad outputs
     aida_io_pkg::aida_pads_o_t pads_o,
     // === JTAG port ===
@@ -75,14 +75,14 @@ module rv_domain_top
   isolde_tcdm_if aida_stack_memory ();
 
 
-  assign instr_req = aida_instr_memory.req;
-  assign aida_instr_memory.rsp = instr_rsp;
+//   assign instr_req = aida_instr_memory.req;
+//   assign aida_instr_memory.rsp = instr_rsp;
 
-  assign data_req = aida_data_memory.req;
-  assign aida_data_memory.rsp = data_rsp;
+//   assign data_req = aida_data_memory.req;
+//   assign aida_data_memory.rsp = data_rsp;
 
-  assign stack_req = aida_stack_memory.req;
-  assign aida_stack_memory.rsp = stack_rsp;
+//   assign stack_req = aida_stack_memory.req;
+//   assign aida_stack_memory.rsp = stack_rsp;
 
 
 

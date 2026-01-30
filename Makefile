@@ -49,10 +49,15 @@ clean:
 
 .PHONY: clean
 
-.PHONY: clean-redmule
-clean-redmule:
+.PHONY: redmule-clean
+redmule-clean:
 	cd vendor/redmule && \
 	git reset --hard  && \
 	git clean -xfdxf
+
+## Delete bender generated file
+bender-clean:
+	rm -f $(SYS_DIR)/Bender.lock
+.PHONY: bender-clean
 
 include common.mk

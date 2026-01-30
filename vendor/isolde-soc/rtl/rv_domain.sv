@@ -72,9 +72,9 @@ module rv_domain
   localparam addr_range_t addr_map[NoRules] = '{ 
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},           
-      '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
+      '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END}
 `ifdef TARGET_RV_DEBUG
-      '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
+      ,'{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
 `endif
   };
 

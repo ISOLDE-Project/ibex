@@ -16,6 +16,7 @@
 module isolde_decoder
   import isolde_register_file_pkg::RegDataWidth, isolde_register_file_pkg::RegCount, isolde_register_file_pkg::RegSize, isolde_register_file_pkg::RegAddrWidth;
   import isolde_decoder_pkg::*;
+  import isolde_register_file_pkg::*;
 (
     input logic clk_i,
     input logic rst_ni,
@@ -29,7 +30,8 @@ module isolde_decoder
     output logic isolde_decoder_busy_o,
     output logic isolde_decoder_stalled_o,
     //ISOLDE Register file interface
-    isolde_register_file_if.cpu isolde_rf_bus,
+    output isolde_rf_raddr_t isolde_rf_raddr_o,
+    output write_port_t isolde_rf_wp_o,
     isolde_x_register_file_if.cpu x_rf_bus,
     isolde_fetch2exec_if.dec isolde_decoder_exec_bus
 );
@@ -79,8 +81,19 @@ module isolde_decoder
     if (!rst_ni) begin
       idvli_state <= BOOT;
       read_ptr <= 0;
-      isolde_rf_bus.wp.we <= 1'b0;
+      rd <= '0;
+      isolde_opcode_q <= isolde_opcode_invalid;
+      vlen_instr_words_q <= 3'd0;
+      isolde_rf_wp_o <= '0;
       isolde_decoder_illegal_instr_q <= 1;
+      isolde_rf_raddr_o <= '0;
+      isolde_decoder_exec_bus.isolde_opcode <= isolde_opcode_invalid;
+      isolde_decoder_exec_bus.func3 <= '0;
+      isolde_decoder_exec_bus.funct2 <= '0;
+      isolde_decoder_exec_bus.isolde_decoder_instr <= '0;
+      isolde_decoder_exec_bus.isolde_decoder_imm32 <= '0;
+      isolde_decoder_exec_bus.isolde_decoder_imm32_valid <= '0;
+      x_rf_bus.raddr <= '0;
     end else begin
 
       if (~isolde_decoder_instr_exec_i) begin
@@ -120,10 +133,10 @@ module isolde_decoder
                       x_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[0][19:15];  //rs1  
                     end
                     isolde_opcode_redmule_gemm1: begin
-                      isolde_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[0][31:27];  //rs3
-                      x_rf_bus.raddr[2]      <= isolde_decoder_instr_batch_i[0][24:20];  //rs2
-                      x_rf_bus.raddr[1]      <= isolde_decoder_instr_batch_i[0][19:15];  //rs1
-                      x_rf_bus.raddr[0]      <= isolde_decoder_instr_batch_i[0][11:7];  //rd    
+                      isolde_rf_raddr_o[0] <= isolde_decoder_instr_batch_i[0][31:27];  //rs3
+                      x_rf_bus.raddr[2] <= isolde_decoder_instr_batch_i[0][24:20];  //rs2
+                      x_rf_bus.raddr[1] <= isolde_decoder_instr_batch_i[0][19:15];  //rs1
+                      x_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[0][11:7];  //rd    
                     end
                   endcase
                 end  /*else isolde_decoder_stalled_o <= 0;*/
@@ -218,26 +231,26 @@ module isolde_decoder
   task static load_quad_word;
     begin
       if (3'h4 == read_ptr) begin
-        isolde_rf_bus.wp.addr <= isolde_decoder_instr_batch_i[4][11:7];
-        isolde_rf_bus.wp.data[3] <= isolde_decoder_instr_batch_i[0];
-        isolde_rf_bus.wp.data[2] <= isolde_decoder_instr_batch_i[1];
-        isolde_rf_bus.wp.data[1] <= isolde_decoder_instr_batch_i[2];
-        isolde_rf_bus.wp.data[0] <= isolde_decoder_instr_batch_i[3];
-        isolde_rf_bus.wp.we <= 1'b1;
+        isolde_rf_wp_o.addr <= isolde_decoder_instr_batch_i[4][11:7];
+        isolde_rf_wp_o.data[3] <= isolde_decoder_instr_batch_i[0];
+        isolde_rf_wp_o.data[2] <= isolde_decoder_instr_batch_i[1];
+        isolde_rf_wp_o.data[1] <= isolde_decoder_instr_batch_i[2];
+        isolde_rf_wp_o.data[0] <= isolde_decoder_instr_batch_i[3];
+        isolde_rf_wp_o.we <= 1'b1;
       end else if (3'h3 == read_ptr) begin
-        isolde_rf_bus.wp.addr <= isolde_decoder_instr_batch_i[3][11:7];
-        isolde_rf_bus.wp.data[3] <= isolde_decoder_instr_batch_i[0];
-        isolde_rf_bus.wp.data[2] <= isolde_decoder_instr_batch_i[1];
-        isolde_rf_bus.wp.data[1] <= isolde_decoder_instr_batch_i[2];
-        isolde_rf_bus.wp.data[0] <= 0;
-        isolde_rf_bus.wp.we <= 1'b1;
+        isolde_rf_wp_o.addr <= isolde_decoder_instr_batch_i[3][11:7];
+        isolde_rf_wp_o.data[3] <= isolde_decoder_instr_batch_i[0];
+        isolde_rf_wp_o.data[2] <= isolde_decoder_instr_batch_i[1];
+        isolde_rf_wp_o.data[1] <= isolde_decoder_instr_batch_i[2];
+        isolde_rf_wp_o.data[0] <= 0;
+        isolde_rf_wp_o.we <= 1'b1;
       end else if (3'h2 == read_ptr) begin
-        isolde_rf_bus.wp.addr <= isolde_decoder_instr_batch_i[2][11:7];
-        isolde_rf_bus.wp.data[3] <= isolde_decoder_instr_batch_i[0];
-        isolde_rf_bus.wp.data[2] <= isolde_decoder_instr_batch_i[1];
-        isolde_rf_bus.wp.data[1] <= 0;
-        isolde_rf_bus.wp.data[0] <= 0;
-        isolde_rf_bus.wp.we <= 1'b1;
+        isolde_rf_wp_o.addr <= isolde_decoder_instr_batch_i[2][11:7];
+        isolde_rf_wp_o.data[3] <= isolde_decoder_instr_batch_i[0];
+        isolde_rf_wp_o.data[2] <= isolde_decoder_instr_batch_i[1];
+        isolde_rf_wp_o.data[1] <= 0;
+        isolde_rf_wp_o.data[0] <= 0;
+        isolde_rf_wp_o.we <= 1'b1;
       end
     end
   endtask
@@ -267,12 +280,12 @@ module isolde_decoder
         x_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[2][11:7];  //rd1    
         //
         x_rf_bus.raddr[3] <= isolde_decoder_instr_batch_i[1][29:25];  //rs5  
-        isolde_rf_bus.raddr[2] <= isolde_decoder_instr_batch_i[1][24:20];  //rs4
-        isolde_rf_bus.raddr[1] <= isolde_decoder_instr_batch_i[1][19:15];  //rs3
-        isolde_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[1][11:7];  //rd2    
+        isolde_rf_raddr_o[2] <= isolde_decoder_instr_batch_i[1][24:20];  //rs4
+        isolde_rf_raddr_o[1] <= isolde_decoder_instr_batch_i[1][19:15];  //rs3
+        isolde_rf_raddr_o[0] <= isolde_decoder_instr_batch_i[1][11:7];  //rd2    
         // 
-        isolde_rf_bus.raddr[4] <= isolde_decoder_instr_batch_i[0][24:20];  //rs7
-        isolde_rf_bus.raddr[3] <= isolde_decoder_instr_batch_i[0][19:15];  //rs6
+        isolde_rf_raddr_o[4] <= isolde_decoder_instr_batch_i[0][24:20];  //rs7
+        isolde_rf_raddr_o[3] <= isolde_decoder_instr_batch_i[0][19:15];  //rs6
 
       end
     end
@@ -295,14 +308,14 @@ module isolde_decoder
         //first 32 bits
         x_rf_bus.raddr[2] <= isolde_decoder_instr_batch_i[1][24:20];  //rs2
         x_rf_bus.raddr[1] <= isolde_decoder_instr_batch_i[1][19:15];  //rs1
-        // isolde_rf_bus.wp.data[3] <= isolde_decoder_instr_batch_i[1][14:12]; //funct3
+        // isolde_rf_wp_o.data[3] <= isolde_decoder_instr_batch_i[1][14:12]; //funct3
         x_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[1][11:7];  //rd1             
         // // extension 32 bits
-        // isolde_rf_bus.wp.data[1] <= isolde_decoder_instr_batch_i[0][29:25]; //rs6
-        isolde_rf_bus.raddr[1] <= isolde_decoder_instr_batch_i[0][24:20];  //rs5
-        isolde_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[0][19:15];  //rs4
-        // isolde_rf_bus.wp.data[1] <= isolde_decoder_instr_batch_i[0][14:12]; //_ext_funct3
-        isolde_rf_bus.wp.addr <= isolde_decoder_instr_batch_i[0][11:7];  //rd2  
+        // isolde_rf_wp_o.data[1] <= isolde_decoder_instr_batch_i[0][29:25]; //rs6
+        isolde_rf_raddr_o[1] <= isolde_decoder_instr_batch_i[0][24:20];  //rs5
+        isolde_rf_raddr_o[0] <= isolde_decoder_instr_batch_i[0][19:15];  //rs4
+        // isolde_rf_wp_o.data[1] <= isolde_decoder_instr_batch_i[0][14:12]; //_ext_funct3
+        isolde_rf_wp_o.addr <= isolde_decoder_instr_batch_i[0][11:7];  //rd2  
         isolde_decoder_exec_bus.funct2 <= isolde_decoder_instr_batch_i[0][6:5];  //_ext_funct2 
         x_rf_bus.raddr[3] <= isolde_decoder_instr_batch_i[0][4:0];  //rs3
 

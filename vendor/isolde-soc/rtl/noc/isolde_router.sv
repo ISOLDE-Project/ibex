@@ -125,14 +125,14 @@ module isolde_router
   end
 
 
-  always_comb begin
+  always_comb begin : bind_rsp
 
     tcdm_slave_i.rsp.gnt   = |rsp_gnt_vec;
     tcdm_slave_i.rsp.valid = |rsp_valid_vec;
     tcdm_slave_i.rsp.err   = '0;
     tcdm_slave_i.rsp.data  = '0;
     for (int i = 0; i < N_RULES; i++) begin
-      if (req_idx == mk_one_based_index(i)) begin
+      if (rsp_idx == mk_one_based_index(i)) begin
         tcdm_slave_i.rsp.data = rsp_i[i].data;
       end
     end

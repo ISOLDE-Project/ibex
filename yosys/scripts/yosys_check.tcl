@@ -62,8 +62,8 @@ yosys attrmvcp -copy -attr keep
 # this section heavily borrows from the yosys synth command:
 # synth - check
 yosys hierarchy -top $top_design
-#yosys check
-#yosys proc
-#yosys opt -full
-#yosys check
+yosys check
+yosys proc
+yosys opt -full
+yosys check
 #yosys stat

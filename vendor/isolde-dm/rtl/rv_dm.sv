@@ -151,8 +151,8 @@ module rv_dm
   isolde_tcdm_if dm_top_dgb_req ();
 
   assign dm_top_dgb_req.req = s_periph.req;
-  assign s_periph.rsp          = dm_top_dgb_req.rsp;
-  
+  assign s_periph.rsp       = dm_top_dgb_req.rsp;
+
 
   //logic [31:0]   slave_rdata_test;
   dm_top #(
@@ -183,31 +183,31 @@ module rv_dm
       .slave_be_i    (dm_top_dgb_req.req.be),
       .slave_wdata_i (dm_top_dgb_req.req.data),
       .slave_rdata_o (dm_top_dgb_req.rsp.data),
-      .slave_err_o     (dm_top_dgb_req.rsp.err),
-      .slave_gnt_o     (dm_top_dgb_req.rsp.gnt),
-      .slave_valid_o   (dm_top_dgb_req.rsp.valid),
+      .slave_err_o   (dm_top_dgb_req.rsp.err),
+      .slave_gnt_o   (dm_top_dgb_req.rsp.gnt),
+      .slave_valid_o (dm_top_dgb_req.rsp.valid),
       //.slave_rdata_o   (slave_rdata_test),
 
 
       // System Bus access
-      .master_req_o    (m_sba.req.req),
-      .master_add_o    (m_sba.req.addr),
-      .master_we_o     (m_sba.req.we),
-      .master_wdata_o  (m_sba.req.data),
-      .master_be_o     (m_sba.req.be),
-      .master_gnt_i    (m_sba.rsp.gnt),
-      .master_r_valid_i(m_sba.rsp.valid),
-      .master_r_err_i  (1'b0),
-      //.master_r_other_err_i  (host_r_other_err    ),
-      .master_r_rdata_i(m_sba.rsp.data),
+      .master_req_o        (m_sba.req.req),
+      .master_add_o        (m_sba.req.addr),
+      .master_we_o         (m_sba.req.we),
+      .master_wdata_o      (m_sba.req.data),
+      .master_be_o         (m_sba.req.be),
+      .master_gnt_i        (m_sba.rsp.gnt),
+      .master_r_valid_i    (m_sba.rsp.valid),
+      .master_r_err_i      (1'b0),
+      .master_r_other_err_i(1'b0),
+      .master_r_rdata_i    (m_sba.rsp.data),
       //  DMI -> DM
-      .dmi_rst_ni      (dmi_rst_n),
-      .dmi_req_valid_i (dmi_req_valid),
-      .dmi_req_ready_o (dmi_req_ready),
-      .dmi_req_i       (dmi_req),
-      .dmi_resp_valid_o(dmi_rsp_valid),
-      .dmi_resp_ready_i(dmi_rsp_ready),
-      .dmi_resp_o      (dmi_rsp)
+      .dmi_rst_ni          (dmi_rst_n),
+      .dmi_req_valid_i     (dmi_req_valid),
+      .dmi_req_ready_o     (dmi_req_ready),
+      .dmi_req_i           (dmi_req),
+      .dmi_resp_valid_o    (dmi_rsp_valid),
+      .dmi_resp_ready_i    (dmi_rsp_ready),
+      .dmi_resp_o          (dmi_rsp)
   );
 
   // JTAG TAP
