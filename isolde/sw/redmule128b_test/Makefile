@@ -1,6 +1,6 @@
 ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
 REDMULE_ROOT_DIR    :=  $(ROOT_DIR)/vendor/redmule
-mkfile_path         :=  $(ROOT_DIR)/isolde/sw/redmule_test
+mkfile_path         :=  $(ROOT_DIR)/isolde/sw/redmule128b_test
 
 
 TEST_SRCS   := golden.h  tensor_dim.h  w_input.h  x_input.h  y_input.h

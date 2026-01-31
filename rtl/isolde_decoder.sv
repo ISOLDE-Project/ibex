@@ -17,6 +17,7 @@ module isolde_decoder
   import isolde_register_file_pkg::RegDataWidth, isolde_register_file_pkg::RegCount, isolde_register_file_pkg::RegSize, isolde_register_file_pkg::RegAddrWidth;
   import isolde_decoder_pkg::*;
   import isolde_register_file_pkg::*;
+  import isolde_x_register_file_pkg::*;
 (
     input logic clk_i,
     input logic rst_ni,
@@ -32,7 +33,8 @@ module isolde_decoder
     //ISOLDE Register file interface
     output isolde_rf_raddr_t isolde_rf_raddr_o,
     output write_port_t isolde_rf_wp_o,
-    isolde_x_register_file_if.cpu x_rf_bus,
+    //isolde_x_register_file_if.cpu x_rf_bus,
+    isolde_x_rf_addr_t x_rf_addr_o,
     isolde_fetch2exec_if.dec isolde_decoder_exec_bus
 );
 
@@ -93,7 +95,7 @@ module isolde_decoder
       isolde_decoder_exec_bus.isolde_decoder_instr <= '0;
       isolde_decoder_exec_bus.isolde_decoder_imm32 <= '0;
       isolde_decoder_exec_bus.isolde_decoder_imm32_valid <= '0;
-      x_rf_bus.raddr <= '0;
+      x_rf_addr_o <= '0;
     end else begin
 
       if (~isolde_decoder_instr_exec_i) begin
@@ -123,20 +125,20 @@ module isolde_decoder
                   isolde_decoder_exec_bus.isolde_decoder_instr <= isolde_decoder_instr_batch_i[0];
                   case (isolde_opcode_d)
                     isolde_opcode_R_type: begin
-                      x_rf_bus.raddr[2] <= isolde_decoder_instr_batch_i[0][24:20];  //rs2
-                      x_rf_bus.raddr[1] <= isolde_decoder_instr_batch_i[0][19:15];  //rs1
-                      x_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[0][11:7];  //rd    
+                      x_rf_addr_o[2] <= isolde_decoder_instr_batch_i[0][24:20];  //rs2
+                      x_rf_addr_o[1] <= isolde_decoder_instr_batch_i[0][19:15];  //rs1
+                      x_rf_addr_o[0] <= isolde_decoder_instr_batch_i[0][11:7];  //rd    
                     end
                     isolde_opcode_redmule: begin
-                      x_rf_bus.raddr[2] <= isolde_decoder_instr_batch_i[0][31:27];  //rs3
-                      x_rf_bus.raddr[1] <= isolde_decoder_instr_batch_i[0][24:20];  //rs2
-                      x_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[0][19:15];  //rs1  
+                      x_rf_addr_o[2] <= isolde_decoder_instr_batch_i[0][31:27];  //rs3
+                      x_rf_addr_o[1] <= isolde_decoder_instr_batch_i[0][24:20];  //rs2
+                      x_rf_addr_o[0] <= isolde_decoder_instr_batch_i[0][19:15];  //rs1  
                     end
                     isolde_opcode_redmule_gemm1: begin
                       isolde_rf_raddr_o[0] <= isolde_decoder_instr_batch_i[0][31:27];  //rs3
-                      x_rf_bus.raddr[2] <= isolde_decoder_instr_batch_i[0][24:20];  //rs2
-                      x_rf_bus.raddr[1] <= isolde_decoder_instr_batch_i[0][19:15];  //rs1
-                      x_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[0][11:7];  //rd    
+                      x_rf_addr_o[2] <= isolde_decoder_instr_batch_i[0][24:20];  //rs2
+                      x_rf_addr_o[1] <= isolde_decoder_instr_batch_i[0][19:15];  //rs1
+                      x_rf_addr_o[0] <= isolde_decoder_instr_batch_i[0][11:7];  //rd    
                     end
                   endcase
                 end  /*else isolde_decoder_stalled_o <= 0;*/
@@ -275,11 +277,11 @@ module isolde_decoder
       if (3'h2 == read_ptr) begin
         //first 32 bits
         isolde_decoder_exec_bus.isolde_decoder_instr <= isolde_decoder_instr_batch_i[3];
-        x_rf_bus.raddr[2] <= isolde_decoder_instr_batch_i[2][24:20];  //rs2
-        x_rf_bus.raddr[1] <= isolde_decoder_instr_batch_i[2][19:15];  //rs1
-        x_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[2][11:7];  //rd1    
+        x_rf_addr_o[2] <= isolde_decoder_instr_batch_i[2][24:20];  //rs2
+        x_rf_addr_o[1] <= isolde_decoder_instr_batch_i[2][19:15];  //rs1
+        x_rf_addr_o[0] <= isolde_decoder_instr_batch_i[2][11:7];  //rd1    
         //
-        x_rf_bus.raddr[3] <= isolde_decoder_instr_batch_i[1][29:25];  //rs5  
+        x_rf_addr_o[3] <= isolde_decoder_instr_batch_i[1][29:25];  //rs5  
         isolde_rf_raddr_o[2] <= isolde_decoder_instr_batch_i[1][24:20];  //rs4
         isolde_rf_raddr_o[1] <= isolde_decoder_instr_batch_i[1][19:15];  //rs3
         isolde_rf_raddr_o[0] <= isolde_decoder_instr_batch_i[1][11:7];  //rd2    
@@ -306,10 +308,10 @@ module isolde_decoder
     begin
       if (3'h1 == read_ptr) begin
         //first 32 bits
-        x_rf_bus.raddr[2] <= isolde_decoder_instr_batch_i[1][24:20];  //rs2
-        x_rf_bus.raddr[1] <= isolde_decoder_instr_batch_i[1][19:15];  //rs1
+        x_rf_addr_o[2] <= isolde_decoder_instr_batch_i[1][24:20];  //rs2
+        x_rf_addr_o[1] <= isolde_decoder_instr_batch_i[1][19:15];  //rs1
         // isolde_rf_wp_o.data[3] <= isolde_decoder_instr_batch_i[1][14:12]; //funct3
-        x_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[1][11:7];  //rd1             
+        x_rf_addr_o[0] <= isolde_decoder_instr_batch_i[1][11:7];  //rd1             
         // // extension 32 bits
         // isolde_rf_wp_o.data[1] <= isolde_decoder_instr_batch_i[0][29:25]; //rs6
         isolde_rf_raddr_o[1] <= isolde_decoder_instr_batch_i[0][24:20];  //rs5
@@ -317,7 +319,7 @@ module isolde_decoder
         // isolde_rf_wp_o.data[1] <= isolde_decoder_instr_batch_i[0][14:12]; //_ext_funct3
         isolde_rf_wp_o.addr <= isolde_decoder_instr_batch_i[0][11:7];  //rd2  
         isolde_decoder_exec_bus.funct2 <= isolde_decoder_instr_batch_i[0][6:5];  //_ext_funct2 
-        x_rf_bus.raddr[3] <= isolde_decoder_instr_batch_i[0][4:0];  //rs3
+        x_rf_addr_o[3] <= isolde_decoder_instr_batch_i[0][4:0];  //rs3
 
       end
     end
@@ -330,9 +332,9 @@ module isolde_decoder
       if (3'h3 == read_ptr) begin
         //first 32 bits
         isolde_decoder_exec_bus.isolde_decoder_instr <= isolde_decoder_instr_batch_i[3];
-        x_rf_bus.raddr[2] <= isolde_decoder_instr_batch_i[3][24:20];  //rs2
-        x_rf_bus.raddr[1] <= isolde_decoder_instr_batch_i[3][19:15];  //rs1
-        x_rf_bus.raddr[0] <= isolde_decoder_instr_batch_i[3][11:7];  //rd             
+        x_rf_addr_o[2] <= isolde_decoder_instr_batch_i[3][24:20];  //rs2
+        x_rf_addr_o[1] <= isolde_decoder_instr_batch_i[3][19:15];  //rs1
+        x_rf_addr_o[0] <= isolde_decoder_instr_batch_i[3][11:7];  //rd             
         // extension 32 bits
         isolde_decoder_exec_bus.isolde_decoder_imm32_valid <= 4'b0111;
         isolde_decoder_exec_bus.isolde_decoder_imm32[2] <= isolde_decoder_instr_batch_i[0];

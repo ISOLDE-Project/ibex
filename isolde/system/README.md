@@ -16,6 +16,11 @@ make sure you have simulation data for the hardware accelerator
 ```sh
 make TEST=redmule_test golden
 ```
+### isolde/sw/redmule128b_test
+```sh
+cd isolde/sw/redmule128b_test
+make golden
+```
 ### Build scratchpad memory simulation (SPM, NO JTAG )
 it will execute *isolde/sw/redmule128b_test*
 ```sh

@@ -1,24 +1,20 @@
 // Copyleft 2024
 
 // Interface definition
-interface isolde_x_register_file_if #(
-    parameter int unsigned RegDataWidth = 32,  // Default register data width
-    parameter int unsigned RegAddrWidth = 5,   // Default register address width
-    parameter int unsigned NumReadPorts = 4
-);
+interface isolde_x_register_file_if ();
+import isolde_x_register_file_pkg::*;
 
-  typedef logic [RegAddrWidth-1:0] isolde_x_rf_addr_t;
-  typedef logic [RegDataWidth-1:0] isolde_x_rf_data_t;
+
 
   // ------------------------
-  // Parameterized number of read ports
+  //  read ports
   // ------------------------
-  isolde_x_rf_addr_t [NumReadPorts-1:0] raddr;
-  isolde_x_rf_data_t [NumReadPorts-1:0] rdata;
+  isolde_x_rf_addr_t  raddr;
+  isolde_x_rf_data_t  rdata;
 
 
   // Error detection
-  logic [NumReadPorts-1:0] isolde_x_rf_err;  // invalid reads
+  isolde_x_rf_err_t isolde_x_rf_err;  // invalid reads
 
   modport cpu(
       // Read ports
@@ -36,6 +32,22 @@ interface isolde_x_register_file_if #(
       output isolde_x_rf_err
   );
 
+
 endinterface
 
 
+module isolde_x_register_file_interconnect 
+import isolde_x_register_file_pkg::*;
+(
+    isolde_x_register_file_if.cpu x_rf_bus,
+    //decoder ports
+    input isolde_x_rf_addr_t   raddr_i,
+    //exec port
+    output isolde_x_rf_addr_t  raddr_o,
+    output isolde_x_rf_data_t  rdata_o
+);
+assign raddr_o=x_rf_bus.raddr;
+assign rdata_o=x_rf_bus.rdata;
+
+assign x_rf_bus.raddr= raddr_i;
+endmodule

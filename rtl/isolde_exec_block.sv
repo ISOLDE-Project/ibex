@@ -5,6 +5,7 @@ module isolde_exec_block
   import isolde_register_file_pkg::RegAddrWidth;
   import isolde_register_file_pkg::RegSize, isolde_register_file_pkg::RegDataWidth;
   import isolde_register_file_pkg::*;
+  import isolde_x_register_file_pkg::*;
 #(
     parameter string LogName = "isolde_exec_block.log"
 ) (
@@ -16,7 +17,9 @@ module isolde_exec_block
     isolde_rf_rdata_t  isolde_rf_rdata_i,
     isolde_rf_waddr_t isolde_rf_waddr_i,
     isolde_rf_wdata_t isolde_rf_wecho_i,
-    isolde_x_register_file_if.cpu x_rf_bus,
+    //isolde_x_register_file_if.cpu x_rf_bus,
+    isolde_x_rf_addr_t x_rf_addr_i,
+    isolde_x_rf_data_t x_rf_data_i,
     isolde_fetch2exec_if.exec isolde_exec_from_decoder,
     output logic isolde_exec_busy_o,
     // eXtension interface
@@ -180,15 +183,15 @@ module isolde_exec_block
 `ifndef SYNTHESIS
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_nop_RType");
     $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
-    $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_bus.raddr[0], x_rf_bus.rdata[0]);
-    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_bus.raddr[1], x_rf_bus.rdata[1]);
-    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_bus.raddr[2], x_rf_bus.rdata[2]);
+    $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_addr_i[0], x_rf_data_i[0]);
+    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_addr_i[1], x_rf_data_i[1]);
+    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_addr_i[2], x_rf_data_i[2]);
 `endif
     begin
       xif_issue_if.issue_req.instr <= isolde_exec_from_decoder.isolde_decoder_instr;
-      xif_issue_if.issue_req.rs[0] <= x_rf_bus.rdata[1];  // rs1
-      xif_issue_if.issue_req.rs[1] <= x_rf_bus.rdata[2];  // rs2
-      xif_issue_if.issue_req.rs[2] <= x_rf_bus.rdata[0];  //rd
+      xif_issue_if.issue_req.rs[0] <= x_rf_data_i[1];  // rs1
+      xif_issue_if.issue_req.rs[1] <= x_rf_data_i[2];  // rs2
+      xif_issue_if.issue_req.rs[2] <= x_rf_data_i[0];  //rd
       xif_issue_if.issue_req.rs_valid <= 3'b111;
       xif_issue_if.issue_valid <= 1;
       //
@@ -201,15 +204,15 @@ module isolde_exec_block
 `ifndef SYNTHESIS
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_nop_redmule");
     $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
-    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_bus.raddr[0], x_rf_bus.rdata[0]);
-    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_bus.raddr[1], x_rf_bus.rdata[1]);
-    $fwrite(log_fh, "    @rs3=%d: %h\n", x_rf_bus.raddr[2], x_rf_bus.rdata[2]);
+    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_addr_i[0], x_rf_data_i[0]);
+    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_addr_i[1], x_rf_data_i[1]);
+    $fwrite(log_fh, "    @rs3=%d: %h\n", x_rf_addr_i[2], x_rf_data_i[2]);
 `endif
     begin
       xif_issue_if.issue_req.instr <= isolde_exec_from_decoder.isolde_decoder_instr;
-      xif_issue_if.issue_req.rs[0] <= x_rf_bus.rdata[0];  //rs1
-      xif_issue_if.issue_req.rs[1] <= x_rf_bus.rdata[1];  // rs2
-      xif_issue_if.issue_req.rs[2] <= x_rf_bus.rdata[2];  // rs3
+      xif_issue_if.issue_req.rs[0] <= x_rf_data_i[0];  //rs1
+      xif_issue_if.issue_req.rs[1] <= x_rf_data_i[1];  // rs2
+      xif_issue_if.issue_req.rs[2] <= x_rf_data_i[2];  // rs3
       xif_issue_if.issue_req.rs_valid <= 3'b111;
       xif_issue_if.issue_valid <= 1;
       //
@@ -223,10 +226,10 @@ module isolde_exec_block
     //  $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_gemm");
     $fwrite(log_fh, "  func3=%b\n", isolde_exec_from_decoder.func3);
-    $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_bus.raddr[0], x_rf_bus.rdata[0]);
-    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_bus.raddr[1], x_rf_bus.rdata[1]);
-    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_bus.raddr[2], x_rf_bus.rdata[2]);
-    $fwrite(log_fh, "    @rs3=%d: %h\n", x_rf_bus.raddr[3], x_rf_bus.rdata[3]);
+    $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_addr_i[0], x_rf_data_i[0]);
+    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_addr_i[1], x_rf_data_i[1]);
+    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_addr_i[2], x_rf_data_i[2]);
+    $fwrite(log_fh, "    @rs3=%d: %h\n", x_rf_addr_i[3], x_rf_data_i[3]);
     $fwrite(log_fh, "    @rs4=%d: [ %d, %d, %d, %d ]\n", isolde_rf_raddr_i[0],
             isolde_rf_rdata_i[0][0], isolde_rf_rdata_i[0][1], isolde_rf_rdata_i[0][2],
             isolde_rf_rdata_i[0][3]);
@@ -246,9 +249,9 @@ module isolde_exec_block
     //  $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_redmule_gemm");
     $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
-    $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_bus.raddr[0], x_rf_bus.rdata[0]);
-    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_bus.raddr[1], x_rf_bus.rdata[1]);
-    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_bus.raddr[2], x_rf_bus.rdata[2]);
+    $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_addr_i[0], x_rf_data_i[0]);
+    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_addr_i[1], x_rf_data_i[1]);
+    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_addr_i[2], x_rf_data_i[2]);
     for (int i = 0; i < isolde_exec_from_decoder.IMM32_OPS; i++) begin
       $fwrite(log_fh, "  imm32[%0d]: 0x%h (valid: %b)\n", i,
               isolde_exec_from_decoder.isolde_decoder_imm32[i],
@@ -258,9 +261,9 @@ module isolde_exec_block
 `endif
     begin
       xif_issue_if.issue_req.instr <= isolde_exec_from_decoder.isolde_decoder_instr;
-      xif_issue_if.issue_req.rs[0] <= x_rf_bus.rdata[0];  //rs1
-      xif_issue_if.issue_req.rs[1] <= x_rf_bus.rdata[1];  // rs2
-      xif_issue_if.issue_req.rs[2] <= x_rf_bus.rdata[2];  // rs3
+      xif_issue_if.issue_req.rs[0] <= x_rf_data_i[0];  //rs1
+      xif_issue_if.issue_req.rs[1] <= x_rf_data_i[1];  // rs2
+      xif_issue_if.issue_req.rs[2] <= x_rf_data_i[2];  // rs3
       xif_issue_if.issue_req.rs_valid <= 3'b111;
       xif_issue_if.issue_req.imm32 <= isolde_exec_from_decoder.isolde_decoder_imm32;
       xif_issue_if.issue_req.imm32_valid <= isolde_exec_from_decoder.isolde_decoder_imm32_valid;
@@ -276,18 +279,18 @@ module isolde_exec_block
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_redmule_gemm1");
     $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
     $fwrite(log_fh, "    func3=%b\n", isolde_exec_from_decoder.func3);
-    $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_bus.raddr[0], x_rf_bus.rdata[0]);
-    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_bus.raddr[1], x_rf_bus.rdata[1]);
-    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_bus.raddr[2], x_rf_bus.rdata[2]);
+    $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_addr_i[0], x_rf_data_i[0]);
+    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_addr_i[1], x_rf_data_i[1]);
+    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_addr_i[2], x_rf_data_i[2]);
     $fwrite(log_fh, "    @rs3=%d: [ %d, %d, %d, %d ]\n", isolde_rf_raddr_i[0],
             isolde_rf_rdata_i[0][0], isolde_rf_rdata_i[0][1], isolde_rf_rdata_i[0][2],
             isolde_rf_rdata_i[0][3]);
 `endif
     begin
       xif_issue_if.issue_req.instr <= 32'h087332ff;  //hack to simplify redmule instruction decoder
-      xif_issue_if.issue_req.rs[0] <= x_rf_bus.rdata[0];  //rs1
-      xif_issue_if.issue_req.rs[1] <= x_rf_bus.rdata[1];  // rs2
-      xif_issue_if.issue_req.rs[2] <= x_rf_bus.rdata[2];  // rs3
+      xif_issue_if.issue_req.rs[0] <= x_rf_data_i[0];  //rs1
+      xif_issue_if.issue_req.rs[1] <= x_rf_data_i[1];  // rs2
+      xif_issue_if.issue_req.rs[2] <= x_rf_data_i[2];  // rs3
       xif_issue_if.issue_req.rs_valid <= 3'b111;
       xif_issue_if.issue_req.imm32[0] <= isolde_rf_rdata_i[0][1];
       xif_issue_if.issue_req.imm32[1] <= isolde_rf_rdata_i[0][2];
@@ -305,9 +308,9 @@ module isolde_exec_block
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_conv2d");
     $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
     $fwrite(log_fh, "    func3=%b\n", isolde_exec_from_decoder.func3);
-    $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_bus.raddr[0], x_rf_bus.rdata[0]);
-    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_bus.raddr[1], x_rf_bus.rdata[1]);
-    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_bus.raddr[2], x_rf_bus.rdata[2]);
+    $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_addr_i[0], x_rf_data_i[0]);
+    $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_addr_i[1], x_rf_data_i[1]);
+    $fwrite(log_fh, "    @rs2=%d: %h\n", x_rf_addr_i[2], x_rf_data_i[2]);
     //
     $fwrite(log_fh, "    @rd2=%d: [ %d, %d, %d, %d ]\n", isolde_rf_raddr_i[0],
             isolde_rf_rdata_i[0][0], isolde_rf_rdata_i[0][1], isolde_rf_rdata_i[0][2],
@@ -318,7 +321,7 @@ module isolde_exec_block
     $fwrite(log_fh, "    @rs4=%d: [ %d, %d, %d, %d ]\n", isolde_rf_raddr_i[2],
             isolde_rf_rdata_i[2][0], isolde_rf_rdata_i[2][1], isolde_rf_rdata_i[2][2],
             isolde_rf_rdata_i[2][3]);
-    $fwrite(log_fh, "    @rs5=%d: %h\n", x_rf_bus.raddr[3], x_rf_bus.rdata[3]);
+    $fwrite(log_fh, "    @rs5=%d: %h\n", x_rf_addr_i[3], x_rf_data_i[3]);
     //
     $fwrite(log_fh, "    @rs6=%d: [ %d, %d, %d, %d ]\n", isolde_rf_raddr_i[3],
             isolde_rf_rdata_i[3][0], isolde_rf_rdata_i[3][1], isolde_rf_rdata_i[3][2],

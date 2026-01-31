@@ -592,6 +592,10 @@ module ibex_id_stage
   isolde_register_file_pkg::isolde_rf_waddr_t isolde_rf_wp_addr;
   isolde_register_file_pkg::isolde_rf_wdata_t isolde_rf_wp_echo;
   isolde_register_file_pkg::write_port_t isolde_rf_wp;
+//
+  isolde_x_register_file_pkg::isolde_x_rf_addr_t x_rf_addr;
+  isolde_x_register_file_pkg::isolde_x_rf_addr_t x_rf_addr_exec;
+  isolde_x_register_file_pkg::isolde_x_rf_data_t x_rf_data;
 
   isolde_register_file_interconnect isolde_register_file_interconnect_i (
       .isolde_rf_if(isolde_rf_bus),
@@ -600,6 +604,14 @@ module ibex_id_stage
       .wp_i(isolde_rf_wp),
       .waddr_o(isolde_rf_wp_addr),
       .wp_echo_o(isolde_rf_wp_echo)
+
+  );
+
+  isolde_x_register_file_interconnect isolde_x_register_file_interconnect_i(
+       .x_rf_bus(x_rf_bus),
+       .raddr_i(x_rf_addr),
+       .rdata_o(x_rf_data),
+       .raddr_o(x_rf_addr_exec)
 
   );
 
@@ -617,7 +629,7 @@ module ibex_id_stage
       //ISOLDE register file
       .isolde_rf_raddr_o      (isolde_rf_raddr),
       .isolde_rf_wp_o         (isolde_rf_wp),
-      .x_rf_bus               (x_rf_bus),
+      .x_rf_addr_o            (x_rf_addr),
       .isolde_decoder_exec_bus(fetch_exec_conn.dec)
   );
 
@@ -636,7 +648,8 @@ module ibex_id_stage
       .isolde_rf_rdata_i       (isolde_rf_rdata),
       .isolde_rf_waddr_i     (isolde_rf_wp_addr),
       .isolde_rf_wecho_i     (isolde_rf_wp_echo),
-      .x_rf_bus                (x_rf_bus),
+      .x_rf_addr_i           (x_rf_addr_exec),
+      .x_rf_data_i           (x_rf_data),
       .isolde_exec_from_decoder(fetch_exec_conn.exec),
       .isolde_exec_busy_o      (isolde_exec_busy),
       // eXtension interface
