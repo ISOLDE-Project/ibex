@@ -76,6 +76,22 @@ module rv_top
       .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
   ) itf_core_xif ();
 
+
+// === Tie off coprocessor side of XIF
+assign itf_core_xif.compressed_ready  = 1'b0;
+assign itf_core_xif.compressed_resp   = '0;
+//
+assign itf_core_xif.issue_ready      = 1'b0;
+assign itf_core_xif.issue_resp       = '0;
+//
+assign itf_core_xif.mem_valid      = 1'b0;        
+assign itf_core_xif.mem_req       = '0;
+//
+assign itf_core_xif.result_valid      = 1'b0;
+assign itf_core_xif.result       = '0;
+
+
+
   ibex_top #(
 
       .SecureIbex      (SecureIbex),
@@ -107,7 +123,7 @@ module rv_top
 
       .hart_id_i  (32'b0),
       // First instruction executed is at 0x0 + 0x80
-      .boot_addr_i(RV_BOOT_ADDR),
+      .boot_addr_i(aida_lca_package::RV_BOOT_ADDR),
       // === Instruction memory interface
       .instr_req_o,
       .instr_gnt_i,
@@ -145,9 +161,9 @@ module rv_top
       .double_fault_seen_o(),
 
       .fetch_enable_i,
-      .alert_minor_o         (),
-      .alert_major_internal_o(),
-      .alert_major_bus_o     (),
+      .alert_minor_o,
+      .alert_major_internal_o,
+      .alert_major_bus_o,
       .core_sleep_o,
       // eXtension interface
       .xif_compressed_if     (itf_core_xif.cpu_compressed),

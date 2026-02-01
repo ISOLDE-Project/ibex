@@ -34,18 +34,19 @@ module isolde_exec_block
   /********************************************************/
   /**   tie-off unused interfaces                        **/
   /********************************************************/
-  // Compressed interface
+  // === Compressed interface
   assign xif_compressed_if.compressed_valid = 0;
   assign xif_compressed_if.compressed_req = '0;
-  // Commit interface
-  // NA
-  // Memory (request/response) interface
+  // === Commit interface
+  assign xif_commit_if.commit_valid = 0;
+  assign xif_commit_if.commit = '0;
+  // === Memory (request/response) interface
   assign xif_mem_if.mem_ready = 0;
   assign xif_mem_if.mem_resp = '0;
-  // Memory result interface
+  // === Memory result interface
   assign xif_mem_result_if.mem_result_valid = 0;
   assign xif_mem_result_if.mem_result = '0;
-  // Result interface
+  // === Result interface
   assign xif_result_if.result_ready = 0;
 
 `ifndef SYNTHESIS
