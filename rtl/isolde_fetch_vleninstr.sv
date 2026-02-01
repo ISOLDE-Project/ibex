@@ -22,14 +22,7 @@ module isolde_fetch_vleninstr (
     output logic              vlen_instr_ready_o   // vlen_instr_o is ready to use
 );
 
-  // FSM states
-  typedef enum logic [1:0] {
-    IDLE,
-    FETCH_COMPUTE,
-    FETCH_REST     // Fetch the remaining words for multi-word instructions
-  } state_t;
-
-  state_t ifvli_state, ifvli_next;
+ 
 
   // Extract the opcode and nnn fields from the instruction
   logic [6:0] opCode;
@@ -82,15 +75,11 @@ module isolde_fetch_vleninstr (
 
   always_ff @(posedge clk_i, negedge rst_ni) begin
     if (!rst_ni) begin
-      ifvli_state <= FETCH_COMPUTE;
       wr_ptr <= 0;
       des_instr <= '0;
       _vlen_instr_words_o <= 0;
     end else begin
-      ifvli_state <= ifvli_next;
 
-      // case (ifvli_state)
-      //   FETCH_COMPUTE: begin
       if (word_instr_ready_i & vlen_instr_req_i) begin
         des_instr[3] <= des_instr[2];
         des_instr[2] <= des_instr[1];

@@ -1,7 +1,7 @@
 // Copyleft 2024 ISOLDE
 // see https://ibex-core.readthedocs.io/en/latest/03_reference/load_store_unit.html, Protocol
 interface isolde_fetch2exec_if #(
-    parameter int unsigned IMM32_OPS = 4
+    parameter int unsigned IMM32_OPS = 3
 );
 
   //

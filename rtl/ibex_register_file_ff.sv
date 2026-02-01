@@ -56,9 +56,6 @@ module ibex_register_file_ff #(
   logic [NUM_WORDS-1:0] we_a_dec;
 
 
-  logic [3:0] extended_ports_err_read;
-  logic extended_ports_err_write;
-
   logic oh_raddr_a_err, oh_raddr_b_err, oh_we_err;
 
   always_comb begin : we_a_decoder
@@ -241,7 +238,7 @@ module ibex_register_file_ff #(
     assign oh_raddr_b_err = 1'b0;
   end
 
-  assign err_o = oh_raddr_a_err || oh_raddr_b_err || oh_we_err ||  extended_ports_err_read || extended_ports_err_write ;
+  assign err_o = oh_raddr_a_err || oh_raddr_b_err || oh_we_err  ;
 
   // Signal not used in FF register file
   logic unused_test_en;
