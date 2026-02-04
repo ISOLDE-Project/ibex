@@ -34,7 +34,7 @@ yosys-flist:
 
 
 include yosys/yosys.mk
-
+include openroad/openroad.mk
 
 ###########
 # Cleanup #
@@ -58,6 +58,12 @@ redmule-clean:
 ## Delete bender generated file
 bender-clean:
 	rm -f $(SYS_DIR)/Bender.lock
-.PHONY: bender-clean
+
+## Checkout/update dependencies using Bender
+checkout: $(IHP_RCX_FILE)
+	$(BENDER) checkout
+	git submodule update --init --recursive
+
+.PHONY: bender-clean checkout
 
 include common.mk

@@ -66,6 +66,6 @@ yosys-clean:
 	rm -rf $(YOSYS_OUT)
 	rm -rf $(YOSYS_TMP)
 	rm -rf $(YOSYS_REPORTS) 
-	rm -f $(YOSYS_DIR)/$(TOP_DESIGN).log
+	rm -f $(YOSYS_DIR)/*.log
 
 .PHONY:  yosys	yosys-check yosys-clean
