@@ -1,4 +1,7 @@
 *.log
+*copy*
+pin_placement.tcl
+*.orig
 save
 reports
 out

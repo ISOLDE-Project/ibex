@@ -34,6 +34,7 @@ IHP_RCX_FILE := $(ROOT_DIR)/openroad/IHP_rcx_patterns.rules
 
 $(IHP_RCX_FILE): 
 	curl -L -o $@ $(IHP_RCX_URL)
+	touch $@
 
 
 backend: $(OR_OUT)/$(PROJ_NAME).def
@@ -45,14 +46,12 @@ $(OR_OUT_FILES): $(NETLIST) $(OR_DIR)/scripts/*.tcl $(OR_DIR)/src/*.tcl $(OR_DIR
 	mkdir -p $(SAVE)
 	mkdir -p $(REPORTS)
 	mkdir -p $(OR_OUT)
-	echo $(CROC_ROOT)
 	cd $(OR_DIR) && \
 	NETLIST="$(NETLIST)" \
 	TOP_DESIGN="$(TOP_DESIGN)" \
 	PROJ_NAME="$(PROJ_NAME)" \
 	SAVE="$(SAVE)" \
 	REPORTS="$(REPORTS)" \
-	PDK="$(CROC_ROOT)/ihp13/pdk" \
 	QT_QPA_PLATFORM=$$(if [ -z "$$DISPLAY" ]; then echo "offscreen"; else echo "$$QT_QPA_PLATFORM"; fi) \
 	$(OPENROAD) scripts/chip.tcl \
 		$$(if [ "$(gui)" = "1" ]; then echo "-gui"; fi) \
@@ -81,3 +80,6 @@ start_openroad_gui:
 	$(OPENROAD) -gui scripts/startup.tcl
 
 .PHONY: backend openroad openroad-clean start_openroad start_openroad_gui
+
+generate-pins: 
+	python3 $(OR_DIR)/scripts/generate_pins.py -o $(OR_DIR)/src/pin_placement.tcl $(NETLIST) 

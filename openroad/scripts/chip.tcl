@@ -49,31 +49,32 @@ report_checks -format end -no_line_splits                >> ${report_dir}/${log_
 report_checks -format end -no_line_splits                >> ${report_dir}/${log_id_str}_${proj_name}_checks.rpt
 
 # Size of the chip
-set chipW            1760.0
-set chipH            1760.0
+set chipW            800.0
+set chipH            800.0
 
 # thickness of annular ring for pads (length of a pad)
-set padRing           180.0
-set coreMargin [expr $padRing + 35]; # space for power ring
+set padRing           0.0
+set site_w 0.48
+set site_h 2.268
+
+set coreMargin [expr ceil(($padRing + 20) / $site_w) * $site_w]
+#set coreMarginY [expr ceil(($padRing + 20) / $site_h) * $site_h]
 
 utl::report "Initialize Chip"
 initialize_floorplan -die_area "0 0 $chipW $chipH" \
                      -core_area "$coreMargin $coreMargin [expr $chipW-$coreMargin] [expr $chipH-$coreMargin]" \
                      -site "CoreSite"
-
-
+                     
 utl::report "Connect global nets (power)"
 source scripts/power_connect.tcl
 
 utl::report "Create Floorplan"
 source scripts/floorplan.tcl
 
-utl::report "Create Power Grid"
-source scripts/power_grid.tcl
-save_checkpoint 00_${proj_name}.power_grid
-report_image "00_${proj_name}.power" true
-
-
+ utl::report "Create Power Grid"
+ source scripts/power_grid.tcl
+ save_checkpoint 00_${proj_name}.power_grid
+ report_image "00_${proj_name}.power" true
 ###############################################################################
 # Initial Repair Netlist                                                      #
 ###############################################################################
