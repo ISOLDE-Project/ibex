@@ -90,6 +90,12 @@ git commit -m "Squash merge tmp/exp into isolde/dev using theirs strategy"
 ```
 
 # Open EDA
+## Install tools
+for a lst of available targets:
+```sh
+make -f Makefile.tools help
+```
+## Synthesis
 apply patches from isolde/system/patches by running
 ```sh
 make -C isolde/system/patches 
@@ -167,6 +173,13 @@ make TOP_DESIGN=aida_top  yosys
 ```
 **Note**:  
 Needs fix for *$_DLATCH_N_* nodes.  
+
+## OpenROAD
+```sh
+make openroad
+```
+**Note**: only rv_core available 
+
 # Ibex RISC-V Core
 
 Ibex is a production-quality open source 32-bit RISC-V CPU core written in

@@ -39,10 +39,10 @@ $(IHP_RCX_FILE):
 
 backend: $(OR_OUT)/$(PROJ_NAME).def
 
-openroad: $(OR_OUT)/$(PROJ_NAME).def
+openroad: generate-pins $(OR_OUT)/$(PROJ_NAME).def
 
 ## Place & Route flow using OpenROAD
-$(OR_OUT_FILES): $(NETLIST) $(OR_DIR)/scripts/*.tcl $(OR_DIR)/src/*.tcl $(OR_DIR)/src/*.sdc $(IHP_RCX_FILE)
+$(OR_OUT_FILES): $(NETLIST) $(OR_DIR)/scripts/*.tcl $(OR_DIR)/src/*.tcl $(OR_DIR)/src/*.sdc $(IHP_RCX_FILE) 
 	mkdir -p $(SAVE)
 	mkdir -p $(REPORTS)
 	mkdir -p $(OR_OUT)
@@ -65,14 +65,14 @@ openroad-clean:
 	rm -f $(OR_DIR)/$(PROJ_NAME).log
 	rm -f $(OR_DIR)/*.rules
 
-start_openroad:
+start-openroad:
 	cd $(OR_DIR) && \
 	PROJ_NAME="$(PROJ_NAME)" \
 	SAVE="$(SAVE)" \
 	REPORTS="$(REPORTS)" \
 	$(OPENROAD) scripts/startup.tcl
 
-start_openroad_gui:
+start-openroad-gui:
 	cd $(OR_DIR) && \
 	PROJ_NAME="$(PROJ_NAME)" \
 	SAVE="$(SAVE)" \

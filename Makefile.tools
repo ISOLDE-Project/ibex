@@ -1,12 +1,13 @@
 
 prj_path := $(shell git rev-parse --show-toplevel)
 num_cores := $(shell nproc)
-num_cores_half := $(shell echo "$$(($(num_cores) / 2))")
+num_cores_half := $(shell echo "$$(($(num_cores) / 2)"))
 VLT_CXX := /usr/bin/clang++
 VLT_CC  := /usr/bin/clang
 
 
 INSTALL_PREFIX            ?= install
+TOOLS_DIR                 ?= $(prj_path)/tools
 INSTALL_DIR               ?= $(prj_path)/${INSTALL_PREFIX}
 GCC_INSTALL_DIR           ?= ${INSTALL_DIR}/riscv-gcc
 LLVM_INSTALL_DIR          ?= ${INSTALL_DIR}/riscv-llvm
@@ -14,22 +15,27 @@ ISA_SIM_INSTALL_DIR       ?= ${INSTALL_DIR}/riscv-isa-sim
 ISA_SIM_MOD_INSTALL_DIR   ?= ${INSTALL_DIR}/riscv-isa-sim-mod
 OPENOCD_INSTALL_DIR       ?= ${INSTALL_DIR}/openocd
 OSS_CAD_SUITE_INSTALL_DIR ?= ${INSTALL_DIR}/oss-cad-suite
-VERIL_SRC_ROOT            ?= $(prj_path)/vendor
+OPENROAD_INSTALL_DIR      ?= ${INSTALL_DIR}/openroad
+OPENROAD_VERSION          ?= a008522d88b669ac4c985609533cf5a3d2649222
 VERIL_INSTALL_DIR         ?= ${INSTALL_DIR}/verilator
 VERIL_VERSION             ?= v5.036
 BENDER_INSTALL_DIR        ?= ${INSTALL_DIR}/bender
 
 all: dev-dep verilator riscv32-gcc riscv32-llvm  openocd
-# Verilator
+
+${TOOLS_DIR}:
+	mkdir -p $@
+
+## Install Verilator
 verilator: ${VERIL_INSTALL_DIR}/bin/verilator
 
 ${VERIL_INSTALL_DIR}/bin/verilator:
-	rm -fr $(VERIL_SRC_ROOT)/verilator
-	cd $(VERIL_SRC_ROOT) && git clone https://github.com/verilator/verilator.git
+	rm -fr $(TOOLS_DIR)/verilator
+	cd $(TOOLS_DIR) && git clone https://github.com/verilator/verilator.git
 	# Checkout the right version
-	cd $(VERIL_SRC_ROOT)/verilator  && git reset --hard && git fetch && git checkout ${VERIL_VERSION}
+	cd $(TOOLS_DIR)/verilator  && git reset --hard && git fetch && git checkout ${VERIL_VERSION}
 	# Compile verilator
-	cd $(VERIL_SRC_ROOT)/verilator  && git clean -xfdf && autoconf && \
+	cd $(TOOLS_DIR)/verilator  && git clean -xfdf && autoconf && \
 	./configure --prefix=$(VERIL_INSTALL_DIR) CXX=$(VLT_CXX) CC=$(VLT_CC) && make -j$(num_cores_half)  && make install
 	touch ${VERIL_INSTALL_DIR}/bin/verilator
 
@@ -39,7 +45,7 @@ ${VERIL_INSTALL_DIR}/bin/verilator:
 
 cores:
 	@num_cores=$$(nproc); \
-	num_cores=$$((num_cores / 2)); \
+	num_cores=$$((num_cores / 2); \
 	echo "Number of cores available on this machine (divided by 2): $$num_cores"
 
 riscv32-gcc: $(GCC_INSTALL_DIR)
@@ -47,7 +53,7 @@ riscv32-gcc: $(GCC_INSTALL_DIR)
 $(GCC_INSTALL_DIR): vendor/riscv32-elf-gcc.url
 	rm -fr $(GCC_INSTALL_DIR)
 	mkdir -p $(INSTALL_DIR)
-	cd vendor && \
+	cd $(TOOLS_DIR) && \
 	wget  `cat $(CURDIR)/$<` -O riscv.tar.gz && \
 	tar -xzvf riscv.tar.gz -C  $(INSTALL_DIR)/ riscv	
 	mv $(INSTALL_DIR)/riscv $(GCC_INSTALL_DIR)
@@ -56,24 +62,28 @@ $(GCC_INSTALL_DIR): vendor/riscv32-elf-gcc.url
 
 riscv32-llvm: $(LLVM_INSTALL_DIR)
 
-vendor/riscv32-elf-llvm.tar.gz: vendor/riscv32-elf-llvm.url
-	cd vendor && \
+$(TOOLS_DIR)/riscv32-elf-llvm.tar.gz: ${TOOLS_DIR} vendor/riscv32-elf-llvm.url
+	cd $(TOOLS_DIR) && \
 	wget `cat $(CURDIR)/$<` -O riscv32-elf-llvm.tar.gz && \
 	touch riscv32-elf-llvm.tar.gz
 
-$(LLVM_INSTALL_DIR): vendor/riscv32-elf-llvm.tar.gz
+$(LLVM_INSTALL_DIR): $(TOOLS_DIR)/riscv32-elf-llvm.tar.gz
 	rm -fr $(LLVM_INSTALL_DIR)
 	mkdir -p $(INSTALL_DIR)
-	cd vendor && \
+	cd $(TOOLS_DIR) && \
 	tar -xzvf riscv32-elf-llvm.tar.gz -C  $(INSTALL_DIR)/ riscv-llvm
 	touch  $(LLVM_INSTALL_DIR)
 
 
-
+## Install development dependencies
 dev-dep:
 	sudo apt-get install flex bison clang help2man
 	sudo apt-get install libelf-dev autoconf
 	sudo apt-get install srecord gtkwave
+	sudo apt-get install libyaml-cpp-dev libboost-all-dev
+
+.PHONY: dev-dep
+
 
 $(HOME)/eth/$(BENDER_ARCH_FILE):
 	mkdir -p $(HOME)/eth && cd $(HOME)/eth       &&  \
@@ -88,31 +98,54 @@ bender:
 	curl --proto '=https' --tlsv1.2 https://pulp-platform.github.io/bender/init -sSf | sh
 	
 
-vendor/xpack-openocd.tar.gz: vendor/xpack-openocd.url
-	cd vendor && \
+$(TOOLS_DIR)/xpack-openocd.tar.gz: ${TOOLS_DIR} vendor/xpack-openocd.url
+	cd $(TOOLS_DIR) && \
 	wget `cat $(CURDIR)/$<` -O xpack-openocd.tar.gz 
 	touch $@
 
 .PHONY: openocd
 ## Install OpenOCD from xpack
-openocd: vendor/xpack-openocd.tar.gz
+openocd: $(TOOLS_DIR)/xpack-openocd.tar.gz
 	mkdir -p $(OPENOCD_INSTALL_DIR)
-	cd vendor && \
+	cd $(TOOLS_DIR) && \
 	tar -xzvf xpack-openocd.tar.gz  --strip-components=1 -C $(OPENOCD_INSTALL_DIR)/ 
 	touch  $(OPENOCD_INSTALL_DIR)
 
-vendor/oss-cad-suite-linux-x64-20260109.tgz: vendor/oss-cad-suite.url
-	cd vendor && \
+$(TOOLS_DIR)/oss-cad-suite-linux-x64-20260109.tgz: vendor/oss-cad-suite.url
+	cd $(TOOLS_DIR) && \
 	wget `cat $(CURDIR)/$<` -O oss-cad-suite-linux-x64-20260109.tgz 
 	touch $@
 
 .PHONY: oss-cad-suite
 ## Install yosys from YosysHQ/oss-cad-suite
-oss-cad-suite: vendor/oss-cad-suite-linux-x64-20260109.tgz
+oss-cad-suite: $(TOOLS_DIR)/oss-cad-suite-linux-x64-20260109.tgz
 	mkdir -p $(OSS_CAD_SUITE_INSTALL_DIR)
-	cd vendor && \
+	cd $(TOOLS_DIR) && \
 	tar -xzvf oss-cad-suite-linux-x64-20260109.tgz  --strip-components=1 -C $(OSS_CAD_SUITE_INSTALL_DIR)/ 
 	touch  $(OSS_CAD_SUITE_INSTALL_DIR)
 
 
+OPENROAD_REPO := $(TOOLS_DIR)/OpenROAD/.git
+
+$(OPENROAD_REPO): ${TOOLS_DIR}
+	cd $(TOOLS_DIR) && git clone https://github.com/The-OpenROAD-Project/OpenROAD.git
+
+openroad-clone: $(OPENROAD_REPO)
+	rm -fr $(OPENROAD_INSTALL_DIR)
+	# Checkout the right version
+	cd $(TOOLS_DIR)/OpenROAD  && \
+	git reset --hard && \
+	git fetch --all --tags && \
+	git switch --detach ${OPENROAD_VERSION} && \
+	git submodule update --init --recursive
+
+
+.PHONY: openroad
+## Build and install OpenROAD
+openroad: openroad-clone
+	cd $(TOOLS_DIR)/OpenROAD   && rm -fr build && mkdir -p build 
+	cd $(TOOLS_DIR)/OpenROAD/build && \
+	cmake .. && \
+	make -j2 && make DESTDIR=$(OPENROAD_INSTALL_DIR) install
+	
 include common.mk
