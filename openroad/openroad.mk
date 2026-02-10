@@ -24,6 +24,21 @@ REPORTS	 	 ?= $(OR_DIR)/reports
 OR_OUT  	 ?= $(OR_DIR)/out
 OR_OUT_FILES  = $(OR_OUT)/$(PROJ_NAME).def $(OR_OUT)/$(PROJ_NAME).v $(OR_OUT)/$(PROJ_NAME).sdc $(OR_OUT)/$(PROJ_NAME).odb
 
+FLOW_SRC ?=  $(OR_DIR)/scripts/chip.tcl 
+
+ifneq ($(strip $(FLOW)),)
+
+# If FLOW already ends with .tcl → use as-is
+	ifneq ($(filter %.tcl,$(FLOW)),)
+		FLOW_SRC = $(OR_DIR)/scripts/$(FLOW)
+
+# Otherwise append .tcl
+	else
+		FLOW_SRC = $(OR_DIR)/scripts/$(FLOW).tcl
+	endif
+
+endif
+
 ################
 # Dependencies #
 ################
@@ -53,7 +68,7 @@ $(OR_OUT_FILES): $(NETLIST) $(OR_DIR)/scripts/*.tcl $(OR_DIR)/src/*.tcl $(OR_DIR
 	SAVE="$(SAVE)" \
 	REPORTS="$(REPORTS)" \
 	QT_QPA_PLATFORM=$$(if [ -z "$$DISPLAY" ]; then echo "offscreen"; else echo "$$QT_QPA_PLATFORM"; fi) \
-	$(OPENROAD) scripts/chip.tcl \
+	$(OPENROAD) $(FLOW_SRC) \
 		$$(if [ "$(gui)" = "1" ]; then echo "-gui"; fi) \
 		-log $(PROJ_NAME).log \
 		2>&1 | TZ=UTC gawk '{ print strftime("[%Y-%m-%d %H:%M %Z]"), $$0 }';
@@ -82,4 +97,4 @@ start-openroad-gui:
 .PHONY: backend openroad openroad-clean start_openroad start_openroad_gui
 
 generate-pins: 
-	python3 $(OR_DIR)/scripts/generate_pins.py -o $(OR_DIR)/src/pin_placement.tcl $(NETLIST) --module $(TOP_DESIGN)
+	python3 $(OR_DIR)/scripts/generate_pins.py -o $(OR_DIR)/src/pin_placement.tcl $(NETLIST) --module $(TOP_DESIGN) -H 1200 -w 1200

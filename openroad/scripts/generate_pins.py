@@ -152,6 +152,8 @@ def main():
     parser.add_argument("netlist", help="Input synthesized Verilog netlist")
     parser.add_argument("-m", "--module", required=True, help="Top module name to parse")
     parser.add_argument("-o", "--output", required=True, help="Output TCL pin placement file")
+    parser.add_argument("-w", "--width", required=True, type=float, help="Chip width in microns")
+    parser.add_argument("-H", "--height", required=True, type=float, help="Chip height in microns")
     args = parser.parse_args()
 
     netlist_path = Path(args.netlist)
@@ -166,12 +168,14 @@ def main():
     module_text = extract_module(text, args.module)
     ports = parse_ports(module_text)
     groups = classify_ports(ports)
-    write_tcl(groups, output_path)
+    write_tcl(groups, output_path, chip_width=args.width, chip_height=args.height)
 
     total_pins = sum(len(pins) for pins in groups.values())
-    print(f"✔ Module: {args.module}")
-    print(f"✔ Generated {output_path}")
-    print(f"✔ Parsed {len(ports)} ports → {total_pins} IO pins placed")
+    print(f"🌟 Chip dimensions: {args.width} x {args.height} microns")
+    print(f"✅ Module: {args.module}")
+    print(f"✅ Generated {output_path}")
+    print(f"✅ Parsed {len(ports)} ports → {total_pins} IO pins placed")
+     
 
 
 if __name__ == "__main__":

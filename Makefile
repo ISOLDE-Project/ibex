@@ -24,7 +24,7 @@ VSIM      ?= vsim
 
 ## Generate yosys.flist used to read design in yosys
 yosys-flist:  
-	make -C $(SYS_DIR)  ibex_synth.tcl
+	make -C $(SYS_DIR) vivado-clean  ibex_synth.tcl
 	tclsh $(ROOT_DIR)/yosys/scripts/vivado_tcl_to_yosys_f.tcl $(SYS_DIR)/ibex_synth.tcl
 	make -C $(SYS_DIR) DBG_MODULE=1 \
 	                   ENABLE_SPM=1 \
