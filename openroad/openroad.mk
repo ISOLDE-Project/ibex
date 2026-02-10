@@ -82,4 +82,4 @@ start-openroad-gui:
 .PHONY: backend openroad openroad-clean start_openroad start_openroad_gui
 
 generate-pins: 
-	python3 $(OR_DIR)/scripts/generate_pins.py -o $(OR_DIR)/src/pin_placement.tcl $(NETLIST) 
+	python3 $(OR_DIR)/scripts/generate_pins.py -o $(OR_DIR)/src/pin_placement.tcl $(NETLIST) --module $(TOP_DESIGN)

@@ -81,6 +81,7 @@ dev-dep:
 	sudo apt-get install libelf-dev autoconf
 	sudo apt-get install srecord gtkwave
 	sudo apt-get install libyaml-cpp-dev libboost-all-dev
+	sudo apt-get install gawk
 
 .PHONY: dev-dep
 
@@ -118,7 +119,7 @@ $(TOOLS_DIR)/oss-cad-suite-linux-x64-20260109.tgz: vendor/oss-cad-suite.url
 
 .PHONY: oss-cad-suite
 ## Install yosys from YosysHQ/oss-cad-suite
-oss-cad-suite: $(TOOLS_DIR)/oss-cad-suite-linux-x64-20260109.tgz
+oss-cad-suite: $(TOOLS_DIR) $(TOOLS_DIR)/oss-cad-suite-linux-x64-20260109.tgz
 	mkdir -p $(OSS_CAD_SUITE_INSTALL_DIR)
 	cd $(TOOLS_DIR) && \
 	tar -xzvf oss-cad-suite-linux-x64-20260109.tgz  --strip-components=1 -C $(OSS_CAD_SUITE_INSTALL_DIR)/ 
@@ -137,7 +138,9 @@ openroad-clone: $(OPENROAD_REPO)
 	git reset --hard && \
 	git fetch --all --tags && \
 	git switch --detach ${OPENROAD_VERSION} && \
-	git submodule update --init --recursive
+	git submodule update --init --recursive	&& \
+	cd ./etc && . ./DependencyInstaller.sh
+	
 
 
 .PHONY: openroad

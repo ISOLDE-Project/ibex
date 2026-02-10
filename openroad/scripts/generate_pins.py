@@ -11,6 +11,25 @@ from collections import defaultdict
 from pathlib import Path
 
 # ------------------------
+# MODULE EXTRACTION
+# ------------------------
+def extract_module(verilog_text, module_name):
+    """
+    Extract the text of a specific Verilog module.
+    """
+    pattern = re.compile(
+        rf'\bmodule\s+{re.escape(module_name)}\b.*?\bendmodule\b',
+        re.DOTALL
+    )
+
+    match = pattern.search(verilog_text)
+    if not match:
+        raise ValueError(f"Module '{module_name}' not found in netlist")
+
+    return match.group(0)
+
+
+# ------------------------
 # PORT PARSING
 # ------------------------
 def parse_ports(verilog_text):
@@ -60,10 +79,6 @@ def bus_expand(name, msb, lsb):
 def classify_ports(ports):
     """
     Classify pins by side for manual placement.
-      - clk / reset → top
-      - input → left
-      - output → right
-      - inout → bottom
     """
     groups = defaultdict(list)
     for p in ports:
@@ -88,22 +103,13 @@ def classify_ports(ports):
 # TCL WRITER
 # ------------------------
 def write_tcl(groups, output_path, chip_width=800.0, chip_height=800.0):
-    """
-    Generate TCL file using vanilla OpenROAD commands:
-      - set_io -pin PIN
-      - set_io -pin PIN -location "X Y"
-      - set_io_layer -pins {list} -hor met3 -ver met2
-    Assigns pins evenly along each side.
-    """
     with open(output_path, "w") as f:
         f.write("############################################################\n")
         f.write("# AUTO-GENERATED VANILLA OPENROAD PIN PLACEMENT TCL\n")
         f.write("############################################################\n\n")
 
-        f.write("set IO_LAYER {Metal3}\n")
-        #f.write("set IO_V_LAYERS {met2}\n\n")
+        f.write("set IO_LAYER {Metal3}\n\n")
 
-        # Coordinates margins
         margin = 20.0
 
         for side in ["top", "left", "right", "bottom"]:
@@ -113,29 +119,27 @@ def write_tcl(groups, output_path, chip_width=800.0, chip_height=800.0):
 
             f.write(f"# ----------------\n# {side.upper()} PINS\n# ----------------\n")
 
-            # Compute coordinates for each pin
             n = len(pins)
             for idx, pin in enumerate(pins):
                 f.write(f"set_io -pin {pin}\n")
 
                 if side == "top":
-                    x = margin + (chip_width - 2*margin) * idx / max(n-1,1)
+                    x = margin + (chip_width - 2*margin) * idx / max(n-1, 1)
                     y = chip_height
                 elif side == "bottom":
-                    x = margin + (chip_width - 2*margin) * idx / max(n-1,1)
+                    x = margin + (chip_width - 2*margin) * idx / max(n-1, 1)
                     y = 0
                 elif side == "left":
                     x = 0
-                    y = margin + (chip_height - 2*margin) * idx / max(n-1,1)
-                elif side == "right":
+                    y = margin + (chip_height - 2*margin) * idx / max(n-1, 1)
+                else:  # right
                     x = chip_width
-                    y = margin + (chip_height - 2*margin) * idx / max(n-1,1)
+                    y = margin + (chip_height - 2*margin) * idx / max(n-1, 1)
 
-                f.write(f"place_pin -pin_name {pin} -layer $IO_LAYER -location {{{x:.2f} {y:.2f}}}\n")
-
-            # Assign layers for all pins on this side
-            #pin_list_str = " ".join(pins)
-            #f.write(f"set_io_layer -pins {{{pin_list_str}}} -hor $IO_H_LAYERS -ver $IO_V_LAYERS\n\n")
+                f.write(
+                    f"place_pin -pin_name {pin} -layer $IO_LAYER "
+                    f"-location {{{x:.2f} {y:.2f}}}\n"
+                )
 
 
 # ------------------------
@@ -146,6 +150,7 @@ def main():
         description="Generate vanilla OpenROAD pin_placement.tcl from Yosys netlist"
     )
     parser.add_argument("netlist", help="Input synthesized Verilog netlist")
+    parser.add_argument("-m", "--module", required=True, help="Top module name to parse")
     parser.add_argument("-o", "--output", required=True, help="Output TCL pin placement file")
     args = parser.parse_args()
 
@@ -158,14 +163,17 @@ def main():
     with open(netlist_path) as f:
         text = f.read()
 
-    ports = parse_ports(text)
+    module_text = extract_module(text, args.module)
+    ports = parse_ports(module_text)
     groups = classify_ports(ports)
     write_tcl(groups, output_path)
 
     total_pins = sum(len(pins) for pins in groups.values())
+    print(f"✔ Module: {args.module}")
     print(f"✔ Generated {output_path}")
     print(f"✔ Parsed {len(ports)} ports → {total_pins} IO pins placed")
 
 
 if __name__ == "__main__":
     main()
+
