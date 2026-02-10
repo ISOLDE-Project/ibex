@@ -40,6 +40,7 @@ filesets:
       - rtl/isolde_fetch_vleninstr.sv
       - rtl/isolde_decoder.sv
       - rtl/isolde_exec_block.sv
+      - rtl/isolde_decoder_top.sv
       - rtl/ibex_pmp_reset_default.svh: {is_include_file: true}
     file_type: systemVerilogSource
 

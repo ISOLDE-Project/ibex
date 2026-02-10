@@ -583,75 +583,21 @@ module ibex_id_stage
   /////////////////////
   // ISOLDE decoder //
   ///////////////////
-
-  isolde_fetch2exec_if fetch_exec_conn ();
-
-  isolde_register_file_pkg::isolde_rf_raddr_t isolde_rf_raddr;
-  isolde_register_file_pkg::isolde_rf_rdata_t  isolde_rf_rdata;
-  //
-  isolde_register_file_pkg::isolde_rf_waddr_t isolde_rf_wp_addr;
-  isolde_register_file_pkg::isolde_rf_wdata_t isolde_rf_wp_echo;
-  isolde_register_file_pkg::write_port_t isolde_rf_wp;
-//
-  isolde_x_register_file_pkg::isolde_x_rf_addr_t x_rf_addr;
-  isolde_x_register_file_pkg::isolde_x_rf_addr_t x_rf_addr_exec;
-  isolde_x_register_file_pkg::isolde_x_rf_data_t x_rf_data;
-
-  isolde_register_file_interconnect isolde_register_file_interconnect_i (
-      .isolde_rf_if(isolde_rf_bus),
-      .raddr_i(isolde_rf_raddr),
-      .rdata_o(isolde_rf_rdata),
-      .wp_i(isolde_rf_wp),
-      .waddr_o(isolde_rf_wp_addr),
-      .wp_echo_o(isolde_rf_wp_echo)
-
-  );
-
-  isolde_x_register_file_interconnect isolde_x_register_file_interconnect_i(
-       .x_rf_bus(x_rf_bus),
-       .raddr_i(x_rf_addr),
-       .rdata_o(x_rf_data),
-       .raddr_o(x_rf_addr_exec)
-
-  );
-
-  isolde_decoder isolde_decoder_i (
-      .clk_i(clk_i),
+ 
+  isolde_decoder_top isolde_decoder_top_i (
+      .clk_i (clk_i),
       .rst_ni(rst_ni),
-      .isolde_decoder_instr_exec_i(instr_exec_i),
-      .isolde_decoder_instr_valid_i(instr_valid_i),
-      .isolde_decoder_instr_batch_i(instr_batch_rdata_i),
-      .isolde_decoder_enable_i(1'b1),
-      .isolde_decoder_illegal_instr_o(illegal_custom_instr),
+      // from IF-ID pipeline register
+      .instr_exec_i,
+      .instr_valid_i,
+      .instr_batch_rdata_i,     // from IF-ID pipeline registers
+      // output to ID stage
+      .illegal_custom_instr_o(illegal_custom_instr),
+      .isolde_stall_fetch_o(isolde_stall_fetch),
       .isolde_decoder_busy_o(isolde_decoder_busy),
-      .isolde_decoder_stalled_o(isolde_decoder_stalled),
-
       //ISOLDE register file
-      .isolde_rf_raddr_o      (isolde_rf_raddr),
-      .isolde_rf_wp_o         (isolde_rf_wp),
-      .x_rf_addr_o            (x_rf_addr),
-      .isolde_decoder_exec_bus(fetch_exec_conn.dec)
-  );
-
-
-  assign illegal_insn_dec   = illegal_std_instr & illegal_custom_instr;
-  assign isolde_stall_fetch = ~isolde_decoder_stalled;
-  ///////////////////////////
-  // ISOLDE  execute block //
-  ///////////////////////////
-
-
-  isolde_exec_block isolde_exec_block_i (
-      .clk_i                   (clk_i),
-      .rst_ni                  (rst_ni),
-      .isolde_rf_raddr_i       (isolde_rf_raddr),
-      .isolde_rf_rdata_i       (isolde_rf_rdata),
-      .isolde_rf_waddr_i     (isolde_rf_wp_addr),
-      .isolde_rf_wecho_i     (isolde_rf_wp_echo),
-      .x_rf_addr_i           (x_rf_addr_exec),
-      .x_rf_data_i           (x_rf_data),
-      .isolde_exec_from_decoder(fetch_exec_conn.exec),
-      .isolde_exec_busy_o      (isolde_exec_busy),
+      .isolde_rf_bus,
+      .x_rf_bus,
       // eXtension interface
       .xif_compressed_if,
       .xif_issue_if,
@@ -660,8 +606,7 @@ module ibex_id_stage
       .xif_mem_result_if,
       .xif_result_if
   );
-
-
+  assign illegal_insn_dec = illegal_std_instr & illegal_custom_instr;
   ////////////////
   // Controller //
   ////////////////
