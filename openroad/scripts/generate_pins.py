@@ -106,6 +106,8 @@ def write_tcl(groups, output_path, chip_width=800.0, chip_height=800.0):
     with open(output_path, "w") as f:
         f.write("############################################################\n")
         f.write("# AUTO-GENERATED VANILLA OPENROAD PIN PLACEMENT TCL\n")
+        f.write(f"# chip_width:  {chip_width}  microns\n")
+        f.write(f"# chip_height: {chip_height} microns\n")
         f.write("############################################################\n\n")
 
         f.write("set IO_LAYER {Metal3}\n\n")

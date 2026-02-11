@@ -26,15 +26,15 @@ OR_OUT_FILES  = $(OR_OUT)/$(PROJ_NAME).def $(OR_OUT)/$(PROJ_NAME).v $(OR_OUT)/$(
 
 OPENROAD_FLOW ?=  $(OR_DIR)/scripts/chip.tcl 
 
-ifneq ($(strip $(FLOW)),)
+ifneq ($(strip $(OR_FLOW)),)
 
-# If FLOW already ends with .tcl → use as-is
-	ifneq ($(filter %.tcl,$(FLOW)),)
-		OPENROAD_FLOW = $(OR_DIR)/scripts/$(FLOW)
+# If OR_FLOW already ends with .tcl → use as-is
+	ifneq ($(filter %.tcl,$(OR_FLOW)),)
+		OPENROAD_FLOW = $(OR_DIR)/scripts/$(OR_FLOW)
 
 # Otherwise append .tcl
 	else
-		OPENROAD_FLOW = $(OR_DIR)/scripts/$(FLOW).tcl
+		OPENROAD_FLOW = $(OR_DIR)/scripts/$(OR_FLOW).tcl
 	endif
 
 endif

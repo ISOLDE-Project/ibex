@@ -61,10 +61,11 @@ bender-clean:
 
 ## Checkout/update dependencies using Bender
 checkout: $(IHP_RCX_FILE)
-	cd isolde/system/ && \
-	make -C patches && \
-	$(BENDER) checkout
 	git submodule update --init --recursive 
+	cd isolde/system/ && \
+	$(BENDER) checkout && \
+	make -C patches 
+	
 
 .PHONY: bender-clean checkout
 

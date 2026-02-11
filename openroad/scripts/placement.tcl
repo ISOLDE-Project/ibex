@@ -140,7 +140,24 @@ report_metrics "${log_id_str}_${proj_name}.gpl1"
 report_image "${log_id_str}_${proj_name}.gpl1" true true
 save_checkpoint ${log_id_str}_${proj_name}.gpl1
 
+utl::report "Estimate parasitics"
+estimate_parasitics -placement
+utl::report "Repair design"
+repair_design -verbose
+save_checkpoint ${log_id_str}_${proj_name}.gpl1_fix
 
+# old versions of repair_timing may swap non-equal pins, deactivated for now to avoid problems
+# Likely introduced in:  https://github.com/The-OpenROAD-Project/OpenROAD/pull/3215 (fixed in new versions)
+utl::report "Repair setup"
+repair_timing -setup -skip_pin_swap -verbose
+save_checkpoint ${log_id_str}_${proj_name}.gpl1_repaired
+
+# actual global placement
+utl::report "Global Placement (2)"
+global_placement {*}$GPL2_ARGS
+report_metrics "${log_id_str}_${proj_name}.gpl2"
+report_image "${log_id_str}_${proj_name}.gpl2" true true
+save_checkpoint ${log_id_str}_${proj_name}.gpl2
 
 
 
