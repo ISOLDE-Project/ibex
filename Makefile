@@ -24,7 +24,7 @@ VSIM      ?= vsim
 
 ## Generate yosys.flist used to read design in yosys
 yosys-flist:  
-	make -C $(SYS_DIR)  ibex_synth.tcl
+	make -C $(SYS_DIR) vivado-clean  ibex_synth.tcl
 	tclsh $(ROOT_DIR)/yosys/scripts/vivado_tcl_to_yosys_f.tcl $(SYS_DIR)/ibex_synth.tcl
 	make -C $(SYS_DIR) DBG_MODULE=1 \
 	                   ENABLE_SPM=1 \
@@ -34,7 +34,7 @@ yosys-flist:
 
 
 include yosys/yosys.mk
-
+include openroad/openroad.mk
 
 ###########
 # Cleanup #
@@ -49,10 +49,28 @@ clean:
 
 .PHONY: clean
 
-.PHONY: clean-redmule
-clean-redmule:
+.PHONY: redmule-clean
+redmule-clean:
 	cd vendor/redmule && \
 	git reset --hard  && \
 	git clean -xfdxf
+
+## Delete bender generated file
+bender-clean:
+	rm -f $(SYS_DIR)/Bender.lock
+
+bender-update: bender-clean
+	cd isolde/system/ && \
+	$(BENDER) update
+	make -C  $(SYS_DIR)/patches 
+
+## Checkout/update dependencies using Bender
+checkout: $(IHP_RCX_FILE)
+	git submodule update --init --recursive 
+	cd isolde/system/ && \
+	$(BENDER) checkout 
+	
+
+.PHONY: bender-clean bender-update checkout
 
 include common.mk

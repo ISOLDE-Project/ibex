@@ -46,7 +46,7 @@ yosys read_slang --top $top_design -F $sv_flist \
 # yosys setattr -set keep_hierarchy 1 "t:tc_clk*$*"
 # yosys setattr -set keep_hierarchy 1 "t:tc_sram_impl$*"
 # yosys setattr -set keep_hierarchy 1 "t:cdc_*$*"
-# yosys setattr -set keep_hierarchy 1 "t:sync$*"
+
 
 
 # blackbox modules (applies the *blackbox* attribute)
@@ -62,8 +62,10 @@ yosys attrmvcp -copy -attr keep
 # this section heavily borrows from the yosys synth command:
 # synth - check
 yosys hierarchy -top $top_design
-#yosys check
-#yosys proc
-#yosys opt -full
-#yosys check
+yosys check
+yosys proc
+yosys opt -full
+yosys check
+yosys flatten
+yosys write_verilog -noattr -noexpr -nohex -nodec ${out_dir}/${top_design}_yosys.v 
 #yosys stat

@@ -6,7 +6,9 @@ package:
   authors:
     - daro <daro@tsr>
 
-  
+dependencies:
+  isolde-soc:         {path: ../../vendor/isolde-soc}  
+  isolde-dm:          {path: ../../vendor/isolde-dm}  
 
 # *                matches any target
 # name             matches the target "name"

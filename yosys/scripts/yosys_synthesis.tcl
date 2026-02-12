@@ -48,6 +48,9 @@ yosys read_slang --top $top_design -F $sv_flist \
 # yosys setattr -set keep_hierarchy 1 "t:cdc_*$*"
 # yosys setattr -set keep_hierarchy 1 "t:sync$*"
 
+#yosys setattr -set keep_hierarchy 1 "t:isolde_*$*"
+yosys setattr -set keep_hierarchy 1 "t:isolde_decoder_top$*"
+yosys setattr -set keep_hierarchy 1 "t:isolde_register_file_ff$*"
 
 # blackbox modules (applies the *blackbox* attribute)
 # yosys blackbox "t:tc_sram_blackbox$*"

@@ -137,9 +137,9 @@ module rv_top
       .double_fault_seen_o(),
 
       .fetch_enable_i,
-      .alert_minor_o         (),
-      .alert_major_internal_o(),
-      .alert_major_bus_o     (),
+      .alert_minor_o,
+      .alert_major_internal_o,
+      .alert_major_bus_o,
       .core_sleep_o
   );
 endmodule
