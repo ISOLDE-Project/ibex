@@ -10,29 +10,7 @@ module aida_top
   import isolde_tcdm_pkg::*;
   import aida_lca_package::*;
 #(
-    //ibex parameters
-    parameter bit RV32E           = 1'b0,
-    parameter bit ICacheScramble  = 1'b0,
-    parameter bit ICache          = 1'b0,
-    parameter bit ICacheECC       = 1'b0,
-    parameter bit BranchTargetALU = 1'b0,
-    parameter bit WritebackStage  = 1'b0,
-    parameter bit SecureIbex      = 1'b0,
-    parameter bit BranchPredictor = 1'b0,
-    parameter bit DbgTriggerEn    = 1'b0,
-
-    parameter bit          PMPEnable        = 1'b0,
-    parameter int unsigned PMPGranularity   = 0,
-    parameter int unsigned PMPNumRegions    = 4,
-    parameter int unsigned MHPMCounterNum   = 0,
-    parameter int unsigned MHPMCounterWidth = 40,
-
-    parameter rv32m_e   RV32M   = RV32MFast,
-    parameter rv32b_e   RV32B   = RV32BNone,
-    parameter regfile_e RegFile = RegFileFF,
-
-    parameter int unsigned DmHaltAddr      = 32'h1A11_0800,
-    parameter int unsigned DmExceptionAddr = 32'h1A11_0808,
+    //ibex parameter(s)
     parameter bit          BootROMEnable   = 1'b1
 ) (
     input logic clk_i,
@@ -43,7 +21,10 @@ module aida_top
     // === JTAG port ===
     input jtag_pkg::jtag_req_t soc_jtag_in,
     output jtag_pkg::jtag_rsp_t soc_jtag_out
-
+`ifdef TARGET_VERILATOR
+    ,output logic[31:0] sim_exit_code_o,
+    output logic sim_exit_valid_o    
+`endif 
 );
 
 
@@ -138,25 +119,6 @@ module aida_top
   /*******************************************************/
 
   aida #(
-      .SecureIbex      (SecureIbex),
-      .ICacheScramble  (ICacheScramble),
-      .PMPEnable       (PMPEnable),
-      .PMPGranularity  (PMPGranularity),
-      .PMPNumRegions   (PMPNumRegions),
-      .MHPMCounterNum  (MHPMCounterNum),
-      .MHPMCounterWidth(MHPMCounterWidth),
-      .RV32E           (RV32E),
-      .RV32M           (RV32M),
-      .RV32B           (RV32B),
-      .RegFile         (RegFile),
-      .BranchTargetALU (BranchTargetALU),
-      .ICache          (ICache),
-      .ICacheECC       (ICacheECC),
-      .WritebackStage  (WritebackStage),
-      .BranchPredictor (BranchPredictor),
-      .DbgTriggerEn    (DbgTriggerEn),
-      .DmHaltAddr      (DmHaltAddr),
-      .DmExceptionAddr (DmExceptionAddr),
       .BootROMEnable   (BootROMEnable)
   ) i_aida_lca (
       .clk_i(clk_i),
@@ -172,6 +134,10 @@ module aida_top
       .spm_rsp_i(mem_rsp),
       .aida_jtag_in(soc_jtag_in),
       .aida_jtag_out(soc_jtag_out)
+`ifdef TARGET_VERILATOR
+    ,.sim_exit_code_o,
+    .sim_exit_valid_o    
+`endif 
 
   );
 

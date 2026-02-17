@@ -1,4 +1,4 @@
-FPGA_DIR            :=  $(shell git rev-parse --show-toplevel)/isolde/lca_system/fpga
+FPGA_DIR            :=  $(shell git rev-parse --show-toplevel)/isolde/system/fpga
 PROJECT		        :=  xilinx_sys_rst
 VIVADO              ?=  vivado
 VIVADOFLAGS         ?=  -nojournal -mode batch -source scripts/prologue.tcl
