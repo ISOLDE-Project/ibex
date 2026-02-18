@@ -16,13 +16,15 @@ module tb_isolde_mux_tcdm(
   isolde_mux_tcdm dut (
     .clk_i(clk_i),
     .rst_ni(rst_n),
-    .tcdm_slave_i1(tcdm_slave_i1),
-    .tcdm_slave_i2(tcdm_slave_i2),
+    .req_1_i(tcdm_slave_i1.req),
+    .rsp_1_o(tcdm_slave_i1.rsp),
+    .req_2_i(tcdm_slave_i2.req),
+    .rsp_2_o(tcdm_slave_i2.rsp),
     .tcdm_master_o(tcdm_master_o)
   );
 
   
-
+`ifndef SYNTHESIS
   // // Monitor: print output from slaves
   // always @(posedge clk_i) begin
   //   if (tcdm_slave_i1.rsp.valid) begin
@@ -102,5 +104,5 @@ initial begin
    
   end
 
-
+`endif
 endmodule

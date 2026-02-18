@@ -72,9 +72,9 @@ module rv_domain
   localparam addr_range_t addr_map[NoRules] = '{ 
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},           
-      '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
+      '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END}
 `ifdef TARGET_RV_DEBUG
-      '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
+      ,'{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
 `endif
   };
 
@@ -351,26 +351,7 @@ aida_io #(
     endgenerate
 `endif
 
-  /********************************************************/
-  /**     CV-X-IF                                        **/
-  /*******************************************************/
 
-  isolde_cv_x_if #(
-      .X_NUM_RS   (isolde_cv_x_if_pkg::X_NUM_RS),
-      .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
-      .X_MEM_WIDTH(isolde_cv_x_if_pkg::X_MEM_WIDTH),
-      .X_RFR_WIDTH(isolde_cv_x_if_pkg::X_RFR_WIDTH),
-      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH),
-      .X_MISA     (isolde_cv_x_if_pkg::X_MISA),
-      .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
-  ) itf_core_xif ();
-
-`ifdef TARGET_VERILATOR
-  xif_monitor_cpu_issue xif_monitor_cpu_issue_i (
-      clk_i,
-      itf_core_xif
-  );
-`endif
 
   /********************************************************/
   /**     IBEX core                                     **/
@@ -450,14 +431,7 @@ aida_io #(
       .alert_minor_o         (),
       .alert_major_internal_o(),
       .alert_major_bus_o     (),
-      .core_sleep_o          (core_sleep),
-      // eXtension interface
-      .xif_compressed_if     (itf_core_xif.cpu_compressed),
-      .xif_issue_if          (itf_core_xif.cpu_issue),
-      .xif_commit_if         (itf_core_xif.cpu_commit),
-      .xif_mem_if            (itf_core_xif.cpu_mem),
-      .xif_mem_result_if     (itf_core_xif.cpu_mem_result),
-      .xif_result_if         (itf_core_xif.cpu_result)
+      .core_sleep_o          (core_sleep)
   );
 
 

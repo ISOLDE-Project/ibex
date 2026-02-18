@@ -29,7 +29,6 @@ sources:
     - rtl/isolde_tcdm_interconnect.sv
     - rtl/isolde_log_interconnect.sv
     - rtl/isolde_boot_rom.sv
-    - rtl/rv_domain.sv
     - rtl/uart/udma_uart_tx.sv
     - rtl/uart/isolde_uart_top.sv
     - rtl/io/aida_io.sv
@@ -38,9 +37,8 @@ sources:
     - rtl/noc/isolde_router.sv
     - rtl/ibex_rst.sv
     ##level 3
-    - rtl/aida_lca.sv
-    - rtl/aida.sv
-    - target: all(not(any(fpga_sim,yosys)),any(tb_dm,redmule_test_hwpe, redmule_complex,redmule_test_complex))
+    - rtl/rv_domain.sv
+    - target: all(not(yosys),any(tb_dm,redmule_test_hwpe, redmule_complex,redmule_test_complex,fpga_sim))
       files:
         - tb/tb_tcdm_mem.sv
         - tb/monitor/perfCounters.sv

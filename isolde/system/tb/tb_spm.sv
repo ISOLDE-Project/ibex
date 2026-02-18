@@ -96,7 +96,7 @@ module tb_lca_system
   string stim_instr, stim_data;
 
   logic                 [31:0] sim_exit_code;
-  logic                        sim_exit_valid_o;
+  logic                        sim_exit_valid;
   MemStatisticsCallback        mem_stats_cb;
 
 

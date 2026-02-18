@@ -6,14 +6,14 @@ SYS_MAKEFILE        := $(ROOT_DIR)/isolde/system/Makefile
 export FPGA_DIR
 
 SYNTH_TARGET        += "-t xilinx"
-
+ENABLE_SPM          ?= 1
 .DEFAULT_GOAL:=help
 
 all: vivado-prj
 
 vivado_synth.tcl: Makefile.vivado $(FPGA_DIR)/ips/xilinx_sys_rst/xilinx_sys_rst.xpr $(FPGA_DIR)/ips/xilinx_clk_mngr/xilinx_clk_mngr.xpr
 	make -f  Makefile.vivado \
-			 DBG_MODULE=1 ENABLE_SPM=1 \
+			 DBG_MODULE=1 ENABLE_SPM=$(ENABLE_SPM) \
 	         FUSESOC_SYNTH_ROOT=$(FPGA_DIR) \
 			 BENDER_RTL_ROOT=$(SYS_DIR) \
 			 BENDER_SYNTH_TARGET=$(SYNTH_TARGET) \

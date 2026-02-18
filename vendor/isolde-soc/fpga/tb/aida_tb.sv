@@ -30,11 +30,16 @@ module tb_system (
   parameter bit ICacheECC = 1'b0;
   parameter bit BranchPredictor = 1'b0;
   parameter int unsigned IMEM_LATENCY = 0;
+`ifdef TARGET_RV_DEBUG
   parameter bit BootROMEnable = 1'b1;  // enable booting from ROM
+`else
+  parameter bit BootROMEnable = 1'b0;  // enable booting from instr memory
+`endif
 
-
-
-
+`ifndef TARGET_RV_DEBUG
+  logic [31:0] sim_exit_code;
+  logic        sim_exit_valid;
+`endif
   string stim_instr, stim_data;
 
   /********************************************************/
@@ -77,7 +82,19 @@ module tb_system (
       .clk(clk_i)
   );  // dummy interface for hwpe_stream_tcdm_fifo_store
 
+  /********************************************************/
+  /**          Simulation end                            **/
+  /*******************************************************/
 
+`ifndef TARGET_RV_DEBUG
+  always_comb begin
+    if (sim_exit_valid) begin
+      endSimulation(sim_exit_code);
+    end
+  end
+`endif
+
+`ifdef TARGET_RV_DEBUG
   /********************************************************/
   /**     JTAG simulation                                **/
   /*******************************************************/
@@ -101,7 +118,7 @@ module tb_system (
   always_comb begin : jtag_exit_handler
     if (sim_jtag_exit) endSimulation(32'h0);
   end
-
+`endif
 
   wire fetch_enable;
   ibex_rst i_ibex_rst (
@@ -110,27 +127,35 @@ module tb_system (
       .fetch_enable_o(fetch_enable)
   );
 
+
   // Main AIDA top-level instance
   aida_top #(
-      .RegFile         (ibex_pkg::RegFileFF)
-  )i_aida_top (
+      .BootROMEnable(BootROMEnable)
+  ) i_aida_top (
       .clk_i         (ref_clk),
       .rst_ni        (~sys_mb_reset),  // Use system reset controller output
       .fetch_enable_i(fetch_enable),
 
-      .pads_o,  
+      .pads_o,
       // JTAG port
-      .soc_jtag_in (jtag_req),
-      .soc_jtag_out(jtag_rsp)
+      .soc_jtag_in(jtag_req),
+      .soc_jtag_out(jtag_rsp),
+      .sim_exit_code_o(sim_exit_code),
+      .sim_exit_valid_o(sim_exit_valid)
   );
+
 
 
   // Declare the task with an input parameter for errors
   task endSimulation(input int errors);
 
-
-    $display("[AIDA TB] @ t=%0t - Finish!", $time);
-
+    if (errors != 0) begin
+      $display("[FPGA SIM] @ t=%0t - Fail!", $time);
+      $display("[FPGA SIM] @ t=%0t - errors=%08x", $time, errors);
+    end else begin
+      $display("[FPGA SIM] @ t=%0t - Success!", $time);
+      $display("[FPGA SIM] @ t=%0t - errors=%08x", $time, errors);
+    end
     $finish;
   endtask
 
