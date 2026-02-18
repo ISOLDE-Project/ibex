@@ -1,3 +1,8 @@
+# Vivado project
+in folder *isolde/system/fpga*:
+```sh
+make -f Makefile.nospm clean-vivado impl
+```
 
 # UART JTAG test
 

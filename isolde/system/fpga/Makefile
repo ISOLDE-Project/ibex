@@ -5,7 +5,7 @@ SYS_MAKEFILE        := $(ROOT_DIR)/isolde/system/Makefile
 
 export FPGA_DIR
 
-SYNTH_TARGET        += "-t xilinx"
+SYNTH_TARGET        += "-t xilinx -D COMMON_CELLS_ASSERTS_OFF"
 ENABLE_SPM          ?= 1
 .DEFAULT_GOAL:=help
 

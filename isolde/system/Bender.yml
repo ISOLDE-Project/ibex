@@ -16,6 +16,9 @@ dependencies:
 # any(T1, ..., TN) matches if any of the targets T1 to TN match (boolean OR)
 # not(T)           matches if target T does not match (boolean NOT)
 sources: 
+   - target: xilinx
+     files:
+     - fpga/rtl/xilinx_aida.sv
    - target: yosys
      files:
      - asic/ihp13/icg.sv
