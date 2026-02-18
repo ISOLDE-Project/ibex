@@ -37,9 +37,9 @@ module tb_system (
 `endif
 
 `ifndef TARGET_RV_DEBUG
-  logic                 [31:0] sim_exit_code;
-  logic                        sim_exit_valid;
-  `endif
+  logic [31:0] sim_exit_code;
+  logic        sim_exit_valid;
+`endif
   string stim_instr, stim_data;
 
   /********************************************************/
@@ -127,31 +127,35 @@ module tb_system (
       .fetch_enable_o(fetch_enable)
   );
 
+
   // Main AIDA top-level instance
   aida_top #(
-     .BootROMEnable   (BootROMEnable)
-  )i_aida_top (
+      .BootROMEnable(BootROMEnable)
+  ) i_aida_top (
       .clk_i         (ref_clk),
       .rst_ni        (~sys_mb_reset),  // Use system reset controller output
       .fetch_enable_i(fetch_enable),
 
-      .pads_o,  
+      .pads_o,
       // JTAG port
-      .soc_jtag_in (jtag_req),
-      .soc_jtag_out(jtag_rsp)
-`ifdef TARGET_VERILATOR,
+      .soc_jtag_in(jtag_req),
+      .soc_jtag_out(jtag_rsp),
       .sim_exit_code_o(sim_exit_code),
       .sim_exit_valid_o(sim_exit_valid)
-`endif
   );
+
 
 
   // Declare the task with an input parameter for errors
   task endSimulation(input int errors);
 
-
-    $display("[AIDA TB] @ t=%0t - Finish!", $time);
-
+    if (errors != 0) begin
+      $display("[FPGA SIM] @ t=%0t - Fail!", $time);
+      $display("[FPGA SIM] @ t=%0t - errors=%08x", $time, errors);
+    end else begin
+      $display("[FPGA SIM] @ t=%0t - Success!", $time);
+      $display("[FPGA SIM] @ t=%0t - errors=%08x", $time, errors);
+    end
     $finish;
   endtask
 
