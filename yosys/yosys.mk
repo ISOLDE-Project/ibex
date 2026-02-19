@@ -78,4 +78,7 @@ show-flows:
 	@echo "yosys_synthesis (default)"
 	@echo "yosys_check"
 
-.PHONY:  yosys	yosys-check yosys-clean show-flows
+sv-wrapper:
+	python3 $(YOSYS_DIR)/scripts/make_wrapper.py $(NETLIST) $(YOSYS_OUT)/$(TOP_DESIGN).sv
+
+.PHONY:  yosys	yosys-check yosys-clean show-flows sv-wrapper
