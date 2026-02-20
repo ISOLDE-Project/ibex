@@ -9,7 +9,6 @@
 
 #####
 VERI_LOG_DIR      ?= $(mkfile_path)/log/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)
-SIM_TEST_INPUTS   ?= $(mkfile_path)/vsim
 BIN_DIR           = $(mkfile_path)/bin/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)
 VERI_FLAGS        +=
 NO_TEE		      ?= 1

@@ -12,3 +12,6 @@ yosys-manifest.flist: Bender.yml
 	touch $@
 
 
+asic-sim.flist: Bender.yml
+	$(BENDER) script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(VLT_BENDER)  >$@
+	touch $@

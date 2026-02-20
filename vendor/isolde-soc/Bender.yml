@@ -72,4 +72,8 @@ sources:
       files:
         - asic/rtl/aida_top.sv
         - asic/rtl/rv_domain_top.sv
-    
+    - target: asic_sim
+      files:
+        - ../../yosys/out/rv_top_yosys.v
+        - ../../yosys/out/rv_top.sv
+        - asic/tb/asic_tb.sv
