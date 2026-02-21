@@ -1,3 +1,59 @@
+# Copyleft 2024
+
+# ------------------------------
+# Case 1: dict-style sources
+#
+# sources:
+#   default:
+#     - a.cpp
+#   vanilla:
+#     - b.cpp
+# ------------------------------
+#
+# ------------------------------
+# Case 2: list-style sources
+#
+# sources:
+#   - files: [...]
+#     target: vanilla
+# ------------------------------
+
+defines:
+    ihp13:
+      RV32M: ibex_pkg::RV32MFast
+      RV32B: ibex_pkg::RV32BNone
+      RegFile: ibex_pkg::RegFileFF
+
 sources:
-  vanilla:
+  default:
     - sim/core/tb_top_verilator.cpp
+  ihp13:
+  # IBEX package files( needed for verilator testbench)
+    - ../../rtl/ibex_pkg.sv
+    #- ../../isolde/system/tmp/isolde/sim-verilator/generated/lowrisc_prim_prim_pkg-impl_0.1/prim_pkg.sv
+    - ../../vendor/lowrisc_ip/ip/prim/rtl/prim_ram_1p_pkg.sv
+#    - ../../vendor/lowrisc_ip/ip/prim/rtl/prim_cipher_pkg.sv
+#    - ../../vendor/lowrisc_ip/ip/prim/rtl/prim_secded_pkg.sv
+    - ../../rtl/ibex_tracer_pkg.sv
+#    - ../../vendor/lowrisc_ip/ip/prim/rtl/prim_count_pkg.sv
+#    - ../../vendor/lowrisc_ip/ip/prim/rtl/prim_util_pkg.sv
+#    - ../../vendor/lowrisc_ip/ip/prim/rtl/prim_mubi_pkg.sv 
+  # ISOLDE package files( needed for verilator testbench)
+#    - .bender/git/checkouts/common_cells-5f8752ff87c3029a/src/cb_filter_pkg.sv
+#    - .bender/git/checkouts/common_cells-5f8752ff87c3029a/src/cdc_reset_ctrlr_pkg.sv
+#    - .bender/git/checkouts/common_cells-5f8752ff87c3029a/src/cf_math_pkg.sv
+#    - .bender/git/checkouts/common_cells-5f8752ff87c3029a/src/ecc_pkg.sv
+#    - .bender/git/checkouts/cluster_interconnect-2e435a1bc5694a09/rtl/tcdm_interconnect/tcdm_interconnect_pkg.sv
+#    - .bender/git/checkouts/fpnew-8ce10fc9208d86ea/src/fpnew_pkg.sv
+#    - .bender/git/checkouts/axi-5480d715b198aaaa/src/axi_pkg.sv
+#    - ../../vendor/redmule/rtl/redmule_pkg.sv
+#    - ../../vendor/riscv-dbg/src/dm_pkg.sv
+#    - .bender/git/checkouts/udma_core-05081fbbf78770c7/rtl/common/udma_pkg.sv
+#    - ../../vendor/isolde-dm/rtl/jtag_pkg.sv
+#    - ../../vendor/isolde-dm/rtl/rv_dm_pkg.sv
+    - ../../vendor/isolde-soc/rtl/common/isolde_tcdm_pkg.sv
+#    - ../../vendor/isolde-soc/rtl/aida_lca_pkg.sv
+    - ../../vendor/isolde-soc/rtl/io/aida_io_pkg.sv
+  # PDK simulation models  
+    - ../../ihp13/pdk/ihp-sg13g2/libs.ref/sg13g2_stdcell/verilog/sg13g2_stdcell.v 
+  

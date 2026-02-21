@@ -8,9 +8,9 @@ module tb_system (
 
 );
 
-  import redmule_pkg::*;
-  import isolde_tcdm_pkg::*;
-  import aida_lca_package::*;
+  //import redmule_pkg::*;
+  //import isolde_tcdm_pkg::*;
+  //import aida_lca_package::*;
   //ibex parameters
   parameter bit SecureIbex = 1'b0;
   parameter bit ICacheScramble = 1'b0;

@@ -1,7 +1,9 @@
 
 %:
-	 @echo  $(MAKECMDGOALS)
-	 make DBG_MODULE=0 ENABLE_SPM=1 \
+	@echo "EXPERIMENTAL MAKEFILE, DO NOT USE"
+	@exit 1
+	@echo  $(MAKECMDGOALS)
+	make DBG_MODULE=0 ENABLE_SPM=1 \
 	    VLT_TOP_MODULE=tb_system     \
 		BENDER_EXTRA_TARGET="-t fpga_sim" \
 	 	TEST=redmule128b_test $@

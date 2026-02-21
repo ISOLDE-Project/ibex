@@ -77,7 +77,9 @@ include $(mkfile_path)/../mk/verilator-build.mk
 include $(mkfile_path)/../mk/vivado.mk
 include $(mkfile_path)/../mk/yosys.mk
 
-
+# Open EDA
+include $(ROOT_DIR)/yosys/yosys.mk
+include $(ROOT_DIR)/openroad/openroad.mk
 
 	
 

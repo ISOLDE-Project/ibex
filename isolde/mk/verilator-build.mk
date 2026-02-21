@@ -19,7 +19,8 @@ else
   TEE_CMD := | tee $(VERI_LOG_DIR)/$(TEST).log
 endif
 
-
+FLIST_LEVEL_1  ?= ibex_sim.flist 
+FLIST_LEVEL_2  ?= manifest.flist
 
 .PHONY: veri-clean 
 
@@ -58,11 +59,11 @@ manifest.flist: Bender.yml
 	touch $@
 
 
-verilate:  ibex_sim.flist manifest.flist
+verilate:  $(FLIST_LEVEL_1) $(FLIST_LEVEL_2)
 #	mkdir -p $(dir $@)
 	mkdir -p $(BIN_DIR)
-	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist     \
-											     PE_MANIFEST=${CURDIR}/manifest.flist    \
+	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/$(FLIST_LEVEL_1)     \
+											     PE_MANIFEST=${CURDIR}/$(FLIST_LEVEL_2)   \
 	                                             SIM_RESULTS=$(BIN_DIR)                  \
 												   RUN_INDEX=$(IMEM_LATENCY)           \
 											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
@@ -163,3 +164,15 @@ bender-clean:
 rtl-update:	bender-clean
 	git submodule update --init
 	bender update
+
+#helpers
+ibex_pkg.flist:  ibex_sim.flist
+	python $(ROOT_DIR)/util/extract_pkg_from_flist.py  $< \
+											    -o $@	
+	touch $@
+
+manifest_pkg.flist:  manifest.flist	
+	python $(ROOT_DIR)/util/extract_pkg_from_flist.py  $< \
+											    -o $@	
+	touch $@
+

@@ -1,5 +1,7 @@
 
 %:
+	@echo "EXPERIMENTAL MAKEFILE, DO NOT USE"
+	@exit 1
 	 @echo  $(MAKECMDGOALS)
 	 make DBG_MODULE=1 ENABLE_SPM=1 \
 	    VLT_TOP_MODULE=tb_system     \

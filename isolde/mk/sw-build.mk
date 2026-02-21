@@ -212,7 +212,7 @@ test-clean: clean-bsp
 
 
 
-clean: veri-clean test-clean-programs
+clean: veri-clean test-clean
 	rm -fr $(BUILD_DIR) $(TEST_BIN_DIR) logs 
 	rm -f *.log *.csv
 
