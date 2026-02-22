@@ -4,25 +4,6 @@ module rv_domain
   import isolde_tcdm_pkg::*;
   import aida_lca_package::*;
 #(
-    parameter bit          PMPEnable        = 1'b0,
-    parameter int unsigned PMPGranularity   = 0,
-    parameter int unsigned PMPNumRegions    = 4,
-    parameter int unsigned MHPMCounterNum   = 0,
-    parameter int unsigned MHPMCounterWidth = 40,
-    parameter bit          RV32E            = 1'b0,
-    parameter rv32m_e      RV32M            = RV32MSingleCycle,
-    parameter rv32b_e      RV32B            = RV32BNone,
-    parameter regfile_e    RegFile          = RegFileFF,
-    parameter bit          BranchTargetALU  = 1'b0,
-    parameter bit          WritebackStage   = 1'b0,
-    parameter bit          ICache           = 1'b1,
-    parameter bit          ICacheECC        = 1'b0,
-    parameter bit          BranchPredictor  = 1'b0,
-    parameter bit          DbgTriggerEn     = 1'b0,
-    parameter bit          SecureIbex       = 1'b0,
-    parameter bit          ICacheScramble   = 1'b0,
-    parameter int unsigned DmHaltAddr       = 32'h1A11_0800,
-    parameter int unsigned DmExceptionAddr  = 32'h1A11_0808,
     parameter bit          BootROMEnable    = 1'b1
 ) (
     input  logic                  clk_i,
@@ -47,9 +28,7 @@ module rv_domain
   logic                               core_sleep;
   logic [                NC-1:0][1:0] evt;
 
-   logic [31:0] BOOT_ADDR;
 
-   assign BOOT_ADDR =  BootROMEnable? ROM_BOOT_ADDR : RV_BOOT_ADDR;
 
 
   /********************************************************/
@@ -354,60 +333,20 @@ aida_io #(
 
 
   /********************************************************/
-  /**     IBEX core                                     **/
-  /*******************************************************/  
-`ifdef TARGET_VERILATOR
-`ifdef TARGET_ASIC_SIM
- rv_top_wrapper
-`else
-  ibex_top_tracing 
-`endif    
-`else    
-  ibex_top 
-`endif   
-`ifndef TARGET_ASIC_SIM
-    #(
-      .SecureIbex      (SecureIbex),
-      .ICacheScramble  (ICacheScramble),
-      .PMPEnable       (PMPEnable),
-      .PMPGranularity  (PMPGranularity),
-      .PMPNumRegions   (PMPNumRegions),
-      .MHPMCounterNum  (MHPMCounterNum),
-      .MHPMCounterWidth(MHPMCounterWidth),
-      .RV32E           (RV32E),
-      .RV32M           (RV32M),
-      .RV32B           (RV32B),
-      .RegFile         (RegFile),
-      .BranchTargetALU (BranchTargetALU),
-      .ICache          (ICache),
-      .ICacheECC       (ICacheECC),
-      .WritebackStage  (WritebackStage),
-      .BranchPredictor (BranchPredictor),
-      .DbgTriggerEn    (DbgTriggerEn),
-      .DmHaltAddr      (DmHaltAddr),  
-      .DmExceptionAddr (DmExceptionAddr)
-  ) 
-`endif
-  i_ibex_top (
+  /**     RISC-V top                                    **/
+  /*******************************************************/
+ 
+  rv_top #( 
+   .BootROMEnable(BootROMEnable)
+  ) i_rv_top (
       .clk_i (clk_i),
       .rst_ni(rst_ni),
-`ifndef TARGET_ASIC_SIM
-      .test_en_i  (1'b0),
-      .scan_rst_ni(1'b1),
-      .ram_cfg_i  (prim_ram_1p_pkg::RAM_1P_CFG_DEFAULT),
-
-      .hart_id_i        (32'b0),
-      // First instruction executed is at 0x0 + 0x80
-      .boot_addr_i      (BOOT_ADDR),
- `endif     
       // === Instruction memory interface
       .instr_req_o      (tcdm_core_inst.req.req),
       .instr_gnt_i      (tcdm_core_inst.rsp.gnt),
       .instr_rvalid_i   (tcdm_core_inst.rsp.valid),
       .instr_addr_o     (tcdm_core_inst.req.addr),
       .instr_rdata_i    (tcdm_core_inst.rsp.data),
-      //.instr_rdata_intg_i     (instr_rdata_intg),
-      //.instr_err_i            (instr_err),
       // === Data memory interface
       .data_req_o       (tcdm_core_data.req.req),
       .data_gnt_i       (tcdm_core_data.rsp.gnt),
@@ -416,34 +355,17 @@ aida_io #(
       .data_be_o        (tcdm_core_data.req.be),
       .data_we_o        (tcdm_core_data.req.we),
       .data_wdata_o     (tcdm_core_data.req.data),
-      .data_wdata_intg_o(),
       .data_rdata_i     (tcdm_core_data.rsp.data),
-      .data_rdata_intg_i(),
-      .data_err_i       (),
 
       .irq_software_i(evt[0][0]),
-`ifndef TARGET_ASIC_SIM      
-      .irq_timer_i   (1'b0),
-      .irq_external_i(1'b0),
-      .irq_fast_i    (1'b0),
-      .irq_nm_i      (1'b0),
 
-      .scramble_key_valid_i('0),
-      .scramble_key_i      ('0),
-      .scramble_nonce_i    ('0),
-      .scramble_req_o      (),
-`endif
-      .debug_req_i        (debug_req[0])
-`ifndef TARGET_ASIC_SIM      
-     , .crash_dump_o       (),
-      .double_fault_seen_o(),
+
+      .debug_req_i        (debug_req[0]),
+ 
 
       .fetch_enable_i        (fetch_enable_i),
-      .alert_minor_o         (),
-      .alert_major_internal_o(),
-      .alert_major_bus_o     (),
+
       .core_sleep_o          (core_sleep)
-`endif
   );
 
 

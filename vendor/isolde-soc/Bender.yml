@@ -32,6 +32,7 @@ sources:
     - rtl/uart/udma_uart_tx.sv
     - rtl/uart/isolde_uart_top.sv
     - rtl/io/aida_io.sv
+    - rtl/rv_top.sv
     ##level 2
     - rtl/hwe/isolde_redmule_top.sv
     - rtl/noc/isolde_router.sv
