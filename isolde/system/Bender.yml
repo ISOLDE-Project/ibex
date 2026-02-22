@@ -22,6 +22,6 @@ sources:
    - target: yosys
      files:
      - asic/ihp13/icg.sv
-     - asic/rtl/rv_top.sv
+ 
 
 

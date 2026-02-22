@@ -21,3 +21,13 @@ asic-sim.flist: sv-wrapper Bender.yml
 	$(BENDER) script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(VLT_BENDER)  >$@
 	touch $@
 	
+## Generate yosys.flist used to read design in yosys 
+yosys.flist:  ibex_synth.tcl
+	make  DBG_MODULE=$(DBG_MODULE) \
+	      ENABLE_SPM=$(ENABLE_SPM) \
+		  BENDER_EXTRA_TARGET="-t yosys" \
+		  vivado-clean  $<  \
+		  yosys-manifest.flist
+	tclsh $(ROOT_DIR)/yosys/scripts/vivado_tcl_to_yosys_f.tcl $<
+	@cat  ibex-yosys.flist yosys-manifest.flist >$@	
+	touch $@

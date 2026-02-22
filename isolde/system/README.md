@@ -146,3 +146,15 @@ kill -9 27459
  ```sh
   make -f Makefile.wrapper  veri-clean verilate veri-run
  ```
+ # YOSYS
+ in folder **isolde/system**
+```sh
+ make -f Makefile.yosys clean   help
+ ```
+For synthesis:  
+ ```sh
+ make -f Makefile.yosys clean   yosys
+ ```
+ Output(s) available here:
+ - yosys/out
+ - yosys/reports  

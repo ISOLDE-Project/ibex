@@ -1,0 +1,65 @@
+include config.mk
+SYS_DIR             :=  $(ROOT_DIR)/isolde/system
+
+
+# Tools
+BENDER	  ?= bender
+PYTHON3   ?= python3
+YOSYS     ?= yosys
+OPENROAD  ?= openroad
+KLAYOUT   ?= klayout
+VSIM      ?= vsim
+
+
+
+
+
+
+
+include  $(ROOT_DIR)/isolde/mk/vivado.mk
+include $(ROOT_DIR)/isolde/mk/yosys.mk
+include $(ROOT_DIR)/yosys/yosys.mk
+
+#include $(ROOT_DIR)/openroad/openroad.mk
+
+###########
+# Cleanup #
+###########
+
+## Delete generated files and directories
+clean: 
+	$(MAKE) -f Makefile.yosys yosys-clean
+	rm -f $(SYS_DIR)/ibex_synth.tcl
+	rm -f $(SYS_DIR)/yosys-manifest.flist
+	rm -f yosys.flist
+
+.PHONY: clean
+
+.PHONY: redmule-clean
+redmule-clean:
+	cd vendor/redmule && \
+	git reset --hard  && \
+	git clean -xfdxf
+
+## Delete bender generated file
+bender-clean:
+	rm -f $(SYS_DIR)/Bender.lock
+
+bender-update: bender-clean
+	cd isolde/system/ && \
+	$(BENDER) update
+	make -C  $(SYS_DIR)/patches 
+
+## Checkout/update dependencies using Bender
+checkout: $(IHP_RCX_FILE)
+	git submodule update --init --recursive 
+	cd isolde/system/ && \
+	$(BENDER) checkout 
+	
+## Patch the pulp-platform RTL code
+patch:
+	$(MAKE) -C $(SYS_DIR)/patches 
+
+.PHONY: bender-clean bender-update checkout patch
+
+include $(ROOT_DIR)/common.mk

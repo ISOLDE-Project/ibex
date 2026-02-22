@@ -2,7 +2,7 @@ module rv_top
 import ibex_pkg::*;
 import aida_lca_package::*;
 #(
- parameter bit BootROMEnable = 1'b1
+ parameter  BootROMEnable = 1'b1
 )(
    // Clock and Reset
     input logic clk_i,

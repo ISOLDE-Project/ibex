@@ -19,8 +19,8 @@ YOSYS_REPORTS	:= $(YOSYS_DIR)/reports
 TOP_DESIGN		?= rv_top
 
 # file containing include dirs, defines and paths to all source files
-SV_FLIST    	:= $(YOSYS_DIR)/../yosys.flist
-$(SV_FLIST): yosys-flist
+SV_FLIST    	:= $(SYS_DIR)/yosys.flist
+$(SV_FLIST): yosys.flist
 
 # path to the resulting netlists (debug preserves multibit signals)
 NETLIST			:= $(YOSYS_OUT)/$(TOP_DESIGN)_yosys.v
@@ -69,8 +69,7 @@ yosys-clean:
 	rm -rf $(YOSYS_REPORTS) 
 	rm -f $(YOSYS_DIR)/*.log
 	rm -f $(SV_FLIST)
-	rm -f $(SYS_DIR)/ibex_synth.tcl
-	rm -f $(SYS_DIR)/yosys-manifest.flist
+
 ## Show available flows	
 show-flows:
 	@echo "Available flows:"

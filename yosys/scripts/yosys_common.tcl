@@ -57,3 +57,5 @@ proc processAbcScript {abc_script} {
     close $abc_out
     return $abc_out_path
 }
+#parameters
+set BootROMEnable 0

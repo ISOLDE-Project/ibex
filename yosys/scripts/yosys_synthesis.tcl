@@ -23,10 +23,10 @@ source scripts/init_tech.tcl
 
 yosys plugin -i slang.so
 # default from yosys_common.tcl: top_design=croc_chip; sv_flist=../croc.flist
-yosys read_slang --top $top_design -F $sv_flist \
+yosys read_slang -D BootROMEnable=$BootROMEnable --top $top_design -F $sv_flist \
         --compat-mode --keep-hierarchy \
-        --allow-use-before-declare --ignore-unknown-modules
-
+        --allow-use-before-declare --ignore-unknown-modules 
+        
 # preserve hierarchy of selected modules/instances
 # 't' means type as in select all instances of this type/module
 # yosys-slang uniquifies all modules with the naming scheme:
