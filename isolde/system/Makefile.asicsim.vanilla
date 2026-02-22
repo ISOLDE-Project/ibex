@@ -5,5 +5,5 @@
 	 	FLIST_LEVEL_1=pdk-sim.flist   \
         FLIST_LEVEL_2=asic-sim.flist  \
 	    VLT_TOP_MODULE=asic_tb        \
-		BENDER_EXTRA_TARGET="-t fpga_sim -t asic_sim" \
+		BENDER_EXTRA_TARGET=" -t asic_sim" \
 	 	TEST=hello_test $@

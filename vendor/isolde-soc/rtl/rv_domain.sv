@@ -355,12 +355,18 @@ aida_io #(
 
   /********************************************************/
   /**     IBEX core                                     **/
-  /*******************************************************/
+  /*******************************************************/  
 `ifdef TARGET_VERILATOR
-  ibex_top_tracing #(
+`ifdef TARGET_ASIC_SIM
+ rv_top_wrapper
+`else
+  ibex_top_tracing 
+`endif    
 `else    
-  ibex_top #(
+  ibex_top 
 `endif   
+`ifndef TARGET_ASIC_SIM
+    #(
       .SecureIbex      (SecureIbex),
       .ICacheScramble  (ICacheScramble),
       .PMPEnable       (PMPEnable),
@@ -380,10 +386,12 @@ aida_io #(
       .DbgTriggerEn    (DbgTriggerEn),
       .DmHaltAddr      (DmHaltAddr),  
       .DmExceptionAddr (DmExceptionAddr)
-  ) i_ibex_top (
+  ) 
+`endif
+  i_ibex_top (
       .clk_i (clk_i),
       .rst_ni(rst_ni),
-
+`ifndef TARGET_ASIC_SIM
       .test_en_i  (1'b0),
       .scan_rst_ni(1'b1),
       .ram_cfg_i  (prim_ram_1p_pkg::RAM_1P_CFG_DEFAULT),
@@ -391,6 +399,7 @@ aida_io #(
       .hart_id_i        (32'b0),
       // First instruction executed is at 0x0 + 0x80
       .boot_addr_i      (BOOT_ADDR),
+ `endif     
       // === Instruction memory interface
       .instr_req_o      (tcdm_core_inst.req.req),
       .instr_gnt_i      (tcdm_core_inst.rsp.gnt),
@@ -413,6 +422,7 @@ aida_io #(
       .data_err_i       (),
 
       .irq_software_i(evt[0][0]),
+`ifndef TARGET_ASIC_SIM      
       .irq_timer_i   (1'b0),
       .irq_external_i(1'b0),
       .irq_fast_i    (1'b0),
@@ -422,9 +432,10 @@ aida_io #(
       .scramble_key_i      ('0),
       .scramble_nonce_i    ('0),
       .scramble_req_o      (),
-
-      .debug_req_i        (debug_req[0]),
-      .crash_dump_o       (),
+`endif
+      .debug_req_i        (debug_req[0])
+`ifndef TARGET_ASIC_SIM      
+     , .crash_dump_o       (),
       .double_fault_seen_o(),
 
       .fetch_enable_i        (fetch_enable_i),
@@ -432,6 +443,7 @@ aida_io #(
       .alert_major_internal_o(),
       .alert_major_bus_o     (),
       .core_sleep_o          (core_sleep)
+`endif
   );
 
 

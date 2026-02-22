@@ -38,13 +38,20 @@ sources:
     - rtl/ibex_rst.sv
     ##level 3
     - rtl/rv_domain.sv
-    - target: all(not(yosys),any(tb_dm,redmule_test_hwpe, redmule_complex,redmule_test_complex,fpga_sim))
+    - rtl/aida_top.sv
+
+    - target: all(not(yosys),any(tb_dm,redmule_test_hwpe, redmule_complex,redmule_test_complex,fpga_sim,asic_sim))
       files:
         - tb/tb_tcdm_mem.sv
         - tb/monitor/perfCounters.sv
         - tb/monitor/isolde_hci_monitor.sv
         - tb/tb_sram_mem.sv
-        - tb/tb_axi_mem.sv
+        - tb/tb_axi_mem.sv    
+        
+    - target: any(asic_sim,fpga_sim)
+      files:
+        - fpga/sim/tcdm_mem.sv
+
     - target: u_test
       files:
         - tb/tb_tcdm_mem.sv
@@ -61,13 +68,10 @@ sources:
       files:
         - fpga/rtl/aida_padframe.sv
         - fpga/rtl/tcdm_mem.sv
-        - fpga/rtl/aida_top.sv
+ #       - fpga/rtl/aida_top.sv
     - target: fpga_sim
       files:
-        - fpga/rtl/aida_top.sv
-        - fpga/sim/tcdm_mem.sv
         - fpga/tb/aida_tb.sv
-        - fpga/tb/aida_lca_tb.sv
     - target: yosys
       files:
         - asic/rtl/aida_top.sv
