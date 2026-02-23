@@ -70,7 +70,7 @@ sources:
         - fpga/rtl/aida_padframe.sv
         - fpga/rtl/tcdm_mem.sv
  #       - fpga/rtl/aida_top.sv
-    - target: fpga_sim
+    - target: any(fpga_sim,asic_sim)
       files:
         - fpga/tb/aida_tb.sv
     # - target: yosys
@@ -81,4 +81,4 @@ sources:
       files:
         - ../../yosys/out/rv_top_yosys.v
         - ../../yosys/out/rv_top.sv
-        - asic/tb/asic_tb.sv
+    #    - asic/tb/asic_tb.sv

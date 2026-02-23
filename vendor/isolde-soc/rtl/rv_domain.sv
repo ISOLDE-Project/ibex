@@ -335,7 +335,39 @@ aida_io #(
   /********************************************************/
   /**     RISC-V top                                    **/
   /*******************************************************/
+ `ifdef TARGET_ASIC_SIM
+ rv_top_netlist_wrapper 
+    i_rv_top_netlist (
+      .clk_i (clk_i),
+      .rst_ni(rst_ni),
+      // === Instruction memory interface
+      .instr_req_o      (tcdm_core_inst.req.req),
+      .instr_gnt_i      (tcdm_core_inst.rsp.gnt),
+      .instr_rvalid_i   (tcdm_core_inst.rsp.valid),
+      .instr_addr_o     (tcdm_core_inst.req.addr),
+      .instr_rdata_i    (tcdm_core_inst.rsp.data),
+      // === Data memory interface
+      .data_req_o       (tcdm_core_data.req.req),
+      .data_gnt_i       (tcdm_core_data.rsp.gnt),
+      .data_rvalid_i    (tcdm_core_data.rsp.valid),
+      .data_addr_o      (tcdm_core_data.req.addr),
+      .data_be_o        (tcdm_core_data.req.be),
+      .data_we_o        (tcdm_core_data.req.we),
+      .data_wdata_o     (tcdm_core_data.req.data),
+      .data_rdata_i     (tcdm_core_data.rsp.data),
+
+      .irq_software_i(evt[0][0]),
+
+
+      .debug_req_i        (debug_req[0]),
  
+
+      .fetch_enable_i        (fetch_enable_i),
+
+      .core_sleep_o          (core_sleep)
+  );
+
+ `else
   rv_top #( 
    .BootROMEnable(BootROMEnable)
   ) i_rv_top (
@@ -367,7 +399,7 @@ aida_io #(
 
       .core_sleep_o          (core_sleep)
   );
-
+`endif
 
 
 

@@ -162,5 +162,6 @@ yosys tee -q -o "${rep_dir}/${top_design}_area.rpt" stat -top $top_design {*}$li
 yosys tee -q -o "${rep_dir}/${top_design}_area_logic.rpt" stat -top $top_design {*}$tech_cells_args
 
 # final netlist
+yosys rename -top ${top_design}_netlist
 yosys write_verilog -noattr -noexpr -nohex -nodec ${out_dir}/${top_design}_yosys.v
 

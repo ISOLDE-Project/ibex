@@ -77,6 +77,7 @@ show-flows:
 	@echo "yosys_synthesis (default)"
 	@echo "yosys_check"
 
+## Generate System Verilog wrapper of the netlist
 sv-wrapper:
 	python3 $(YOSYS_DIR)/scripts/make_wrapper.py $(NETLIST) $(YOSYS_OUT)/$(TOP_DESIGN).sv
 

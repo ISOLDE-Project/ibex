@@ -23,6 +23,7 @@ defines:
       RV32M: ibex_pkg::RV32MFast
       RV32B: ibex_pkg::RV32BNone
       RegFile: ibex_pkg::RegFileFF
+      BootROMEnable: 1'b0
 
 sources:
   default:

@@ -4,6 +4,6 @@
 	 make DBG_MODULE=0 ENABLE_SPM=0   \
 	 	FLIST_LEVEL_1=pdk-sim.flist   \
         FLIST_LEVEL_2=asic-sim.flist  \
-	    VLT_TOP_MODULE=asic_tb        \
+	    VLT_TOP_MODULE=tb_system        \
 		BENDER_EXTRA_TARGET=" -t asic_sim" \
 	 	TEST=hello_test $@

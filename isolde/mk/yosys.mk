@@ -17,7 +17,7 @@ pdk-sim.flist: Verilator.yml
 											    -o $@	
 	touch $@
 
-asic-sim.flist: sv-wrapper Bender.yml
+asic-sim.flist:  Bender.yml
 	$(BENDER) script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(VLT_BENDER)  >$@
 	touch $@
 	
