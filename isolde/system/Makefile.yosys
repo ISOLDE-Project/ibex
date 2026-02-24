@@ -53,7 +53,7 @@ bender-update: bender-clean
 ## Checkout/update dependencies using Bender
 checkout: $(IHP_RCX_FILE)
 	git submodule update --init --recursive 
-	cd isolde/system/ && \
+	cd $(SYS_DIR) && \
 	$(BENDER) checkout 
 	
 ## Patch the pulp-platform RTL code
