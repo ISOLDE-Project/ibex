@@ -67,6 +67,16 @@ cd isolde/tca_system/
 . ./eth.sh 
 bender update
 ```
+## How to List Branches That Contain a Given Commit?
+In submodule find the commit id:  
+```sh
+$ git status
+HEAD detached at 89f09db
+```
+```sh
+ $ git branch -r  --contains 89f09db
+  origin/isolde/spm
+  ```
 # merging
 ```sh
 # Step 1: Switch to the target branch isolde/dev
