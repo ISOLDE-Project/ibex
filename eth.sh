@@ -2,7 +2,7 @@
 # Copyleft
 
 # Define environment variables
-MINICONDA=~/miniconda3/etc/profile.d/conda.sh
+MINICONDA=$HOME/hdd1/miniconda3/etc/profile.d/conda.sh
 MINICONDA_ENV=ibex
 # To activate this environment, use
 #

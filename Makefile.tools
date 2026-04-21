@@ -26,8 +26,11 @@ all: dev-dep verilator riscv32-gcc riscv32-llvm  openocd
 ${TOOLS_DIR}:
 	mkdir -p $@
 
+${INSTALL_DIR}:
+	mkdir -p $@
+
 ## Install Verilator
-verilator: ${VERIL_INSTALL_DIR}/bin/verilator
+verilator: ${TOOLS_DIR} ${INSTALL_DIR} ${VERIL_INSTALL_DIR}/bin/verilator
 
 ${VERIL_INSTALL_DIR}/bin/verilator:
 	rm -fr $(TOOLS_DIR)/verilator
@@ -62,7 +65,7 @@ $(GCC_INSTALL_DIR): vendor/riscv32-elf-gcc.url
 
 riscv32-llvm: $(LLVM_INSTALL_DIR)
 
-$(TOOLS_DIR)/riscv32-elf-llvm.tar.gz: ${TOOLS_DIR} vendor/riscv32-elf-llvm.url
+$(TOOLS_DIR)/riscv32-elf-llvm.tar.gz: vendor/riscv32-elf-llvm.url
 	cd $(TOOLS_DIR) && \
 	wget `cat $(CURDIR)/$<` -O riscv32-elf-llvm.tar.gz && \
 	touch riscv32-elf-llvm.tar.gz
@@ -83,8 +86,11 @@ dev-dep:
 	sudo apt-get install libyaml-cpp-dev libboost-all-dev
 	sudo apt-get install gawk
 
-.PHONY: dev-dep
 
+ol-dev:
+	sudo dnf install help2man
+
+.PHONY: dev-dep ol-dev 
 
 $(HOME)/eth/$(BENDER_ARCH_FILE):
 	mkdir -p $(HOME)/eth && cd $(HOME)/eth       &&  \
