@@ -37,7 +37,7 @@ sources:
     - rtl/noc/isolde_router.sv
     - rtl/ibex_rst.sv
     ##level 3
-    - rtl/aida_lca.sv
+    # - rtl/aida_lca.sv
     - rtl/aida.sv
     - target: any(tb_dm,redmule_test_hwpe, redmule_complex,redmule_test_complex)
       files:

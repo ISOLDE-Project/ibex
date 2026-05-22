@@ -57,17 +57,12 @@ module isolde_fetch_vleninstr (
   assign word_instr_req_o = vlen_instr_req_i;
   assign vlen_instr_ready_o = word_instr_ready_i;
 
-  //output the deserialiser
-  assign vlen_instr_o[0] = word_instr_i;
-  assign vlen_instr_o[1] = des_instr[0];
-  assign vlen_instr_o[2] = des_instr[1];
-  assign vlen_instr_o[3] = des_instr[2];
-  assign vlen_instr_o[4] = des_instr[3];
+
 
   //assign word_instr_req_o = _word_instr_req_o;
   //assign vlen_instr_ready_o = _vlen_instr_ready_o;
 
-  assign vlen_instr_words_o =_vlen_instr_words_o;
+
 
   logic             _word_instr_req_o;  // request a word_instr_i
   logic [3:0][31:0] des_instr;  // In-order succession of maximum 5 word_instr_i
@@ -75,9 +70,14 @@ module isolde_fetch_vleninstr (
   logic             _vlen_instr_ready_o;  // _vlen_instr_o is ready to use
 
 
+  assign vlen_instr_words_o =_vlen_instr_words_o;
 
-
-
+  //output the deserialiser
+  assign vlen_instr_o[0] = word_instr_i;
+  assign vlen_instr_o[1] = des_instr[0];
+  assign vlen_instr_o[2] = des_instr[1];
+  assign vlen_instr_o[3] = des_instr[2];
+  assign vlen_instr_o[4] = des_instr[3];
 
 
   always_ff @(posedge clk_i, negedge rst_ni)
