@@ -33,6 +33,7 @@ questa-clean:
 	rm -f ibex_questa.flist manifest_questa.flist
 	rm -fr $(BIN_DIR)
 	rm -fr $(QUESTA_LOG_DIR)
+	rm -fr tmp/*
 # 	rm -fr log/$(QUESTA_TOP_MODULE)
 
 
@@ -49,9 +50,9 @@ ibex_questa.flist: $(CORE_FILES)
 	        $(FUSESOC_PKG_NAME) $(FUSESOC_CONFIG_OPTS)
 # 	# Transform paths for QuestaSim (questa subtree instead of sim-verilator)
 	python $(ROOT_DIR)/util/flist2questa.py                            \
-	        $(FUSESOC_BUILD_ROOT)/sim_questa-verilator/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc \
+	        $(FUSESOC_BUILD_ROOT)/sim-verilator/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc \
 	        $@                              \
-			--anchor $(FUSESOC_BUILD_ROOT)/sim_questa-verilator
+			--anchor $(FUSESOC_BUILD_ROOT)/sim-verilator
 	touch $@
 ##
 
@@ -75,6 +76,7 @@ QUESTA_SUPPRESS += -suppress 442  # Port not found in module
 QUESTA_SUPPRESS += -suppress 2912  # Port not found in module 
 QUESTA_SUPPRESS += -suppress 1882  # 
 QUESTA_SUPPRESS += -suppress 7063  # 
+QUESTA_SUPPRESS += -suppress 7045  #  driven by more than one continuous assignment
 
 .PHONY: questa-compile
 questa-compile: ibex_questa.flist manifest_questa.flist
@@ -135,7 +137,7 @@ questa-run: ibex_questa.flist manifest_questa.flist
 	         -f manifest_questa.flist                  \
 	         -work   $(WORK_LIB)                       \
 	         -top    $(QUESTA_TOP_MODULE)               \
-	         -64 -sv -batch                            \
+	         -64 -sv                            \
 	         -outdir $(BIN_DIR)                        \
 	         -logfile $(QUESTA_LOG_DIR)/$(TEST).log    \
 	         $(QUESTA_SUPPRESS)                        \

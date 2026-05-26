@@ -25,7 +25,7 @@ sources:
        - tb/tb_lca_system.sv 
    - target: all (not(fpga_sim),any(spm, redmule_hwpe,redmule_complex, redmule_test_hwpe))
      files:
-       - tb/tb_lca_system.sv
+       - tb/tb_spm.sv
    - target: xilinx
      files:
      - fpga/rtl/xilinx_aida.sv

@@ -15,3 +15,4 @@ ibex_synth.tcl
 isolde_synth.tcl
 vivado_synth.tcl
 *_tmp
+/transcript

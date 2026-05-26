@@ -31,7 +31,7 @@ module isolde_hci_monitor #(
   always_comb begin
 
     case (hci_mon_state)
-      log_req_w,log_req_r: hci_mon_state_next = log_data;
+      log_req_w, log_req_r: hci_mon_state_next = log_data;
       idle: begin
         if (hci_core.req) begin
           if (hci_core.wen) hci_mon_state_next = log_req_r;
@@ -44,36 +44,36 @@ module isolde_hci_monitor #(
 
   end
 
+
+
+
+
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) hci_mon_state <= idle;
-  end
+    else begin
 
+      hci_mon_state <= hci_mon_state_next;
 
+      case (hci_mon_state_next)
 
-
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-
-    hci_mon_state <= hci_mon_state_next;
-
-    case (hci_mon_state_next)
-
-      log_req_r: begin
-        add <= hci_core.add;
-        wen <= hci_core.wen;
-      end
-      log_req_w: begin
-        add <= hci_core.add;
-        wen <= hci_core.wen;
-        data <= hci_core.data;
-      end
-      log_data: begin
-        if (hci_core.r_valid) begin
-          if (~wen) $fwrite(fh_csv, "%t, write, 0x%h, 0x%h\n", $time, add, data);
-          else $fwrite(fh_csv, "%t, read, 0x%h, 0x%h\n", $time, add, hci_core.r_data);
-          hci_mon_state <= idle;  // Return to idle after logging
+        log_req_r: begin
+          add <= hci_core.add;
+          wen <= hci_core.wen;
         end
-      end
-    endcase
+        log_req_w: begin
+          add  <= hci_core.add;
+          wen  <= hci_core.wen;
+          data <= hci_core.data;
+        end
+        log_data: begin
+          if (hci_core.r_valid) begin
+            if (~wen) $fwrite(fh_csv, "%t, write, 0x%h, 0x%h\n", $time, add, data);
+            else $fwrite(fh_csv, "%t, read, 0x%h, 0x%h\n", $time, add, hci_core.r_data);
+            hci_mon_state <= idle;  // Return to idle after logging
+          end
+        end
+      endcase
+    end
   end
 
 
