@@ -15,11 +15,12 @@ MINICONDA_ENV=ibex
 # Get the root directory of the Git repository
 export ROOT_DIR=$(git rev-parse --show-toplevel)
 
-export BENDER=~/eth/bin/bender
+export BENDER=$ROOT_DIR/install/bender/bender
 
 module load lic questasim qformal
 
 source $MINICONDA
 conda activate $MINICONDA_ENV
 
-export PATH=~/eth/bin:~/verible/bin
+#export PATH=~/eth/bin:~/verible/bin:$PATH
+

@@ -74,8 +74,8 @@ common_targs +=  $(tb_target)
 include $(mkfile_path)/../mk/redmule.mk
 include $(mkfile_path)/../mk/sw-build.mk
 include $(mkfile_path)/../mk/verilator-build.mk
+include $(mkfile_path)/../mk/questa-build.mk
 include $(mkfile_path)/../mk/vivado.mk
-include $(mkfile_path)/../mk/yosys.mk
 
 
 

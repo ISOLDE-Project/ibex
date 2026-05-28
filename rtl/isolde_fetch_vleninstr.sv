@@ -39,7 +39,10 @@ module isolde_fetch_vleninstr (
   // Internal control signals
 
   logic [2:0] wr_ptr;  // Write pointer to store fetched words into vlen_instr_o
-
+  logic             _word_instr_req_o;  // request a word_instr_i
+  logic [3:0][31:0] des_instr;  // In-order succession of maximum 5 word_instr_i
+  logic [2:0]       _vlen_instr_words_o;  // Instruction length in words
+  logic             _vlen_instr_ready_o;  // _vlen_instr_o is ready to use
 
   // Extract opcode and nnn
   assign opCode = word_instr_i[6:0];     // Extracting opcode bits
@@ -62,10 +65,7 @@ module isolde_fetch_vleninstr (
 
   assign vlen_instr_words_o =_vlen_instr_words_o;
 
-  logic             _word_instr_req_o;  // request a word_instr_i
-  logic [3:0][31:0] des_instr;  // In-order succession of maximum 5 word_instr_i
-  logic [2:0]       _vlen_instr_words_o;  // Instruction length in words
-  logic             _vlen_instr_ready_o;  // _vlen_instr_o is ready to use
+
 
 
 
