@@ -45,13 +45,13 @@ module tb_top_questa;
     // Phase 1: deasserted until RST_TIME
     #(RST_TIME);
 
-    // Phase 2: assert high for RST_CYCLES
-    rst_ni = 1'b1;
-    #(RST_CYCLES);
+    // // Phase 2: assert high for RST_CYCLES
+    // rst_ni = 1'b1;
+    // #(RST_CYCLES);
 
-    // Phase 3: pull low again for RST_CYCLES
-    rst_ni = 1'b0;
-    #(RST_CYCLES);
+    // // Phase 3: pull low again for RST_CYCLES
+    // rst_ni = 1'b0;
+    // #(RST_CYCLES);
 
     // Phase 4: final release — stays high
     rst_ni = 1'b1;
@@ -62,8 +62,8 @@ module tb_top_questa;
   //  fetch_enable_i = 0 until t > 100, then = 1
   // -------------------------------------------------------
   initial begin
-    fetch_enable_i = 1'b0;
-    #(FETCH_EN_TIME);
+    // fetch_enable_i = 1'b0;
+    // #(FETCH_EN_TIME);
     fetch_enable_i = 1'b1;
   end
 
@@ -83,7 +83,7 @@ module tb_top_questa;
   //  Remove or increase if your test runs longer
   // -------------------------------------------------------
   initial begin
-    #80ns;
+    #10_000_000ns;
     $display("[TB_TOP] @ t=%0t: TIMEOUT — simulation limit reached.", $time);
     $finish;
   end

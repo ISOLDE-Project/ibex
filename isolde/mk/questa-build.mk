@@ -58,7 +58,7 @@ ibex_questa.flist: $(CORE_FILES)
 	touch $@
 ##
 
-BENDER_ARGS  :=  script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(QUESTA_BENDER)
+BENDER_ARGS  :=  script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(VLT_BENDER)
 manifest_questa.flist: Bender.yml
 	@echo 'INFO:  $(BENDER_ARGS)'
 	@$(BENDER) $(BENDER_ARGS) > $@_tmp
@@ -87,7 +87,8 @@ QUESTA_SUPPRESS += -suppress 7045  #  driven by more than one continuous assignm
 #QUESTA_SUPPRESS += -suppress 63000
 
 # Disable assertions globally in all qrun invocations
-QUESTA_NO_ASSERT := 
+QUESTA_NO_ASSERT :=  +define+VERILATOR  #it disables asserts in the ibex rtl code, see vendor/lowrisc_ip/ip/prim/rtl/prim_assert.sv
+
 
 .PHONY: questa-compile
 questa-compile: ibex_questa.flist manifest_questa.flist
@@ -148,26 +149,24 @@ questa-run: ibex_questa.flist manifest_questa.flist
 	$(QRUN)  -f ibex_questa.flist                      \
 	         -f manifest_questa.flist                  \
 	         -work   $(WORK_LIB)                       \
-	         -top    $(QUESTA_TOP_MODULE)               \
-	         -64 -sv                            \
+	         -top    $(QUESTA_TOP_MODULE)              \
+	         -64 -sv                         -         \
 	         -outdir $(BIN_DIR)                        \
 	         -logfile $(QUESTA_LOG_DIR)/$(TEST).log    \
 	         $(QUESTA_SUPPRESS)                        \
-			 $(QUESTA_NO_ASSERT)                                      \
+			 $(QUESTA_NO_ASSERT)                       \
 	         $(QUESTA_FLAGS)                           \
+			-O5                                        \
+			-nodebug                                   \
+			+acc=none                                  \
+			-batch                                     \
 	         +STIM_INSTR=$(test-program)-m.hex         \
 	         +STIM_DATA=$(test-program)-d.hex          \
-	         -do "vcd file questa_tb.vcd;              \
-	              vcd add -r /*;                       \
-				  set assertion -disable -all;         \
-	              run -all;                            \
+	         -do "run -all;                            \
 	              quit -f"                                    
 
 	# === Check for expected output files ===
-	@if [ ! -f "questa_tb.vcd" ]; then \
-		echo "ERROR: Output file missing: questa_tb.vcd"; \
-		exit 1; \
-	fi
+
 
 	@if [ ! -f "rtl_debug_trace.log" ]; then \
 		echo "⚠️  CRITICAL WARNING: Output file missing: rtl_debug_trace.log"; \
@@ -175,12 +174,57 @@ questa-run: ibex_questa.flist manifest_questa.flist
 		mv rtl_debug_trace.log $(QUESTA_LOG_DIR); \
 	fi	
 
-	mv questa_tb.vcd   $(QUESTA_LOG_DIR)/$(TEST).vcd
 	
 	@if [ -f "perfcnt.csv" ]; then \
 		mv perfcnt.csv $(QUESTA_LOG_DIR)/$(TEST).csv; \
 	fi
 
+# ---------------------------------------------------------------------------
+# questa-gui: simulate the compiled design.
+# ---------------------------------------------------------------------------
+.PHONY: questa-gui
+questa-gui: ibex_questa.flist manifest_questa.flist
+	@echo "$(BANNER)"
+	@echo "* Running with QuestaSim (GUI):"
+	@echo "*                            logfile: $(QUESTA_LOG_DIR)/$(TEST).log"
+	@echo "*                    rtl debug trace: $(QUESTA_LOG_DIR)/rtl_debug_trace.log"
+	@echo "*                              *.vcd: $(QUESTA_LOG_DIR)"
+	@echo "$(BANNER)"
+
+	# === Create/clean-up destination log folder ===
+	mkdir -p $(QUESTA_LOG_DIR)
+	rm -f $(QUESTA_LOG_DIR)/*
+
+	# === Check for required input files ===
+	@if [ ! -f "$(test-program)-m.hex" ]; then \
+		echo "ERROR: Missing file: $(test-program)-m.hex"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(test-program)-d.hex" ]; then \
+		echo "ERROR: Missing file: $(test-program)-d.hex"; \
+		exit 1; \
+	fi
+
+	# === Launch simulation (GUI mode) ===
+	# -do inline script: enable VCD dump, open wave window, do NOT quit (user controls).
+	$(QRUN)  -f ibex_questa.flist                      \
+	         -f manifest_questa.flist                  \
+	         -work   $(WORK_LIB)                       \
+	         -top    $(QUESTA_TOP_MODULE)               \
+	         -64 -sv                                   \
+	         -outdir $(BIN_DIR)                        \
+	         -logfile $(QUESTA_LOG_DIR)/$(TEST).log    \
+                 -voptargs=+acc \
+	         $(QUESTA_SUPPRESS)                        \
+	         $(QUESTA_NO_ASSERT)                       \
+	         $(QUESTA_FLAGS)                           \
+	         +STIM_INSTR=$(test-program)-m.hex         \
+	         +STIM_DATA=$(test-program)-d.hex          \
+	         -gui                                      \
+	         -do "vcd file questa_tb.vcd;              \
+	              vcd add -r /*;                       \
+	              set assertion -disable -all;         \
+	              run -all"
 
 # ---------------------------------------------------------------------------
 # questa-run-u-test: headless unit-test run (no hex file guards).
