@@ -48,9 +48,6 @@ ibex_sim.flist:  $(CORE_FILES)
 										       $(FUSESOC_BUILD_ROOT)/sim-verilator  \
 	                                           $(FUSESOC_BUILD_ROOT)/sim-verilator/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc \
 											   $@
-	python $(ROOT_DIR)/util/verilator_manifest.py  Verilator.yml \
-											    -t  $(verilator_target)       \
-											    -o $@	
 	touch $@
 ##
 
@@ -61,9 +58,13 @@ manifest.flist: Bender.yml
 
 verilate:  ibex_sim.flist manifest.flist
 #	mkdir -p $(dir $@)
+	cat manifest.flist	>  manifest.verilator.flist
+	python $(ROOT_DIR)/util/verilator_manifest.py  Verilator.yml \
+											    -t  $(verilator_target)    \
+											    -o  manifest.verilator.flist	
 	mkdir -p $(BIN_DIR)
 	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist     \
-											     PE_MANIFEST=${CURDIR}/manifest.flist    \
+											     PE_MANIFEST=${CURDIR}/manifest.verilator.flist    \
 	                                             SIM_RESULTS=$(BIN_DIR)                  \
 												   RUN_INDEX=$(IMEM_LATENCY)           \
 											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
