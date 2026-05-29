@@ -83,7 +83,7 @@ module tb_top_questa;
   //  Remove or increase if your test runs longer
   // -------------------------------------------------------
   initial begin
-    #10_000_000ns;
+    #10_000ns;
     $display("[TB_TOP] @ t=%0t: TIMEOUT — simulation limit reached.", $time);
     $finish;
   end
