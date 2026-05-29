@@ -73,32 +73,23 @@ questa-clean:
 # ---------------------------------------------------------------------------
 # Generate flists
 # ---------------------------------------------------------------------------
-CORE_FILES      := $(filter %.core,$(wildcard $(mkfile_path)/*))
-CORE_FILES      += $(filter %.core,$(wildcard $(ROOT_DIR)/*))
-CORE_FILE_NAMES := $(notdir $(CORE_FILES))
 
-ibex_questa.flist: $(CORE_FILES)
-	@echo $(CORE_FILE_NAMES)
-	fusesoc --cores-root=$(ROOT_DIR) run --target=sim --setup --no-export \
-	        $(FUSESOC_PARAMS) --build-root=$(FUSESOC_BUILD_ROOT) \
-	        $(FUSESOC_PKG_NAME) $(FUSESOC_CONFIG_OPTS)
+
+ibex_questa.flist: ibex_sim.flist
 	python $(ROOT_DIR)/util/flist2questa.py \
-	        $(FUSESOC_BUILD_ROOT)/sim-verilator/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc \
-	        $@ \
-	        --anchor $(FUSESOC_BUILD_ROOT)/sim-verilator
+	        ibex_sim.flist \
+	        $@ 
 
-BENDER_ARGS := script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(QUESTA_BENDER)
 
-manifest_questa.flist: Bender.yml
-	@echo "INFO: $(BENDER_ARGS)"
-	@$(BENDER) $(BENDER_ARGS) > $@_tmp
+
+manifest_questa.flist: manifest.flist
+	cat manifest.flist	 > $@_tmp
 	python $(ROOT_DIR)/util/verilator_manifest.py Verilator.yml \
 	        -t questa \
 	        -o $@_tmp
 	python $(ROOT_DIR)/util/flist2questa.py \
 	        $@_tmp \
-	        $@ \
-	        --anchor $(mkfile_path)
+	        $@ 
 	rm -f $@_tmp
 
 # ---------------------------------------------------------------------------
