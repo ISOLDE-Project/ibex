@@ -1,6 +1,6 @@
 # Build output
 build
-
+tools/
 # Common editor/IDE config and temporary files
 .project
 .vscode/
@@ -27,6 +27,7 @@ install
 sim.fst
 *.txt
 *.tar.*
+*.tgz
 logs*/
 log/
 *.log
@@ -46,3 +47,5 @@ tmp/
 doc/06_misc/gant.ipynb
 .~lock.*
 vivado.jou
+*.zip
+transcript

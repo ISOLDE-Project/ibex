@@ -11,20 +11,6 @@
  * targeting FPGA synthesis or Verilator simulation.
  */
 
-`define GEN_EXT_PORT_READ_BLOCK(CHANNEL) \
-  always_comb begin \
-    if (extended_ports.raddr_``CHANNEL < 32) begin \
-      extended_ports.rdata_``CHANNEL  = rf_reg[extended_ports.raddr_``CHANNEL];  \
-      extended_ports_err_read[CHANNEL] = 1'b0; \
-    end else begin \
-      extended_ports.rdata_``CHANNEL  = '0;  \
-      extended_ports_err_read[CHANNEL] = 1'b1; \
-    end \
-  end
-
-`define GEN_EXT_PORT_NO_WRITE_BLOCK(CHANNEL) \
-  assign extended_ports_err_write = extended_ports.we_``CHANNEL;
-
 
 module ibex_register_file_ff #(
     parameter bit                          RV32E             = 0,
@@ -32,7 +18,8 @@ module ibex_register_file_ff #(
     parameter bit                          DummyInstructions = 0,
     parameter bit                          WrenCheck         = 0,
     parameter bit                          RdataMuxCheck     = 0,
-    parameter logic        [DataWidth-1:0] WordZeroVal       = '0
+    parameter logic        [DataWidth-1:0] WordZeroVal       = '0,
+    parameter int unsigned                 NumReadPorts      = 4
 ) (
     // Clock and Reset
     input logic clk_i,
@@ -57,9 +44,9 @@ module ibex_register_file_ff #(
     input logic                 we_a_i,
 
     // This indicates whether spurious WE or non-one-hot encoded raddr are detected.
-    output logic                     err_o,
+    output logic                        err_o,
     //extension
-           isolde_x_register_file_if extended_ports
+           isolde_x_register_file_if.rf extended_ports
 );
 
   localparam int unsigned ADDR_WIDTH = RV32E ? 4 : 5;
@@ -68,9 +55,6 @@ module ibex_register_file_ff #(
   logic [DataWidth-1:0] rf_reg   [NUM_WORDS];
   logic [NUM_WORDS-1:0] we_a_dec;
 
-
-  logic [3:0] extended_ports_err_read;
-  logic extended_ports_err_write;
 
   logic oh_raddr_a_err, oh_raddr_b_err, oh_we_err;
 
@@ -254,19 +238,28 @@ module ibex_register_file_ff #(
     assign oh_raddr_b_err = 1'b0;
   end
 
-  assign err_o = oh_raddr_a_err || oh_raddr_b_err || oh_we_err ||  extended_ports_err_read || extended_ports_err_write ;
+  assign err_o = oh_raddr_a_err || oh_raddr_b_err || oh_we_err  ;
 
   // Signal not used in FF register file
   logic unused_test_en;
   assign unused_test_en = test_en_i;
+  
   //extended ports
-  `GEN_EXT_PORT_READ_BLOCK(0)
-  `GEN_EXT_PORT_READ_BLOCK(1)
-  `GEN_EXT_PORT_READ_BLOCK(2)
-  `GEN_EXT_PORT_READ_BLOCK(3)
+  genvar rp_i;
+  generate
+    for (rp_i = 0; rp_i < NumReadPorts; rp_i++) begin : gen_read_ports
+      always_comb begin
+        if (extended_ports.raddr[rp_i] < 32) begin
+          extended_ports.rdata[rp_i] = rf_reg[extended_ports.raddr[rp_i]];
+          extended_ports.isolde_x_rf_err[rp_i] = 1'b0;
+        end else begin
+          extended_ports.rdata[rp_i] = '0;
+          extended_ports.isolde_x_rf_err[rp_i] = 1'b1;
+        end
+      end
+    end
+  endgenerate
 
-  `GEN_EXT_PORT_NO_WRITE_BLOCK(0)
 
-  assign extended_ports.isolde_x_rf_err = |extended_ports_err_read || extended_ports_err_write;
 
 endmodule

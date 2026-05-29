@@ -2,7 +2,7 @@
 # Copyleft
 
 # Define environment variables
-MINICONDA=~/miniconda3/etc/profile.d/conda.sh
+MINICONDA=$HOME/hdd1/miniconda3/etc/profile.d/conda.sh
 MINICONDA_ENV=ibex
 # To activate this environment, use
 #
@@ -15,7 +15,7 @@ MINICONDA_ENV=ibex
 # Get the root directory of the Git repository
 export ROOT_DIR=$(git rev-parse --show-toplevel)
 
-export BENDER=~/eth/bin/bender
+export BENDER=$ROOT_DIR/install/bender/bender
 # export PULP_RISCV_GCC_TOOLCHAIN=$ROOT_DIR/install/riscv
 export GCC_TOOLCHAIN=$ROOT_DIR/install/riscv-gcc/bin
 # export LLVM_TOOLCHAIN=$ROOT_DIR/install/riscv-llvm/bin
@@ -32,7 +32,10 @@ export CXX=g++-11
 source $MINICONDA
 conda activate $MINICONDA_ENV
 
-export PATH=~/eth/bin:~/verible/bin:$ROOT_DIR/install/verilator/bin:$ROOT_DIR/install/openocd/bin:$GCC_TOOLCHAIN:$PATH
+export    YOSYS=$ROOT_DIR/install/oss-cad-suite/bin/yosys
+export OPENROAD=$ROOT_DIR/install/openroad/usr/local/bin/openroad
+
+export PATH=$ROOT_DIR/install/bender:~/verible/bin:$ROOT_DIR/install/verilator/bin:$ROOT_DIR/install/openocd/bin:$GCC_TOOLCHAIN:$PATH
 source ~/vivado.sh
 
 echo  `verilator --version`

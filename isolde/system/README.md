@@ -16,6 +16,11 @@ make sure you have simulation data for the hardware accelerator
 ```sh
 make TEST=redmule_test golden
 ```
+### isolde/sw/redmule128b_test
+```sh
+cd isolde/sw/redmule128b_test
+make golden
+```
 ### Build scratchpad memory simulation (SPM, NO JTAG )
 it will execute *isolde/sw/redmule128b_test*
 ```sh
@@ -44,7 +49,7 @@ or, with code memory latency
 make IMEM_LATENCY=1  rtl-update veri-clean verilate
 ```
 
-### Toolchain
+
 LLVM is the default toolchain   
 for **gcc** you specify:
 
@@ -81,8 +86,51 @@ Dhrystones per 1000 cycle:                     1
 [TB LCA] @ t=272960 - errors=00000000
 - /ubuntu_20.04/home/ext/tristan-project/ibex.tca/isolde/lca_system/tb/tb_lca_system.sv:513: Verilog $finish
 ```
-
-
+# QUESTA
+## compile
+```sh
+make -f Makefile.fpgasim.nodbg  questa-compile
+```
+## lint
+```sh
+make -f Makefile.fpgasim.nodbg  questa-clean questa-lint
+```
+## headless simulation
+```sh
+make -f Makefile.fpgasim.nodbg  questa-run
+```
+# QUESTA FAQ
+```
+fusesoc --cores-root=/icd/home/uidl7286/ibex-openeda run --target=sim --setup --no-export \
+         --build-root=/icd/home/uidl7286/ibex-openeda/isolde/system/tmp/isolde \
+        isolde:ibex:lca_dm_system 
+Traceback (most recent call last):
+  File "/home/uidl7286/miniconda3/envs/ibex/bin/fusesoc", line 7, in <module>
+    sys.exit(main())
+  File "/home/uidl7286/miniconda3/envs/ibex/lib/python3.10/site-packages/fusesoc/main.py", line 835, in main
+    fusesoc(args)
+  File "/home/uidl7286/miniconda3/envs/ibex/lib/python3.10/site-packages/fusesoc/main.py", line 825, in fusesoc
+    args.func(cm, args)
+  File "/home/uidl7286/miniconda3/envs/ibex/lib/python3.10/site-packages/fusesoc/main.py", line 401, in run
+    run_backend(
+  File "/home/uidl7286/miniconda3/envs/ibex/lib/python3.10/site-packages/fusesoc/main.py", line 476, in run_backend
+    edalizer.run()
+  File "/home/uidl7286/miniconda3/envs/ibex/lib/python3.10/site-packages/fusesoc/edalizer.py", line 83, in run
+    self._prepare_work_root()
+  File "/home/uidl7286/miniconda3/envs/ibex/lib/python3.10/site-packages/fusesoc/edalizer.py", line 127, in _prepare_work_root
+    shutil.rmtree(os.path.join(self.work_root, f))
+  File "/home/uidl7286/miniconda3/envs/ibex/lib/python3.10/shutil.py", line 725, in rmtree
+    _rmtree_safe_fd(fd, path, onerror)
+  File "/home/uidl7286/miniconda3/envs/ibex/lib/python3.10/shutil.py", line 664, in _rmtree_safe_fd
+    onerror(os.rmdir, fullname, sys.exc_info())
+  File "/home/uidl7286/miniconda3/envs/ibex/lib/python3.10/shutil.py", line 662, in _rmtree_safe_fd
+    os.rmdir(entry.name, dir_fd=topfd)
+OSError: [Errno 39] Directory not empty: 'lowrisc_prim_prim_pkg-impl_0.1'
+```
+unfortunatelly, kill all processes
+```sh
+killall -u <user_name>
+```
 # Debug Module
 
 Assuming working directory *isolde/lca_system* and each command from bellow in a separate terminal window.  

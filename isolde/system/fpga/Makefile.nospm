@@ -1,0 +1,5 @@
+
+%:
+	 @echo  $(MAKECMDGOALS)
+	 make ENABLE_SPM=0 \
+	 	 $@

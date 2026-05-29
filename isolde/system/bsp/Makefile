@@ -4,7 +4,7 @@ RISCV_CC         =  $(RISCV_EXE_PREFIX)$(RISCV_CC_SUFFIX)
 RISCV_LD         =  $(RISCV_EXE_PREFIX)$(RISCV_CC_SUFFIX)
 RISCV_AR         =  $(RISCV_EXE_PREFIX)ar
 #always use GNU binutils
-OBJDUMP          =  $(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objdump  
+OBJDUMP          =  $(CV_SW_TOOLCHAIN)/bin/llvm-objdump  
 
 LD_FILE ?=
 # Source files
@@ -62,6 +62,7 @@ vars:
 		$(CFLAGS) \
 		-o $@ \
 		$(OBJS) \
+		-fuse-ld=lld \
 		-Wl,-Map=$@.map \
 		-T $(LD_FILE) -lc
 	$(OBJDUMP) -dh  $@ >$@.headers

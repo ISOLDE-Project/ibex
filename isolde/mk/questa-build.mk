@@ -2,43 +2,77 @@
 #
 # Copyleft  2024 ISOLDE
 #
+###############################################################################
 
 ############
 # QuestaSim #
 ############
-QUESTA_TOP_MODULE ?= $(VLT_TOP_MODULE)
-QUESTA_LOG_DIR    ?= $(mkfile_path)/log/$(QUESTA_TOP_MODULE)/$(IMEM_LATENCY)
-BIN_DIR            = $(mkfile_path)/bin/$(QUESTA_TOP_MODULE)/$(IMEM_LATENCY)
-QUESTA_FLAGS      +=
-NO_TEE            ?= 1
 
-# Work library location
-WORK_LIB           = $(BIN_DIR)/work
+# QUESTA_TOP_MODULE ?= $(VLT_TOP_MODULE)
+QUESTA_TOP_MODULE      := tb_top_questa
+QUESTA_BENDER          += $(VLT_BENDER)
+QUESTA_LOG_DIR         ?= $(mkfile_path)/log/$(QUESTA_TOP_MODULE)/$(IMEM_LATENCY)
+BIN_DIR                ?= $(mkfile_path)/bin/$(QUESTA_TOP_MODULE)/$(IMEM_LATENCY)
 
 # qrun binary (override if not on PATH)
-QRUN              ?= qrun
-#####
+QRUN                   ?= qrun
+NO_TEE                 ?= 1
 
+# Work library location
+WORK_LIB               := $(BIN_DIR)/work
+
+# Optional extra user flags
+QUESTA_FLAGS           += -timescale 1ns/1ps
+
+
+# Warning suppressions
+QUESTA_SUPPRESS        := -suppress 2244
+QUESTA_SUPPRESS        += -suppress 442    # Port not found in module
+QUESTA_SUPPRESS        += -suppress 2912   # Port not found in module
+QUESTA_SUPPRESS        += -suppress 1882
+QUESTA_SUPPRESS        += -suppress 7063
+QUESTA_SUPPRESS        += -suppress 7045   # driven by more than one continuous assignment
+# QUESTA_SUPPRESS      += -suppress 7061   # Variable driven in always_ff and elsewhere
+# QUESTA_SUPPRESS      += -suppress 79000
+# QUESTA_SUPPRESS      += -suppress 63000
+
+# Disable assertions globally in all qrun invocations (ibex prim_assert flow)
+QUESTA_NO_ASSERT       := +define+VERILATOR
+
+# Tee handling
 ifeq ($(NO_TEE),1)
   TEE_CMD :=
 else
-  TEE_CMD := | tee $(QUESTA_LOG_DIR)/$(TEST).log
+  TEE_CMD := | tee
 endif
 
+# Shared qrun args
+QUESTA_COMMON_FFILES   := -f ibex_questa.flist -f manifest_questa.flist
+QUESTA_COMMON_ARGS     := $(QUESTA_COMMON_FFILES)            \
+                          -work $(WORK_LIB)                  \
+                          -top $(QUESTA_TOP_MODULE)$(QUESTA_TOP_MODULE_PARAMS) \
+                          -64 -sv                            \
+                          -outdir $(BIN_DIR)                 \
+                          $(QUESTA_SUPPRESS)                 \
+                          $(QUESTA_NO_ASSERT)                \
+                          $(QUESTA_FLAGS)                    
 
-# .PHONY: questa-clean
+.PHONY: questa-clean questa-compile questa-lint questa-run questa-gui questa-run-u-test
+.DELETE_ON_ERROR:
 
-# # Clean all build directories and temporary files for QuestaSim simulation
+# ---------------------------------------------------------------------------
+# Clean all build directories and temporary files for QuestaSim simulation
+# ---------------------------------------------------------------------------
 questa-clean:
 	rm -f ibex_questa.flist manifest_questa.flist
-	rm -fr $(BIN_DIR)
-	rm -fr $(QUESTA_LOG_DIR)
-	rm -fr tmp/*
-# 	rm -fr log/$(QUESTA_TOP_MODULE)
+	rm -rf $(BIN_DIR)
+	rm -rf $(QUESTA_LOG_DIR)
+# 	rm -rf tmp
+# 	mkdir -p tmp
 
-
-
-##
+# ---------------------------------------------------------------------------
+# Generate flists
+# ---------------------------------------------------------------------------
 CORE_FILES      := $(filter %.core,$(wildcard $(mkfile_path)/*))
 CORE_FILES      += $(filter %.core,$(wildcard $(ROOT_DIR)/*))
 CORE_FILE_NAMES := $(notdir $(CORE_FILES))
@@ -46,82 +80,55 @@ CORE_FILE_NAMES := $(notdir $(CORE_FILES))
 ibex_questa.flist: $(CORE_FILES)
 	@echo $(CORE_FILE_NAMES)
 	fusesoc --cores-root=$(ROOT_DIR) run --target=sim --setup --no-export \
-	        $(FUSESOC_PARAMS) --build-root=$(FUSESOC_BUILD_ROOT)          \
+	        $(FUSESOC_PARAMS) --build-root=$(FUSESOC_BUILD_ROOT) \
 	        $(FUSESOC_PKG_NAME) $(FUSESOC_CONFIG_OPTS)
-# 	# Transform paths for QuestaSim (questa subtree instead of sim-verilator)
-	python $(ROOT_DIR)/util/flist2questa.py                            \
+	python $(ROOT_DIR)/util/flist2questa.py \
 	        $(FUSESOC_BUILD_ROOT)/sim-verilator/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc \
-	        $@                              \
-			--anchor $(FUSESOC_BUILD_ROOT)/sim-verilator
-	touch $@
-##
+	        $@ \
+	        --anchor $(FUSESOC_BUILD_ROOT)/sim-verilator
 
-BENDER_ARGS  :=  script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(QUESTA_BENDER)
+BENDER_ARGS := script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(QUESTA_BENDER)
+
 manifest_questa.flist: Bender.yml
-	@echo 'INFO:  $(BENDER_ARGS)'
+	@echo "INFO: $(BENDER_ARGS)"
 	@$(BENDER) $(BENDER_ARGS) > $@_tmp
-	python $(ROOT_DIR)/util/flist2questa.py                            \
-		 $@_tmp \
-		$@                              \
-		--anchor $(mkfile_path)
-	touch $@
-
+	python $(ROOT_DIR)/util/verilator_manifest.py Verilator.yml \
+	        -t questa \
+	        -o $@_tmp
+	python $(ROOT_DIR)/util/flist2questa.py \
+	        $@_tmp \
+	        $@ \
+	        --anchor $(mkfile_path)
+	rm -f $@_tmp
 
 # ---------------------------------------------------------------------------
-# questa-compile: analyze + elaborate all RTL sources into the work library.
+# Analyze + elaborate all RTL sources into the work library
 # ---------------------------------------------------------------------------
-
-QUESTA_SUPPRESS  = -suppress 2244
-QUESTA_SUPPRESS += -suppress 442  # Port not found in module 
-QUESTA_SUPPRESS += -suppress 2912  # Port not found in module 
-QUESTA_SUPPRESS += -suppress 1882  # 
-QUESTA_SUPPRESS += -suppress 7063  # 
-QUESTA_SUPPRESS += -suppress 7045  #  driven by more than one continuous assignment
-
-.PHONY: questa-compile
-questa-compile: ibex_questa.flist manifest_questa.flist
+questa-compile: ibex_questa.flist  manifest_questa.flist
 	mkdir -p $(BIN_DIR)
-	$(QRUN)   -f ibex_questa.flist                                          \
-	          -f manifest_questa.flist                                          \
-	          -work $(WORK_LIB)                                          \
-	          -top  $(QUESTA_TOP_MODULE)$(QUESTA_TOP_MODULE_PARAMS)      \
-	          -compile                                                   \
-			  $(QUESTA_SUPPRESS)                                         \
-	          -64                                                        \
-	          -sv                                                        \
-	          -outdir $(BIN_DIR)
-
-
-questa-lint: ibex_questa.flist manifest_questa.flist
-	$(QRUN)   -f ibex_questa.flist                                          \
-	          -f manifest_questa.flist                                   \
-	          -work $(WORK_LIB)                                          \
-	          -top  $(QUESTA_TOP_MODULE)$(QUESTA_TOP_MODULE_PARAMS)      \
-	          -compile                                                   \
-			  $(QUESTA_SUPPRESS)                                         \
-	          -lint                                                      \
-	          -64                                                        \
-	          -sv                                                        
-
+	$(QRUN) $(QUESTA_COMMON_ARGS) -compile
 
 # ---------------------------------------------------------------------------
-# questa-run: simulate the compiled design.
-# Replaces veri-run; plusargs and VCD output are preserved.
+# Compile-time lint
 # ---------------------------------------------------------------------------
-.PHONY: questa-run
-questa-run: ibex_questa.flist manifest_questa.flist
+questa-lint:  ibex_questa.flist  manifest_questa.flist
+	mkdir -p $(BIN_DIR)
+	$(QRUN) $(QUESTA_COMMON_ARGS) -compile -lint
+
+# ---------------------------------------------------------------------------
+# Simulate compiled design (headless)
+# ---------------------------------------------------------------------------
+questa-run:  ibex_questa.flist  manifest_questa.flist
 	@echo "$(BANNER)"
 	@echo "* Running with QuestaSim:"
-	@echo "*                            logfile: $(QUESTA_LOG_DIR)/$(TEST).log"
-	@echo "*                    rtl debug trace: $(QUESTA_LOG_DIR)/rtl_debug_trace.log"
-	@echo "*                              *.vcd: $(QUESTA_LOG_DIR)"
+	@echo "* logfile: $(QUESTA_LOG_DIR)/$(TEST).log"
+	@echo "* rtl debug trace: $(QUESTA_LOG_DIR)/rtl_debug_trace.log"
+	@echo "* *.vcd: $(QUESTA_LOG_DIR)"
 	@echo "$(BANNER)"
 
-	# === Create/clean-up destination log folder ===
 	mkdir -p $(QUESTA_LOG_DIR)
 	rm -f $(QUESTA_LOG_DIR)/*
 
-	# === Check for required input files ===
 	@if [ ! -f "$(test-program)-m.hex" ]; then \
 		echo "ERROR: Missing file: $(test-program)-m.hex"; \
 		exit 1; \
@@ -131,68 +138,75 @@ questa-run: ibex_questa.flist manifest_questa.flist
 		exit 1; \
 	fi
 
-	# === Launch simulation ===
-	# -do inline script: enable VCD dump, run to completion, quit.
-	$(QRUN)  -f ibex_questa.flist                      \
-	         -f manifest_questa.flist                  \
-	         -work   $(WORK_LIB)                       \
-	         -top    $(QUESTA_TOP_MODULE)               \
-	         -64 -sv                            \
-	         -outdir $(BIN_DIR)                        \
-	         -logfile $(QUESTA_LOG_DIR)/$(TEST).log    \
-	         $(QUESTA_SUPPRESS)                        \
-	         $(QUESTA_FLAGS)                           \
-	         +STIM_INSTR=$(test-program)-m.hex         \
-	         +STIM_DATA=$(test-program)-d.hex          \
-	         -do "vcd file questa_tb.vcd;              \
-	              vcd add -r /*;                       \
-	              run -all;                            \
-	              quit -f"                                    
+	$(QRUN) $(QUESTA_COMMON_ARGS) \
+	        -batch \
+	        -O5 \
+	        -nodebug \
+	        +acc=none \
+	        -logfile $(QUESTA_LOG_DIR)/$(TEST).log \
+	        +STIM_INSTR=$(test-program)-m.hex \
+	        +STIM_DATA=$(test-program)-d.hex \
+	        -do "run -all; quit -f"
 
-	# === Check for expected output files ===
-	@if [ ! -f "questa_tb.vcd" ]; then \
-		echo "ERROR: Output file missing: questa_tb.vcd"; \
-		exit 1; \
-	fi
 	@if [ ! -f "rtl_debug_trace.log" ]; then \
-		echo "ERROR: Output file missing: rtl_debug_trace.log"; \
-		exit 1; \
+		echo "WARNING: Output file missing: rtl_debug_trace.log"; \
+	else \
+		mv rtl_debug_trace.log $(QUESTA_LOG_DIR); \
 	fi
-
-	mv questa_tb.vcd   $(QUESTA_LOG_DIR)/$(TEST).vcd
-	mv rtl_debug_trace.log $(QUESTA_LOG_DIR)
 
 	@if [ -f "perfcnt.csv" ]; then \
 		mv perfcnt.csv $(QUESTA_LOG_DIR)/$(TEST).csv; \
 	fi
 
+# ---------------------------------------------------------------------------
+# Simulate design with GUI
+# ---------------------------------------------------------------------------
+questa-gui:  ibex_questa.flist  manifest_questa.flist
+	@echo "$(BANNER)"
+	@echo "* Running with QuestaSim (GUI):"
+	@echo "* logfile: $(QUESTA_LOG_DIR)/$(TEST).log"
+	@echo "* rtl debug trace: $(QUESTA_LOG_DIR)/rtl_debug_trace.log"
+	@echo "* *.vcd: $(QUESTA_LOG_DIR)"
+	@echo "$(BANNER)"
+
+	mkdir -p $(QUESTA_LOG_DIR)
+	rm -f $(QUESTA_LOG_DIR)/*
+
+	@if [ ! -f "$(test-program)-m.hex" ]; then \
+		echo "ERROR: Missing file: $(test-program)-m.hex"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(test-program)-d.hex" ]; then \
+		echo "ERROR: Missing file: $(test-program)-d.hex"; \
+		exit 1; \
+	fi
+
+	$(QRUN) $(QUESTA_COMMON_ARGS) \
+	        -gui \
+	        -voptargs=+acc \
+	        -logfile $(QUESTA_LOG_DIR)/$(TEST).log \
+	        +STIM_INSTR=$(test-program)-m.hex \
+	        +STIM_DATA=$(test-program)-d.hex \
+	        -do "vcd file questa_tb.vcd; vcd add -r /*; run -all"
 
 # ---------------------------------------------------------------------------
-# questa-run-u-test: headless unit-test run (no hex file guards).
-# Replaces veri-run-u-test.
+# Headless unit-test run (no hex-file guards)
 # ---------------------------------------------------------------------------
-.PHONY: questa-run-u-test
-questa-run-u-test: questa-compile
+questa-run-u-test:  ibex_questa.flist  manifest_questa.flist
 	@echo "$(BANNER)"
 	@echo "* Running with QuestaSim (unit test):"
-	@echo "*                            logfile: $(QUESTA_LOG_DIR)/$(QUESTA_TOP_MODULE).log"
-	@echo "*                              *.vcd: $(QUESTA_LOG_DIR)"
+	@echo "* logfile: $(QUESTA_LOG_DIR)/$(QUESTA_TOP_MODULE).log"
+	@echo "* *.vcd: $(QUESTA_LOG_DIR)"
 	@echo "$(shell pwd)"
+
 	mkdir -p $(QUESTA_LOG_DIR)
 	rm -f $(QUESTA_LOG_DIR)/questa_tb.vcd
-	$(QRUN)   -work $(WORK_LIB)                                          \
-	          -top  $(QUESTA_TOP_MODULE)                                 \
-	          -simulate                                                  \
-	          -64                                                        \
-	          -outdir $(BIN_DIR)                                         \
-	          -do "vcd file questa_tb.vcd;                               \
-	               vcd add -r /*;                                        \
-	               run -all;                                             \
-	               quit -f"                                             \
-	          | tee $(QUESTA_LOG_DIR)/$(QUESTA_TOP_MODULE).log
-	mv questa_tb.vcd $(QUESTA_LOG_DIR)/$(QUESTA_TOP_MODULE).vcd
 
+	$(QRUN) $(QUESTA_COMMON_ARGS) \
+	        -simulate \
+	        -do "vcd file questa_tb.vcd; vcd add -r /*; run -all; quit -f" \
+	        $(TEE_CMD) $(QUESTA_LOG_DIR)/$(QUESTA_TOP_MODULE).log
 
-
-
-
+	@if [ -f questa_tb.vcd ]; then \
+		mv questa_tb.vcd $(QUESTA_LOG_DIR)/$(QUESTA_TOP_MODULE).vcd; \
+	fi

@@ -27,13 +27,14 @@ module isolde_addr_shim #(
   // Internal signals for validation
   logic addr_valid;
   logic [31:0] translated_addr;
-  isolde_tcdm_if null_dev ();
+  isolde_tcdm_pkg::req_t null_req;
+  isolde_tcdm_pkg::rsp_t null_rsp;
 
   // Define a constant invalid response using the type from the interface
-  assign null_dev.rsp = '{gnt: 1'b0, valid: 1'b0, data: 32'hDEADBEEF, err: 1'b1};
+  assign null_rsp = '{gnt: 1'b0, valid: 1'b0, data: 32'hDEADBEEF, err: 1'b1};
 
   // Define a no_request constant to be used when address is invalid
-  assign null_dev.req = '{req: 1'b0, we: 1'b0, be: 4'b0000, addr: 32'b0, data: 32'b0};
+  assign null_req = '{req: 1'b0, we: 1'b0, be: 4'b0000, addr: 32'b0, data: 32'b0};
 
   // Validate if the address is within the valid range [START_ADDR, END_ADDR]
   assign addr_valid = (req_i.addr >= START_ADDR) && (req_i.addr <= END_ADDR);
@@ -43,6 +44,10 @@ module isolde_addr_shim #(
 
   // Single always_comb block for both request forwarding and response handling
   always_comb begin
+
+    tcdm_master_o.req = null_req;
+    rsp_o = null_rsp;
+
     if (addr_valid) begin
       // Forward request to slave when address is valid
       tcdm_master_o.req = '{  // Assign each field individually
@@ -53,12 +58,6 @@ module isolde_addr_shim #(
           data: req_i.data
       };
       rsp_o = tcdm_master_o.rsp;
-    end else begin
-      // Do not forward request to slave when address is invalid
-      tcdm_master_o.req = null_dev.req;
-
-      // Provide invalid response to master when address is invalid
-      rsp_o = null_dev.rsp;
     end
   end
 

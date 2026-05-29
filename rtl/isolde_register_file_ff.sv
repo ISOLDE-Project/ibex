@@ -10,77 +10,82 @@
  * targeting FPGA synthesis or Verilator simulation.
  */
 
-
-`define GEN_READ_BLOCK(CHANNEL) \
-  always_comb begin \
-    if (isolde_rf_bus.raddr_``CHANNEL < RegCount) begin \
-      isolde_rf_bus.rdata_``CHANNEL  = reg_file[isolde_rf_bus.raddr_``CHANNEL];  \
-      isolde_rf_err_read[CHANNEL] = 1'b0; \
-    end else begin \
-      isolde_rf_bus.rdata_``CHANNEL  = '0;  \
-      isolde_rf_err_read[CHANNEL] = 1'b1; \
-    end \
-  end
-
-
 module isolde_register_file_ff
-  import isolde_register_file_pkg::RegDataWidth, isolde_register_file_pkg::RegCount, isolde_register_file_pkg::RegSize, isolde_register_file_pkg::RegAddrWidth;
-(
+  import isolde_register_file_pkg::*;
+#(
+    parameter int unsigned NumReadPorts = 5
+) (
     // Clock and Reset
-    input logic clk_i,  // Clock signal
-    input logic rst_ni,  // Active-low reset signal
-    //
-    isolde_register_file_if isolde_rf_bus
+    input logic clk_i,
+    input logic rst_ni,
+
+    // Register file interface (RF side)
+    isolde_register_file_if.rf isolde_rf_bus
 );
 
-
-  // Internal Register File: RegCount registers, each RegSize words of DataWidth bits
+  // ------------------------------------------------------------
+  // Internal register file:
+  // RegCount registers, each RegSize x RegDataWidth bits
+  // ------------------------------------------------------------
   logic [RegSize-1:0][RegDataWidth-1:0] reg_file[RegCount-1:0];
-  // logic [RegAddrWidth-1:0] echo_addr;
-  logic isolde_rf_err_write;  // Error signal for write process
-  logic [4:0] isolde_rf_err_read;  // Error signals for read process
 
-  // Register Write Process (Sequential logic)
+  // Error tracking
+  logic isolde_rf_err_write;
+  logic [NumReadPorts-1:0] isolde_rf_err_read;
+
+  // ------------------------------------------------------------
+  // Write process
+  // ------------------------------------------------------------
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      // Reset the register file (optional, depending on your design requirements)
       for (int i = 0; i < RegCount; i++) begin
         reg_file[i] <= '0;
       end
       isolde_rf_err_write <= 1'b0;
-      //echo_addr <= 0;
     end else begin
-      // Write data to the register file if write enable is active
-      if (isolde_rf_bus.we_0) begin
-        if (isolde_rf_bus.waddr_0 < RegCount) begin
-          reg_file[isolde_rf_bus.waddr_0] <= isolde_rf_bus.wdata_0;
-          //echo_addr <= isolde_rf_bus.waddr_0;
-          //isolde_rf_bus.echo_0 <= isolde_rf_bus.wdata_0;
-          isolde_rf_err_write <= 1'b0;
+      isolde_rf_err_write <= 1'b0;
+
+      if (isolde_rf_bus.wp.we) begin
+        if (isolde_rf_bus.wp.addr < RegCount) begin
+          reg_file[isolde_rf_bus.wp.addr] <= isolde_rf_bus.wp.data;
         end else begin
-          // Error: write address out of range
           isolde_rf_err_write <= 1'b1;
         end
-      end else begin
-        isolde_rf_err_write <= 1'b0;
       end
     end
   end
 
-  // //echo process
+  // ------------------------------------------------------------
+  // Write echo (combinational)
+  // ------------------------------------------------------------
   always_comb begin
-    if (isolde_rf_bus.we_0) begin
-      isolde_rf_bus.echo_0 = isolde_rf_bus.wdata_0;
+    isolde_rf_bus.wp_echo = '0;
+    if (isolde_rf_bus.wp.we) begin
+      isolde_rf_bus.wp_echo = isolde_rf_bus.wp.data;
     end
   end
-  // Register Read Processes (Combinational logic)
-  `GEN_READ_BLOCK(0)
-  `GEN_READ_BLOCK(1)
-  `GEN_READ_BLOCK(2)
-  `GEN_READ_BLOCK(3)
-  `GEN_READ_BLOCK(4)
 
-  // Combine read and write error signals
-  assign isolde_rf_bus.isolde_rf_err = |isolde_rf_err_read | isolde_rf_err_write  ;
+  // ------------------------------------------------------------
+  // Read ports (generate loop)
+  // ------------------------------------------------------------
+  genvar rp_i;
+  generate
+    for (rp_i = 0; rp_i < NumReadPorts; rp_i++) begin : gen_read_ports
+      always_comb begin
+        if (isolde_rf_bus.raddr[rp_i] < RegCount) begin
+          isolde_rf_bus.rdata[rp_i] = reg_file[isolde_rf_bus.raddr[rp_i]];
+          isolde_rf_err_read[rp_i]  = 1'b0;
+        end else begin
+          isolde_rf_bus.rdata[rp_i] = '0;
+          isolde_rf_err_read[rp_i]  = 1'b1;
+        end
+      end
+    end
+  endgenerate
+
+  // ------------------------------------------------------------
+  // Combined error output
+  // ------------------------------------------------------------
+  assign isolde_rf_bus.isolde_rf_err = isolde_rf_err_write | (|isolde_rf_err_read);
 
 endmodule

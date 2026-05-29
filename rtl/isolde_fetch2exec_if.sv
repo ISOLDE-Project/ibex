@@ -1,15 +1,8 @@
 // Copyleft 2024 ISOLDE
 // see https://ibex-core.readthedocs.io/en/latest/03_reference/load_store_unit.html, Protocol
 interface isolde_fetch2exec_if #(
-    parameter int unsigned IMM32_OPS = 4
-) (
-    // Clock and Reset
-    input logic clk_i,  // Clock signal
-    input logic rst_ni  // Active-low reset signal
+    parameter int unsigned IMM32_OPS = 3
 );
-  logic exec_rst_ni;  // execute  block active-low reset signal
-  logic isolde_decoder_stalled;  
-  logic isolde_decoder_illegal_instr;  // unsupported custom instr encountered
 
   //
   logic isolde_exec_req;  // The isolde decoder sets this high
@@ -24,4 +17,29 @@ interface isolde_fetch2exec_if #(
   logic [31:0] isolde_decoder_instr;  // Offloaded instruction
   logic [IMM32_OPS  -1:0][31:0] isolde_decoder_imm32;        // Immediate operands for the offloaded instruction
   logic [IMM32_OPS  -1:0] isolde_decoder_imm32_valid;  // Validity of the immediate operands
+
+  modport dec(
+      output isolde_exec_req,
+      input isolde_exec_gnt,
+      input isolde_exec_dne,
+      output isolde_opcode,
+      output func3,
+      output funct2,
+      output isolde_decoder_instr,
+      output isolde_decoder_imm32,
+      output isolde_decoder_imm32_valid
+
+  );
+
+  modport exec(
+      input isolde_exec_req,
+      output isolde_exec_gnt,
+      output isolde_exec_dne,
+      input isolde_opcode,
+      input func3,
+      input funct2,
+      input isolde_decoder_instr,
+      input isolde_decoder_imm32,
+      input isolde_decoder_imm32_valid
+  );
 endinterface

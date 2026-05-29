@@ -8,3 +8,4 @@ vivado/
 *.rpt
 *pulpissimo*
 padframe_adapter.sv
+*.str

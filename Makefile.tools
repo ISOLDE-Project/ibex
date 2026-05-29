@@ -1,3 +1,4 @@
+
 prj_path := $(shell git rev-parse --show-toplevel)
 num_cores := $(shell nproc)
 num_cores_half := $(shell echo "$$(($(num_cores) / 2)"))
@@ -69,7 +70,7 @@ $(TOOLS_DIR)/riscv32-elf-llvm.tar.gz: vendor/riscv32-elf-llvm.url
 	wget `cat $(CURDIR)/$<` -O riscv32-elf-llvm.tar.gz && \
 	touch riscv32-elf-llvm.tar.gz
 
-$(LLVM_INSTALL_DIR): ${TOOLS_DIR}  $(TOOLS_DIR)/riscv32-elf-llvm.tar.gz
+$(LLVM_INSTALL_DIR): $(TOOLS_DIR)/riscv32-elf-llvm.tar.gz
 	rm -fr $(LLVM_INSTALL_DIR)
 	mkdir -p $(INSTALL_DIR)
 	cd $(TOOLS_DIR) && \

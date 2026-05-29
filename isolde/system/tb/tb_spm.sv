@@ -254,25 +254,6 @@ module tb_lca_system
   /**    aida core                                      **/
   /*******************************************************/
   aida #(
-      .SecureIbex      (SecureIbex),
-      .ICacheScramble  (ICacheScramble),
-      .PMPEnable       (PMPEnable),
-      .PMPGranularity  (PMPGranularity),
-      .PMPNumRegions   (PMPNumRegions),
-      .MHPMCounterNum  (MHPMCounterNum),
-      .MHPMCounterWidth(MHPMCounterWidth),
-      .RV32E           (RV32E),
-      .RV32M           (RV32M),
-      .RV32B           (RV32B),
-      .RegFile         (ibex_pkg::RegFileFF),
-      .BranchTargetALU (BranchTargetALU),
-      .ICache          (1'b1),
-      .ICacheECC       (ICacheECC),
-      .WritebackStage  (WritebackStage),
-      .BranchPredictor (BranchPredictor),
-      .DbgTriggerEn    (DbgTriggerEn),
-      .DmHaltAddr      (DmHaltAddr),
-      .DmExceptionAddr (DmExceptionAddr),
       .BootROMEnable   (BootROMEnable)
   ) i_aida_lca (
       .clk_i(clk_i),

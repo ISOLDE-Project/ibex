@@ -22,14 +22,7 @@ module isolde_fetch_vleninstr (
     output logic              vlen_instr_ready_o   // vlen_instr_o is ready to use
 );
 
-  // FSM states
-  typedef enum logic [1:0] {
-    IDLE,
-    FETCH_COMPUTE,
-    FETCH_REST     // Fetch the remaining words for multi-word instructions
-  } state_t;
-
-  state_t ifvli_state, ifvli_next;
+ 
 
   // Extract the opcode and nnn fields from the instruction
   logic [6:0] opCode;
@@ -46,7 +39,10 @@ module isolde_fetch_vleninstr (
   // Internal control signals
 
   logic [2:0] wr_ptr;  // Write pointer to store fetched words into vlen_instr_o
-
+  logic             _word_instr_req_o;  // request a word_instr_i
+  logic [3:0][31:0] des_instr;  // In-order succession of maximum 5 word_instr_i
+  logic [2:0]       _vlen_instr_words_o;  // Instruction length in words
+  logic             _vlen_instr_ready_o;  // _vlen_instr_o is ready to use
 
   // Extract opcode and nnn
   assign opCode = word_instr_i[6:0];     // Extracting opcode bits
@@ -64,10 +60,6 @@ module isolde_fetch_vleninstr (
 
 
 
-  logic             _word_instr_req_o;  // request a word_instr_i
-  logic [3:0][31:0] des_instr;  // In-order succession of maximum 5 word_instr_i
-  logic [2:0]       _vlen_instr_words_o;  // Instruction length in words
-  logic             _vlen_instr_ready_o;  // _vlen_instr_o is ready to use
 
 
   assign vlen_instr_words_o =_vlen_instr_words_o;
@@ -80,15 +72,14 @@ module isolde_fetch_vleninstr (
   assign vlen_instr_o[4] = des_instr[3];
 
 
-  always_ff @(posedge clk_i, negedge rst_ni)
-    if (!rst_ni) begin
-      ifvli_state <= FETCH_COMPUTE;
-      wr_ptr <= 0;
-    end else begin
-      ifvli_state <= ifvli_next;
 
-      // case (ifvli_state)
-      //   FETCH_COMPUTE: begin
+  always_ff @(posedge clk_i, negedge rst_ni) begin
+    if (!rst_ni) begin
+      wr_ptr <= 0;
+      des_instr <= '0;
+      _vlen_instr_words_o <= 0;
+    end else begin
+
       if (word_instr_ready_i & vlen_instr_req_i) begin
         des_instr[3] <= des_instr[2];
         des_instr[2] <= des_instr[1];
@@ -104,8 +95,10 @@ module isolde_fetch_vleninstr (
             end else if (nnn == RISCV_ENC_GE80_N1) begin
               _vlen_instr_words_o <= 3;  // 3-word instruction (96 bits)
             end else begin
+`ifndef SYNTHESIS
               // Assert if unknown nnn is encountered
               $fatal("Unsupported custom instruction: nnn = %0d", nnn);
+`endif
             end
           end
 
@@ -118,18 +111,8 @@ module isolde_fetch_vleninstr (
           end
         endcase
       end
-      //   end
-      //   FETCH_REST: begin
-      //     if (word_instr_ready_i) begin
-      //       des_instr[3] <= des_instr[2];
-      //       des_instr[2] <= des_instr[1];
-      //       des_instr[1] <= des_instr[0];
-      //       des_instr[0] <= word_instr_i;
-      //     end
-      //   end
-      // endcase
     end
-
+  end
 
 
 

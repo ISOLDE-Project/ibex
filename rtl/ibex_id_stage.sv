@@ -177,8 +177,8 @@ module ibex_id_stage
     input logic        rf_write_wb_i,
 
     //ISOLDE Register file interface
-    isolde_register_file_if   isolde_rf_bus,
-    isolde_x_register_file_if x_rf_bus,
+    isolde_register_file_if.cpu   isolde_rf_bus,
+    isolde_x_register_file_if.cpu x_rf_bus,
 
     output logic                     en_wb_o,
     output ibex_pkg::wb_instr_type_e instr_type_wb_o,
@@ -210,6 +210,7 @@ module ibex_id_stage
   // Decoder/Controller, ID stage internal signals
   logic illegal_insn_dec;  //RV32+custom illegal operation
   logic isolde_decoder_busy;
+  logic isolde_decoder_stalled;
   logic std_decoder_rst_n;
   logic illegal_std_instr;  //RV32 illegal operation
   logic illegal_custom_instr;  //custom illegal operation
@@ -463,7 +464,7 @@ module ibex_id_stage
     if (~isolde_decoder_busy) begin
       instr_rdata_std = instr_batch_rdata_i[0];
     end else begin
-      instr_rdata_std = 32'h0x0; 
+      instr_rdata_std = 32'h0x0;
     end
   end
   /////////////
@@ -582,41 +583,21 @@ module ibex_id_stage
   /////////////////////
   // ISOLDE decoder //
   ///////////////////
-
-  isolde_fetch2exec_if fetch_exec_conn (
-      clk_i,
-      rst_ni
-  );
-
-  isolde_decoder isolde_decoder_i (
-      .clk_i(clk_i),
+ 
+  isolde_decoder_top isolde_decoder_top_i (
+      .clk_i (clk_i),
       .rst_ni(rst_ni),
-      .isolde_decoder_instr_exec_i(instr_exec_i),
-      .isolde_decoder_instr_valid_i(instr_valid_i),
-      .isolde_decoder_instr_batch_i(instr_batch_rdata_i),
-      .isolde_decoder_enable_i(1'b1),
-      .isolde_decoder_illegal_instr_o(illegal_custom_instr),
+      // from IF-ID pipeline register
+      .instr_exec_i,
+      .instr_valid_i,
+      .instr_batch_rdata_i,     // from IF-ID pipeline registers
+      // output to ID stage
+      .illegal_custom_instr_o(illegal_custom_instr),
+      .isolde_stall_fetch_o(isolde_stall_fetch),
       .isolde_decoder_busy_o(isolde_decoder_busy),
-
       //ISOLDE register file
-      .isolde_rf_bus          (isolde_rf_bus),
-      .x_rf_bus               (x_rf_bus),
-      .isolde_decoder_exec_bus(fetch_exec_conn)
-  );
-
-
-  assign illegal_insn_dec   = illegal_std_instr & illegal_custom_instr;
-  assign isolde_stall_fetch = ~fetch_exec_conn.isolde_decoder_stalled;
-  ///////////////////////////
-  // ISOLDE  execute block //
-  ///////////////////////////
-
-
-  isolde_exec_block isolde_exec_block_i (
-      .isolde_rf_bus           (isolde_rf_bus),
-      .x_rf_bus                (x_rf_bus),
-      .isolde_exec_from_decoder(fetch_exec_conn),
-      .isolde_exec_busy_o      (isolde_exec_busy),
+      .isolde_rf_bus,
+      .x_rf_bus,
       // eXtension interface
       .xif_compressed_if,
       .xif_issue_if,
@@ -625,8 +606,7 @@ module ibex_id_stage
       .xif_mem_result_if,
       .xif_result_if
   );
-
-
+  assign illegal_insn_dec = illegal_std_instr & illegal_custom_instr;
   ////////////////
   // Controller //
   ////////////////

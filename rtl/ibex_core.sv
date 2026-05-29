@@ -89,8 +89,8 @@ module ibex_core
     input  logic [RegFileDataWidth-1:0] rf_rdata_b_ecc_i,
 
     //ISOLDE Register file interface
-    isolde_register_file_if   isolde_rf_bus,
-    isolde_x_register_file_if x_rf_bus,
+    isolde_register_file_if.cpu   isolde_rf_bus,
+    isolde_x_register_file_if.cpu x_rf_bus,
 
     // RAMs interface
     output logic [IC_NUM_WAYS-1:0] ic_tag_req_o,
@@ -1879,7 +1879,7 @@ module ibex_core
   `ASSERT_INIT(IllegalParamSecure, !(SecureIbex && (RV32M == RV32MNone)))
 
   // If the ID stage signals its ready the mult/div FSMs must be idle in the following cycle
-  //`ASSERT(MultDivFSMIdleOnIdReady, id_in_ready |=> ex_block_i.sva_multdiv_fsm_idle)
+  // `ASSERT(MultDivFSMIdleOnIdReady, id_in_ready |=> ex_block_i.sva_multdiv_fsm_idle)
 
   //////////
   // FCOV //

@@ -67,6 +67,16 @@ cd isolde/tca_system/
 . ./eth.sh 
 bender update
 ```
+## How to List Branches That Contain a Given Commit?
+In submodule find the commit id:  
+```sh
+$ git status
+HEAD detached at 89f09db
+```
+```sh
+ $ git branch -r  --contains 89f09db
+  origin/isolde/spm
+  ```
 # merging
 ```sh
 # Step 1: Switch to the target branch isolde/dev
@@ -88,6 +98,98 @@ git add .
 # Step 6: Commit the changes with a custom message
 git commit -m "Squash merge tmp/exp into isolde/dev using theirs strategy"
 ```
+
+# Open EDA
+## Install tools
+for a lst of available targets:
+```sh
+make -f Makefile.tools help
+```
+## Synthesis
+apply patches from isolde/system/patches by running
+```sh
+make -C isolde/system/patches 
+```
+output is generated in  
+- yosys/out
+- yosys/reports  
+
+## RISC-V Domain (rv_domain)
+ibex+debug-module+uart-tx-only
+```sh
+make clean yosys-flist 
+make TOP_DESIGN=rv_domain_top    yosys-clean yosys
+```
+**snippet** from *yosys/reports/rv_domain_top_area.rpt*
+```
+=== rv_domain_top ===
+
+        +----------Local Count, excluding submodules.
+        |        +-Local Area, excluding submodules.
+        |        | 
+    26128        - wires
+    26128        - wire bits
+     4002        - public wires
+     4002        - public wire bits
+      325        - ports
+      325        - port bits
+    25800 3.93E+05 cells
+```
+
+## RISC-V core (rv_core)
+ibex
+```sh
+make clean yosys-flist yosys
+```
+**snippet** from *yosys/reports/rv_top_area.rpt*:  
+```
+=== rv_top ===
+
+        +----------Local Count, excluding submodules.
+        |        +-Local Area, excluding submodules.
+        |        | 
+    16912        - wires
+    16912        - wire bits
+     2193        - public wires
+     2193        - public wire bits
+      206        - ports
+      206        - port bits
+    16850  2.6E+05 cells
+```
+
+## aida (aida_top)
+ibex
+```sh
+make clean yosys-flist 
+make TOP_DESIGN=aida_top  yosys
+```
+**snippet** from *yosys/reports/aida_top_area.rpt*:  
+```
+72. Printing statistics.
+
+=== aida_top ===
+
+        +----------Local Count, excluding submodules.
+        |        +-Local Area, excluding submodules.
+        |        | 
+    41823        - wires
+    41823        - wire bits
+     6008        - public wires
+     6008        - public wire bits
+        9        - ports
+        9        - port bits
+    42986 6.35E+05 cells
+        6        -   $_DLATCH_N_
+```
+**Note**:  
+Needs fix for *$_DLATCH_N_* nodes.  
+
+## OpenROAD
+```sh
+make openroad
+```
+**Note**: only rv_core available 
+
 # Ibex RISC-V Core
 
 Ibex is a production-quality open source 32-bit RISC-V CPU core written in

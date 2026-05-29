@@ -1,4 +1,20 @@
 import argparse
+import re
+
+def parse_verilog_define(line):
+    """
+    Extracts the content inside {} of a verilog_define line
+    and returns a dict of key=value pairs, filtering out RVFI.
+    """
+    match = re.search(r'\{([^}]*)\}', line)
+    if not match:
+        return {}
+    # Split into key=value pairs
+    defines_dict = dict(d.split("=", 1) for d in match.group(1).split())
+    # Remove RVFI if present
+    defines_dict.pop("RVFI", None)
+    return defines_dict
+    
 
 def main():
     parser = argparse.ArgumentParser(description="Convert read_verilog commands to add_files TCL format.")
@@ -10,7 +26,8 @@ def main():
     file_paths = []
     include_dirs_line = None
     property_generic =""
-    
+    verilog_defines = {}
+
     # Read input file
     with open(args.input_file, "r") as f:
         for line in f:
@@ -23,15 +40,23 @@ def main():
                         # Capture include_dirs line
             elif line.startswith("set_property include_dirs"):
                 include_dirs_line = line
-            elif line.startswith(("set_property generic", "set_property verilog_define")):
+            elif line.startswith("set_property generic"):
                 property_generic = f'{property_generic}\n{line}\n'
+            elif line.startswith( "set_property verilog_define"):
+                defines = parse_verilog_define(line)
+                verilog_defines.update(defines)
             
 
 
     # Write output file
     with open(args.output_file, "w") as f:
-        #f.write(f'set_property source_mgmt_mode None [current_project]\n')
+
         f.write(f'{property_generic}\n')
+
+        if verilog_defines:
+            defines_str = " ".join(f"{k}={v}" for k, v in verilog_defines.items())
+            f.write(f"set_property verilog_define {{{defines_str}}} [get_filesets sources_1]\n\n")
+
         f.write(f'set ROOT_IBEX "{args.root}"\n')
         f.write("add_files -norecurse -fileset [current_fileset] [list \\\n")
         for path in file_paths:

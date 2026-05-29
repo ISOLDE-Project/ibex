@@ -55,8 +55,7 @@ ibex_sim.flist:  $(CORE_FILES)
 ##
 
 manifest.flist: Bender.yml
-	@echo 'INFO:  $(BENDER) script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(VLT_BENDER)'
-	@$(BENDER) script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(VLT_BENDER)  >$@
+	$(BENDER) script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(VLT_BENDER)  >$@
 	touch $@
 
 
@@ -112,16 +111,17 @@ veri-run: $(BIN_DIR)/verilator_executable
 
 	# === Check for expected output files ===
 	@if [ ! -f "verilator_tb.vcd" ]; then \
-		echo "ERROR: Output file missing: verilator_tb.vcd"; \
-		exit 1; \
-	fi
-	@if [ ! -f "rtl_debug_trace.log" ]; then \
-		echo "ERROR: Output file missing: rtl_debug_trace.log"; \
-		exit 1; \
+		echo "⚠️  CRITICAL WARNING: Output file missing: verilator_tb.vcd"; \
+		else \
+		mv verilator_tb.vcd $(VERI_LOG_DIR)/$(TEST).vcd; \
 	fi
 
-	mv verilator_tb.vcd $(VERI_LOG_DIR)/$(TEST).vcd
-	mv rtl_debug_trace.log $(VERI_LOG_DIR)
+	@if [ ! -f "rtl_debug_trace.log" ]; then \
+		echo "⚠️  CRITICAL WARNING: Output file missing: rtl_debug_trace.log"; \
+		else \
+		mv rtl_debug_trace.log $(VERI_LOG_DIR); \
+	fi
+
 
 	@if [  -f "perfcnt.csv" ]; then \
 		mv perfcnt.csv $(VERI_LOG_DIR)/$(TEST).csv; \

@@ -13,11 +13,3 @@ help: Makefile
 	done
 
 .PHONY: help
-
-
-
-## Checkout/update git submodule(s)
-checkout: 
-	git submodule update --init --recursive
-
-.PHONY: checkout
