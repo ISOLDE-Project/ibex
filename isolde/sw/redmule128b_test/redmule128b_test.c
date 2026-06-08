@@ -71,8 +71,12 @@ int main(int argc, char *argv[]) {
   printf("[SPM TCA ] x_spm_addr= 0x%08x\n, w_spm_addr= 0x%08x\n, y_spm_addr= 0x%08x\n", x_spm_addr, w_spm_addr,
          y_spm_addr);
 
-  printf("[SPM TCA ] Starting test. Godspeed!\n");
-
+  printf("[SPM TCA ] Starting test. Y = (X x W) + Y\n");
+  printf("[SPM TCA ] fp_fmt: FP16\n");
+  printf("[SPM TCA ] M     : 12\n");
+  printf("[SPM TCA ] N     : 16\n");
+  printf("[SPM TCA ] K     : 16\n");
+  printf("[SPM TCA ] Godspeed!\n");
   asm volatile("addi t0, %0, 0" ::"r"(x_spm_addr));
   asm volatile("addi t1, %0, 0" ::"r"(w_spm_addr));
   asm volatile("addi t2, %0, 0" ::"r"(y_spm_addr));

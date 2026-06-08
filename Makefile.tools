@@ -107,7 +107,7 @@ bender:
 
 $(TOOLS_DIR)/xpack-openocd.tar.gz: ${TOOLS_DIR} vendor/xpack-openocd.url
 	cd $(TOOLS_DIR) && \
-	wget `cat $(CURDIR)/$<` -O xpack-openocd.tar.gz 
+	wget `cat $(CURDIR)/$(word 2, $^)` -O xpack-openocd.tar.gz 
 	touch $@
 
 .PHONY: openocd
