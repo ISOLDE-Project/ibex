@@ -69,6 +69,7 @@ tb_target ?= -t vanilla_lca
 common_targs +=  $(tb_target)
 
 
+include $(mkfile_path)/../mk/yosys.mk
 
 
 include $(mkfile_path)/../mk/redmule.mk
