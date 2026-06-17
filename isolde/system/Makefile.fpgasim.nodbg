@@ -2,6 +2,6 @@
 %:
 	 @echo  $(MAKECMDGOALS)
 	 make DBG_MODULE=0 ENABLE_SPM=1 \
-	    VLT_TOP_MODULE=tb_system     \
+	    VLT_TOP_MODULE=aida_tb     \
 		BENDER_EXTRA_TARGET="-t fpga_sim" \
 	 	TEST=hello_test $@

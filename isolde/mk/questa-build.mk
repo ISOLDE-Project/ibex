@@ -113,7 +113,7 @@ questa-run:  ibex_questa.flist  manifest_questa.flist
 	@echo "$(BANNER)"
 	@echo "* Running with QuestaSim:"
 	@echo "* logfile: $(QUESTA_LOG_DIR)/$(TEST).log"
-	@echo "* rtl debug trace: $(QUESTA_LOG_DIR)/rtl_debug_trace.log"
+	@echo "* rtl debug trace: $(QUESTA_LOG_DIR)/trace_core_00000000.log"
 	@echo "* *.vcd: $(QUESTA_LOG_DIR)"
 	@echo "$(BANNER)"
 
@@ -139,10 +139,10 @@ questa-run:  ibex_questa.flist  manifest_questa.flist
 	        +STIM_DATA=$(test-program)-d.hex \
 	        -do "run -all; quit -f"
 
-	@if [ ! -f "rtl_debug_trace.log" ]; then \
-		echo "WARNING: Output file missing: rtl_debug_trace.log"; \
+	@if [ ! -f "trace_core_00000000.log" ]; then \
+		echo "WARNING: Output file missing: trace_core_00000000.log"; \
 	else \
-		mv rtl_debug_trace.log $(QUESTA_LOG_DIR); \
+		mv trace_core_00000000.log $(QUESTA_LOG_DIR); \
 	fi
 
 	@if [ -f "perfcnt.csv" ]; then \
@@ -156,7 +156,7 @@ questa-gui:  ibex_questa.flist  manifest_questa.flist
 	@echo "$(BANNER)"
 	@echo "* Running with QuestaSim (GUI):"
 	@echo "* logfile: $(QUESTA_LOG_DIR)/$(TEST).log"
-	@echo "* rtl debug trace: $(QUESTA_LOG_DIR)/rtl_debug_trace.log"
+	@echo "* rtl debug trace: $(QUESTA_LOG_DIR)/trace_core_00000000.log"
 	@echo "* *.vcd: $(QUESTA_LOG_DIR)"
 	@echo "$(BANNER)"
 

@@ -9,7 +9,7 @@ package:
 dependencies:
   redmule:            {path: ../../vendor/redmule }
   axi:                { git: "https://github.com/pulp-platform/axi.git"               , version: 0.39.6    }
-  udma_core:          {git: "https://github.com/pulp-platform/udma_core.git"          , version: 2.0.0     }
+ # udma_core:          {git: "https://github.com/pulp-platform/udma_core.git"          , version: 2.0.0     }
   
 export_include_dirs:
 #  - rtl/include
@@ -70,7 +70,7 @@ sources:
         - fpga/rtl/aida_top.sv
         - fpga/sim/tcdm_mem.sv
         - fpga/tb/aida_tb.sv
-        - fpga/tb/aida_lca_tb.sv
+#        - fpga/tb/aida_lca_tb.sv
     - target: yosys
       files:
         - asic/rtl/aida_top.sv

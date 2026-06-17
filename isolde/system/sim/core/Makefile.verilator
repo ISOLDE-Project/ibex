@@ -82,7 +82,7 @@ $(VERI_OBJ_DIR)/V$(VLT_TOP_MODULE).mk:  $(TBSRC_VERI)
 		-f $(PE_MANIFEST) \
 		--Mdir $(VERI_OBJ_DIR) \
 		-CFLAGS "$(VLT_CFLAGS)"  \
-		-LDFLAGS "-pthread -lutil -lelf" \
+		-LDFLAGS "-pthread -lutil " \
 		
 
 

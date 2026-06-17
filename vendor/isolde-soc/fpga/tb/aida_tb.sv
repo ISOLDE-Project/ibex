@@ -1,10 +1,9 @@
 // Copyleft ISOLDE 2025
 
-//module aida_tb (
-module tb_system (
+module aida_tb (
     input logic clk_i,
-    input logic rst_ni,
-    input logic fetch_enable_i
+    input logic rst_ni
+    // input logic fetch_enable_i
 
 );
 
@@ -45,11 +44,13 @@ module tb_system (
   /********************************************************/
   /**  JTAG Static connection signals                   **/
   /*******************************************************/
+  `ifdef TARGET_RV_DEBUG
   logic [31:0] sim_jtag_exit;
   // === JTAG simulation parameters
   localparam int unsigned OPENOCD_PORT = 9999;
   jtag_pkg::jtag_req_t jtag_req;
   jtag_pkg::jtag_rsp_t jtag_rsp;
+  `endif
   // === IO pads outputs
   aida_io_pkg::aida_pads_o_t pads_o;
 
@@ -59,7 +60,7 @@ module tb_system (
 
 
   assign ref_clk = clk_i;
-  assign sys_mb_reset = ~rst_ni;
+  assign sys_mb_reset = rst_ni;
 
 
 
@@ -123,7 +124,7 @@ module tb_system (
   wire fetch_enable;
   ibex_rst i_ibex_rst (
       .clk_i(ref_clk),
-      .rst_ni(~sys_mb_reset),
+      .rst_ni(sys_mb_reset),
       .fetch_enable_o(fetch_enable)
   );
 
@@ -133,7 +134,7 @@ module tb_system (
       .BootROMEnable(BootROMEnable)
   ) i_aida_top (
       .clk_i         (ref_clk),
-      .rst_ni        (~sys_mb_reset),  // Use system reset controller output
+      .rst_ni        (sys_mb_reset),  // Use system reset controller output
       .fetch_enable_i(fetch_enable),
 
       .pads_o,
@@ -168,7 +169,7 @@ module tb_system (
       $finish;
     end else begin
       $display("[TESTBENCH] @ t=%0t: loading %0s into imemory", $time, stim_instr);
-      $readmemh(stim_instr, tb_system.i_aida_top.i_imemory.u_tcdm_mem.memory);
+      $readmemh(stim_instr, aida_tb.i_aida_top.i_imemory.u_tcdm_mem.memory);
     end
 
     if (!$value$plusargs("STIM_DATA=%s", stim_data)) begin
@@ -176,7 +177,7 @@ module tb_system (
       $finish;
     end else begin
       $display("[TESTBENCH] @ t=%0t: loading %0s into dmemory", $time, stim_data);
-      $readmemh(stim_data, tb_system.i_aida_top.i_dmemory.u_tcdm_mem.memory);
+      $readmemh(stim_data, aida_tb.i_aida_top.i_dmemory.u_tcdm_mem.memory);
     end
 
 

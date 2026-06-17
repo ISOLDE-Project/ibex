@@ -67,12 +67,12 @@ void dut_reset(dut_ptr &dut, const vluint64_t sim_time,
     dut->rst_ni = 1;
 }
 
-void dut_set_fetch_en(dut_ptr &dut, const vluint64_t sim_time, bool value) {
-  dut->fetch_enable_i = 0;
-  if (sim_time > 100) {
-    dut->fetch_enable_i = value;
-  }
-}
+// void dut_set_fetch_en(dut_ptr &dut, const vluint64_t sim_time, bool value) {
+//   dut->fetch_enable_i = 0;
+//   if (sim_time > 100) {
+//     dut->fetch_enable_i = value;
+//   }
+// }
 
 int main(int argc, char **argv, char **env) {
   // Register signal handlers
@@ -99,7 +99,7 @@ int main(int argc, char **argv, char **env) {
     // Reset DUT
     dut_reset(dut, contextp->time(), 20, 10);
     // Set fetch enable to core
-    dut_set_fetch_en(dut, contextp->time(), 1);
+    //dut_set_fetch_en(dut, contextp->time(), 1);
     dut->eval();
     tfp->dump(contextp->time());
     contextp->timeInc(1);

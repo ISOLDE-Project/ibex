@@ -86,7 +86,7 @@ veri-run: $(BIN_DIR)/verilator_executable
 	@echo "$(BANNER)"
 	@echo "* Running with Verilator: "
 	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
-	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/rtl_debug_trace.log"
+	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/trace_core_00000000.log"
 	@echo "*                              *.vcd: $(VERI_LOG_DIR)"
 	@echo "$(BANNER)"
 	# === Create/clean-up destination log folder ===
@@ -117,10 +117,10 @@ veri-run: $(BIN_DIR)/verilator_executable
 		mv verilator_tb.vcd $(VERI_LOG_DIR)/$(TEST).vcd; \
 	fi
 
-	@if [ ! -f "rtl_debug_trace.log" ]; then \
-		echo "⚠️  CRITICAL WARNING: Output file missing: rtl_debug_trace.log"; \
+	@if [ ! -f "trace_core_00000000.log" ]; then \
+		echo "⚠️  CRITICAL WARNING: Output file missing: trace_core_00000000.log"; \
 		else \
-		mv rtl_debug_trace.log $(VERI_LOG_DIR); \
+		mv trace_core_00000000.log $(VERI_LOG_DIR); \
 	fi
 
 
@@ -135,7 +135,7 @@ veri-run-u-test: $(BIN_DIR)/verilator_executable
 	@echo "$(BANNER)"
 	@echo "* Running with Verilator: "
 	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
-	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/rtl_debug_trace.log"
+	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/trace_core_00000000.log"
 	@echo "*                              *.vcd: $(VERI_LOG_DIR)"
 	@echo "$(shell pwd)"
 	mkdir -p $(VERI_LOG_DIR)
