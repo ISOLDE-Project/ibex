@@ -18,7 +18,7 @@ OSS_CAD_SUITE_INSTALL_DIR ?= ${INSTALL_DIR}/oss-cad-suite
 OPENROAD_INSTALL_DIR      ?= ${INSTALL_DIR}/openroad
 OPENROAD_VERSION          ?= a008522d88b669ac4c985609533cf5a3d2649222
 VERIL_INSTALL_DIR         ?= ${INSTALL_DIR}/verilator
-VERIL_VERSION             ?= v5.036
+VERIL_VERSION             ?= v5.048
 BENDER_INSTALL_DIR        ?= ${INSTALL_DIR}/bender
 
 all: dev-dep verilator riscv32-gcc riscv32-llvm  openocd
