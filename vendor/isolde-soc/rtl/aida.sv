@@ -36,10 +36,12 @@ module aida
         
     // ===  Scratchpad Memory (SPM) banks  connections ===
     output isolde_tcdm_pkg::req_t spm_req_o        [N_TCDM_BANKS-1:0],
-    input  isolde_tcdm_pkg::rsp_t spm_rsp_i        [N_TCDM_BANKS-1:0],
+    input  isolde_tcdm_pkg::rsp_t spm_rsp_i        [N_TCDM_BANKS-1:0]
+`ifdef TARGET_RV_DEBUG
     // === JTAG port ===
-    input  jtag_pkg::jtag_req_t   aida_jtag_in,
+    ,input  jtag_pkg::jtag_req_t   aida_jtag_in,
     output jtag_pkg::jtag_rsp_t   aida_jtag_out
+`endif    
 `ifdef TARGET_VERILATOR
     ,output logic[31:0] sim_exit_code_o,
     output logic sim_exit_valid_o    
@@ -474,8 +476,8 @@ aida_io #(
       .instr_rvalid_i   (tcdm_core_inst.rsp.valid),
       .instr_addr_o     (tcdm_core_inst.req.addr),
       .instr_rdata_i    (tcdm_core_inst.rsp.data),
-      //.instr_rdata_intg_i     (instr_rdata_intg),
-      //.instr_err_i            (instr_err),
+      .instr_rdata_intg_i     ('0),
+      .instr_err_i            (1'b0),
       // === Data memory interface
       .data_req_o       (tcdm_core_data.req.req),
       .data_gnt_i       (tcdm_core_data.rsp.gnt),
@@ -486,13 +488,13 @@ aida_io #(
       .data_wdata_o     (tcdm_core_data.req.data),
       .data_wdata_intg_o(),
       .data_rdata_i     (tcdm_core_data.rsp.data),
-      .data_rdata_intg_i(),
-      .data_err_i       (),
+      .data_rdata_intg_i('0),
+      .data_err_i       (1'b0),
 
       .irq_software_i(evt[0][0]),
       .irq_timer_i   (1'b0),
       .irq_external_i(1'b0),
-      .irq_fast_i    (1'b0),
+      .irq_fast_i    ('0),
       .irq_nm_i      (1'b0),
 
       .scramble_key_valid_i('0),

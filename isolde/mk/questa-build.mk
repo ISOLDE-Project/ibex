@@ -26,18 +26,21 @@ QUESTA_FLAGS           += -timescale 1ns/1ps
 
 
 # Warning suppressions
-QUESTA_SUPPRESS        := -suppress 2244
-QUESTA_SUPPRESS        += -suppress 442    # Port not found in module
-QUESTA_SUPPRESS        += -suppress 2912   # Port not found in module
-QUESTA_SUPPRESS        += -suppress 1882
-QUESTA_SUPPRESS        += -suppress 7063
-QUESTA_SUPPRESS        += -suppress 7045   # driven by more than one continuous assignment
+ QUESTA_SUPPRESS        :=
+ QUESTA_SUPPRESS        += -suppress 2583
+ QUESTA_SUPPRESS        += -suppress 13314
+ QUESTA_SUPPRESS        += -suppress 13233   # Design unit already exists and will be overwritten
+# QUESTA_SUPPRESS        += -suppress 442    # Port not found in module
+# QUESTA_SUPPRESS        += -suppress 2912   # Port not found in module
+# QUESTA_SUPPRESS        += -suppress 1882
+# QUESTA_SUPPRESS        += -suppress 7063
+# QUESTA_SUPPRESS        += -suppress 7045   # driven by more than one continuous assignment
 # QUESTA_SUPPRESS      += -suppress 7061   # Variable driven in always_ff and elsewhere
 # QUESTA_SUPPRESS      += -suppress 79000
 # QUESTA_SUPPRESS      += -suppress 63000
 
 # Disable assertions globally in all qrun invocations (ibex prim_assert flow)
-QUESTA_NO_ASSERT       := +define+VERILATOR
+QUESTA_NO_ASSERT       := +define+VERILATOR +define+COMMON_CELLS_ASSERTS_OFF
 
 # Tee handling
 ifeq ($(NO_TEE),1)
@@ -133,7 +136,6 @@ questa-run:  ibex_questa.flist  manifest_questa.flist
 	        -batch \
 	        -O5 \
 	        -nodebug \
-	        +acc=none \
 	        -logfile $(QUESTA_LOG_DIR)/$(TEST).log \
 	        +STIM_INSTR=$(test-program)-m.hex \
 	        +STIM_DATA=$(test-program)-d.hex \

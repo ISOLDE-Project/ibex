@@ -32,6 +32,7 @@ module tb_tcdm_mem #(
 
   //assign tcdm_slave_i.rsp.gnt= tcdm_slave_i.req.req;  // Always grant access for simplicity
   assign misalignment = tcdm_slave_i.req.addr[1:0];  // Get the last 2 bits of the address
+  assign tcdm_slave_i.rsp.err = 1'b0; // no errors 
 
   always_comb begin
     if (rst_ni && tcdm_slave_i.req.req)

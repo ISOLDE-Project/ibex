@@ -11,18 +11,20 @@ module tb_top_questa;
   //  Matches cpp: rst_time=20, rst_cycles=10 (time units)
   //  Clock toggles every 1 time unit → period = 2 units
   //  We use 1ns half-period to match "timeInc(1)" steps
-  // -------------------------------------------------------
+  // -------------------------------------------------------m
+  localparam SIM_CYCLES=4000;
   localparam time CLK_HALF_PERIOD = 1ns;
-  localparam time RST_TIME = 20ns;  // rst_time
-  localparam time RST_CYCLES = 10ns;  // rst_cycles (in time units, not clock cycles)
-  localparam time FETCH_EN_TIME = 100ns;  // fetch_enable_i goes high after t=100
+  localparam time RST_TIME = 20*2*CLK_HALF_PERIOD;  // rst_time
+  localparam time SIM_TIME = SIM_CYCLES*2*CLK_HALF_PERIOD;  // rst_time
+  //localparam time RST_CYCLES = 10ns;  // rst_cycles (in time units, not clock cycles)
+ 
 
   // -------------------------------------------------------
   //  DUT signals
   // -------------------------------------------------------
   logic clk_i = 1'b0;
   logic rst_ni = 1'b0;
-  logic fetch_enable_i = 1'b0;
+ 
 
   // -------------------------------------------------------
   //  Clock generation — toggles every 1ns, as in the cpp
@@ -57,34 +59,30 @@ module tb_top_questa;
     rst_ni = 1'b1;
   end
 
-  // -------------------------------------------------------
-  //  Fetch enable — mirrors dut_set_fetch_en()
-  //  fetch_enable_i = 0 until t > 100, then = 1
-  // -------------------------------------------------------
-  initial begin
-    // fetch_enable_i = 1'b0;
-    // #(FETCH_EN_TIME);
-    fetch_enable_i = 1'b1;
-  end
+  
 
   // -------------------------------------------------------
   //  DUT instantiation
   // -------------------------------------------------------
-  tb_system i_dut (
+  aida_tb i_dut (
       .clk_i         (clk_i),
-      .rst_ni        (rst_ni),
-      .fetch_enable_i(fetch_enable_i)
+      .rst_ni        (rst_ni)
   );
 
- 
-
+`ifdef VERBOSE_QUESTA_RUN 
+always @(posedge clk_i) begin
+  if (rst_ni && i_dut.i_aida_top.i_aida.i_ibex_top.instr_req_o && i_dut.i_aida_top.i_aida.i_ibex_top.instr_gnt_i)
+    $display("[FETCH] @ t=%0t: PC=%h", $time, i_dut.i_aida_top.i_aida.i_ibex_top.instr_addr_o);
+end
+`endif
   // -------------------------------------------------------
   //  Simulation timeout guard (optional safety net)
   //  Remove or increase if your test runs longer
   // -------------------------------------------------------
   initial begin
-    #10_000_000ns;
-    $display("[TB_TOP] @ t=%0t: TIMEOUT — simulation limit reached.", $time);
+    //#10_000_000ns;
+    #(SIM_TIME);
+    $display("[tb_top_questa] @ t=%0t: TIMEOUT — simulation limit reached.", $time);
     $finish;
   end
 

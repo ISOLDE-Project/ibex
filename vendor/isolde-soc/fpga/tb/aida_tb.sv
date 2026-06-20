@@ -88,7 +88,7 @@ module aida_tb (
   /*******************************************************/
 
 `ifndef TARGET_RV_DEBUG
-  always_comb begin
+  always @(posedge clk_i) begin
     if (sim_exit_valid) begin
       endSimulation(sim_exit_code);
     end
@@ -116,7 +116,7 @@ module aida_tb (
       .exit           (sim_jtag_exit)
   );
 
-  always_comb begin : jtag_exit_handler
+  always @(posedge clk_i) begin : jtag_exit_handler
     if (sim_jtag_exit) endSimulation(32'h0);
   end
 `endif
@@ -138,9 +138,11 @@ module aida_tb (
       .fetch_enable_i(fetch_enable),
 
       .pads_o,
+    `ifdef TARGET_RV_DEBUG
       // JTAG port
       .soc_jtag_in(jtag_req),
       .soc_jtag_out(jtag_rsp),
+    `endif
       .sim_exit_code_o(sim_exit_code),
       .sim_exit_valid_o(sim_exit_valid)
   );
@@ -168,7 +170,7 @@ module aida_tb (
       $display("No STIM_INSTR specified");
       $finish;
     end else begin
-      $display("[TESTBENCH] @ t=%0t: loading %0s into imemory", $time, stim_instr);
+      $display("[FPGA SIM] @ t=%0t: loading %0s into imemory", $time, stim_instr);
       $readmemh(stim_instr, aida_tb.i_aida_top.i_imemory.u_tcdm_mem.memory);
     end
 
@@ -176,7 +178,7 @@ module aida_tb (
       $display("No STIM_DATA specified");
       $finish;
     end else begin
-      $display("[TESTBENCH] @ t=%0t: loading %0s into dmemory", $time, stim_data);
+      $display("[FPGA SIM] @ t=%0t: loading %0s into dmemory", $time, stim_data);
       $readmemh(stim_data, aida_tb.i_aida_top.i_dmemory.u_tcdm_mem.memory);
     end
 
