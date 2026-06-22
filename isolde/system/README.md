@@ -87,6 +87,11 @@ Dhrystones per 1000 cycle:                     1
 - /ubuntu_20.04/home/ext/tristan-project/ibex.tca/isolde/lca_system/tb/tb_lca_system.sv:513: Verilog $finish
 ```
 # QUESTA
+setup the environment
+```sh
+cd isolde/system
+. ./qsim.sh
+```
 ## compile
 ```sh
 make -f Makefile.fpgasim.nodbg  questa-compile
@@ -98,6 +103,10 @@ make -f Makefile.fpgasim.nodbg  questa-clean questa-lint
 ## headless simulation
 ```sh
 make -f Makefile.fpgasim.nodbg  questa-run
+```
+## GUI simulation
+```sh
+make -f Makefile.fpgasim.nodbg  questa-qui
 ```
 # QUESTA FAQ
 ```
