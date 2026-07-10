@@ -16,7 +16,7 @@ BIN_DIR                ?= $(mkfile_path)/bin/$(QUESTA_TOP_MODULE)/$(IMEM_LATENCY
 
 # qrun binary (override if not on PATH)
 QRUN                   ?= qrun
-NO_TEE                 ?= 1
+# NO_TEE                 ?= 1
 
 # Work library location
 WORK_LIB               := $(BIN_DIR)/work
@@ -29,7 +29,7 @@ QUESTA_FLAGS           += -timescale 1ns/1ps
  QUESTA_SUPPRESS        :=
  QUESTA_SUPPRESS        += -suppress 2583
  QUESTA_SUPPRESS        += -suppress 13314
- QUESTA_SUPPRESS        += -suppress 13233   # Design unit already exists and will be overwritten
+# QUESTA_SUPPRESS        += -suppress 13233   # Design unit already exists and will be overwritten
 # QUESTA_SUPPRESS        += -suppress 442    # Port not found in module
 # QUESTA_SUPPRESS        += -suppress 2912   # Port not found in module
 # QUESTA_SUPPRESS        += -suppress 1882
@@ -43,11 +43,11 @@ QUESTA_FLAGS           += -timescale 1ns/1ps
 QUESTA_NO_ASSERT       := +define+VERILATOR +define+COMMON_CELLS_ASSERTS_OFF
 
 # Tee handling
-ifeq ($(NO_TEE),1)
-  TEE_CMD :=
-else
-  TEE_CMD := | tee
-endif
+# ifeq ($(NO_TEE),1)
+#   TEE_CMD :=
+# else
+#   TEE_CMD := | tee
+# endif
 
 # Shared qrun args
 QUESTA_COMMON_FFILES   := -f ibex_questa.flist -f manifest_questa.flist
@@ -105,13 +105,24 @@ questa-compile: ibex_questa.flist  manifest_questa.flist
 # ---------------------------------------------------------------------------
 # Compile-time lint
 # ---------------------------------------------------------------------------
-questa-lint:  ibex_questa.flist  manifest_questa.flist
-	mkdir -p $(BIN_DIR)
-	$(QRUN) $(QUESTA_COMMON_ARGS) -compile -lint
+QUESTA_LINT_LOG      := $(QUESTA_LOG_DIR)/lint.log
+QUESTA_LINT_WARNINGS := $(QUESTA_LOG_DIR)/lint_warnings.log
+
+questa-lint: ibex_questa.flist manifest_questa.flist
+	@mkdir -p "$(BIN_DIR)" "$(QUESTA_LOG_DIR)"
+	@rm -f "$(QUESTA_LINT_LOG)" "$(QUESTA_LINT_WARNINGS)"
+	@bash -o pipefail -c '\
+	$(QRUN) $(QUESTA_COMMON_ARGS) -compile -lint 2>&1 | \
+	tee "$(QUESTA_LINT_LOG)" | \
+	gawk -v warnings_file="$(QUESTA_LINT_WARNINGS)" -f "$(SCRIPTS_DIR)/questa.awk"'
 
 # ---------------------------------------------------------------------------
 # Simulate compiled design (headless)
 # ---------------------------------------------------------------------------
+
+QUESTA_RUN_LOG      := $(QUESTA_LOG_DIR)/run.log
+QUESTA_RUN_WARNINGS := $(QUESTA_LOG_DIR)/run_warnings.log
+
 questa-run:  ibex_questa.flist  manifest_questa.flist
 	@echo "$(BANNER)"
 	@echo "* Running with QuestaSim:"
@@ -139,7 +150,9 @@ questa-run:  ibex_questa.flist  manifest_questa.flist
 	        -logfile $(QUESTA_LOG_DIR)/$(TEST).log \
 	        +STIM_INSTR=$(test-program)-m.hex \
 	        +STIM_DATA=$(test-program)-d.hex \
-	        -do "run -all; quit -f"
+	        -do "run -all; quit -f" 2>&1 | \
+			tee "$(QUESTA_RUN_LOG)" | \
+			gawk -v warnings_file="$(QUESTA_RUN_WARNINGS)" -f "$(SCRIPTS_DIR)/questa.awk"
 
 	@if [ ! -f "trace_core_00000000.log" ]; then \
 		echo "WARNING: Output file missing: trace_core_00000000.log"; \
@@ -180,7 +193,7 @@ questa-gui:  ibex_questa.flist  manifest_questa.flist
 	        -logfile $(QUESTA_LOG_DIR)/$(TEST).log \
 	        +STIM_INSTR=$(test-program)-m.hex \
 	        +STIM_DATA=$(test-program)-d.hex \
-	        -do "vcd file questa_tb.vcd; vcd add -r /*; run -all"
+	        -do "vcd file questa_tb.vcd; vcd add -r /*;view wave;do wave.do; run -all"
 
 # ---------------------------------------------------------------------------
 # Headless unit-test run (no hex-file guards)
@@ -198,7 +211,7 @@ questa-run-u-test:  ibex_questa.flist  manifest_questa.flist
 	$(QRUN) $(QUESTA_COMMON_ARGS) \
 	        -simulate \
 	        -do "vcd file questa_tb.vcd; vcd add -r /*; run -all; quit -f" \
-	        $(TEE_CMD) $(QUESTA_LOG_DIR)/$(QUESTA_TOP_MODULE).log
+	         $(QUESTA_LOG_DIR)/$(QUESTA_TOP_MODULE).log
 
 	@if [ -f questa_tb.vcd ]; then \
 		mv questa_tb.vcd $(QUESTA_LOG_DIR)/$(QUESTA_TOP_MODULE).vcd; \

@@ -7,8 +7,9 @@ package:
     - daro <daro@tsr>
 
 dependencies:
-  isolde-soc:         {path: ../../vendor/isolde-soc}  
-  isolde-dm:          {path: ../../vendor/isolde-dm}
+  isolde-soc:         { path: ../../vendor/isolde-soc }  
+  isolde-dm:          { path: ../../vendor/isolde-dm }
+  redmule:            { path: ../../vendor/redmule }
   
 
 # *                matches any target

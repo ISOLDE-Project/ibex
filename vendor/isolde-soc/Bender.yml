@@ -7,7 +7,6 @@ package:
     - daro <daro@tsr>
 
 dependencies:
-  redmule:            {path: ../../vendor/redmule }
   axi:                { git: "https://github.com/pulp-platform/axi.git"               , version: 0.39.6    }
  # udma_core:          {git: "https://github.com/pulp-platform/udma_core.git"          , version: 2.0.0     }
   
@@ -34,11 +33,15 @@ sources:
     - rtl/uart/isolde_uart_top.sv
     - rtl/io/aida_io.sv
     ##level 2
-    - rtl/hwe/isolde_redmule_top.sv
     - rtl/noc/isolde_router.sv
     - rtl/ibex_rst.sv
+    - target: any(redmule_complex, redmule_hwpe)
+      files:
+       - rtl/hwe/isolde_redmule_top.sv
+    - target: cohen_cvxif
+      files:
+        - rtl/hwe/isolde_cohen_top.sv
     ##level 3
-    #- rtl/aida_lca.sv
     - rtl/aida.sv
     - target: all(not(yosys),any(tb_dm,redmule_test_hwpe, redmule_complex,redmule_test_complex,fpga_sim))
       files:

@@ -6,7 +6,7 @@ module isolde_decoder_top
     input logic rst_ni,
     // Interface to IF stage
     input logic instr_valid_i,
-    input  logic [ 4:0][31:0] instr_batch_rdata_i,     // from IF-ID pipeline registers
+    input  logic [31:0]      instr_rdata_i,           // from IF-ID pipeline registers
     input logic  instr_exec_i,
 
     // output to ID stage
@@ -62,8 +62,7 @@ module isolde_decoder_top
       .rst_ni(rst_ni),
       .isolde_decoder_instr_exec_i(instr_exec_i),
       .isolde_decoder_instr_valid_i(instr_valid_i),
-      .isolde_decoder_instr_batch_i(instr_batch_rdata_i),
-      .isolde_decoder_enable_i(1'b1),
+      .isolde_decoder_instr_rdata_i(instr_rdata_i),
       .isolde_decoder_illegal_instr_o(illegal_custom_instr_o),
       .isolde_decoder_busy_o(isolde_decoder_busy_o),
       .isolde_decoder_stalled_o(isolde_decoder_stalled),

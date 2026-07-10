@@ -91,6 +91,7 @@ setup the environment
 ```sh
 cd isolde/system
 . ./qsim.sh
+make TEST=hello_test test-clean test-build
 ```
 ## compile
 ```sh

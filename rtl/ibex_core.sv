@@ -477,7 +477,6 @@ module ibex_core
       .instr_valid_id_o        (instr_valid_id),
       .instr_new_id_o          (instr_new_id),
       .instr_rdata_id_o        (instr_rdata_id),
-      .instr_batch_rdata_id_o  (instr_batch_rdata_id),
       .instr_rdata_alu_id_o    (instr_rdata_alu_id),
       .instr_rdata_c_id_o      (instr_rdata_c_id),
       .instr_is_compressed_id_o(instr_is_compressed_id),
@@ -573,7 +572,6 @@ module ibex_core
       // from/to IF-ID pipeline register
       .instr_valid_i        (instr_valid_id),
       .instr_rdata_i        (instr_rdata_id),
-      .instr_batch_rdata_i  (instr_batch_rdata_id),
       .instr_rdata_alu_i    (instr_rdata_alu_id),
       .instr_rdata_c_i      (instr_rdata_c_id),
       .instr_is_compressed_i(instr_is_compressed_id),

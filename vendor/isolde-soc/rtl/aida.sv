@@ -1,6 +1,6 @@
 module aida
   import ibex_pkg::*;
-  import redmule_pkg::*;
+  //import redmule_pkg::*;
   import isolde_tcdm_pkg::*;
   import aida_lca_package::*;
 #(
@@ -506,7 +506,7 @@ aida_io #(
       .crash_dump_o       (),
       .double_fault_seen_o(),
 
-      .fetch_enable_i        (fetch_enable_i),
+      .fetch_enable_i        ({ibex_pkg::IbexMuBiWidth{fetch_enable_i}}),
       .alert_minor_o         (),
       .alert_major_internal_o(),
       .alert_major_bus_o     (),
@@ -523,10 +523,10 @@ aida_io #(
   /********************************************************/
   /**     Hardware Engine HWE                            **/
   /*******************************************************/
+  
   `ifdef TARGET_REDMULE_COMPLEX
 
     isolde_redmule_top #(
-      .ID_WIDTH (ID),
       .N_CORES  (NC),
       .DW       (HCI_DW),  // TCDM port dimension (in bits
       .AddrWidth(HCI_AW)
@@ -562,9 +562,27 @@ aida_io #(
       .m_hci_core    (redmule_hci),
       .s_tcdm_ctrl   (redmule_ctrl)
   );
+`elsif TARGET_COHEN_CVXIF
+
+    isolde_cohen_top 
+    #(
+      .N_CORES  (NC),
+      .DW       (HCI_DW),  // TCDM port dimension (in bits
+      .AddrWidth(HCI_AW)
+    ) i_cohen_top (
+      .clk_i         (clk_i),
+      .rst_ni        (rst_ni),
+      .test_mode_i   (REDMULE_TEST_MODE),
+      .fetch_enable_i(fetch_enable_i),
+      .evt_o         (evt),
+      .m_hci_core    (redmule_hci),
+      .xif_issue_if_i     (itf_core_xif.coproc_issue),
+      .xif_result_if_o    (itf_core_xif.coproc_result),
+      .xif_compressed_if_i(itf_core_xif.coproc_compressed),
+      .xif_mem_if_o       (itf_core_xif.coproc_mem)
+  );
 
 `endif
-
 
 
 

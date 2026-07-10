@@ -118,3 +118,77 @@ module isolde_fetch_vleninstr (
 
 
 endmodule
+
+module if_id_instr_fifo_5 #(
+  parameter int INSTR_W = 32
+) (
+  input  logic               clk_i,
+  input  logic               rst_ni,
+
+  // From IF
+  input  logic               if_valid_i,
+  input  logic [INSTR_W-1:0] if_instr_i,
+  output logic               if_ready_o,
+
+  // To ID
+  output logic               id_valid_o,
+  output logic [INSTR_W-1:0] id_instr_o,
+  input  logic               id_ready_i
+);
+
+  localparam int DEPTH = 5;
+  localparam int PTR_W = $clog2(DEPTH);
+
+  logic [INSTR_W-1:0] mem [0:DEPTH-1];
+  logic [PTR_W-1:0]   wr_ptr, rd_ptr;
+  logic [PTR_W:0]     count;
+
+  logic push, pop;
+
+  assign push = if_valid_i & if_ready_o;
+  assign pop  = id_valid_o & id_ready_i;
+
+  assign if_ready_o = (count < DEPTH);
+  assign id_valid_o = (count > 0);
+  assign id_instr_o = mem[rd_ptr];
+
+  function automatic logic [PTR_W-1:0] ptr_inc(input logic [PTR_W-1:0] ptr);
+    if (ptr == DEPTH-1)
+      ptr_inc = '0;
+    else
+      ptr_inc = ptr + 1'b1;
+  endfunction
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      wr_ptr <= '0;
+      rd_ptr <= '0;
+      count  <= '0;
+    end else begin
+      unique case ({push, pop})
+        2'b10: begin
+          mem[wr_ptr] <= if_instr_i;
+          wr_ptr      <= ptr_inc(wr_ptr);
+          count       <= count + 1'b1;
+        end
+
+        2'b01: begin
+          rd_ptr <= ptr_inc(rd_ptr);
+          count  <= count - 1'b1;
+        end
+
+        2'b11: begin
+          mem[wr_ptr] <= if_instr_i;
+          wr_ptr      <= ptr_inc(wr_ptr);
+          rd_ptr      <= ptr_inc(rd_ptr);
+          count       <= count;
+        end
+
+        default: begin
+          // no-op
+        end
+      endcase
+    end
+  end
+
+endmodule

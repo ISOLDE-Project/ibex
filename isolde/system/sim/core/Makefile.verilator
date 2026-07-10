@@ -25,8 +25,8 @@ VLT_TOP_MODULE     ?= tb_top_verilator
 
 # verilator configuration
 VERILATOR           = verilator
-VERILATOR_ROOT ?= $(dir $(shell which $(VLT)))/../share/verilator
-VLT_ROOT	   ?= ${VERILATOR_ROOT}
+VLT_ROOT           ?= $(dir $(shell which $(VERILATOR)))../share/verilator
+	 
 
 VERI_FLAGS         +=
 VERI_COMPILE_FLAGS += -Wno-BLKANDNBLK $(SV_CMP_FLAGS) # hope this doesn't hurt us in the long run

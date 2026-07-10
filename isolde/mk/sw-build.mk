@@ -71,7 +71,6 @@ CORE_V_VERIF  := $(mkfile_path)
 
 
 #
-SCRIPTS_DIR     = $(ROOT_DIR)/isolde/scripts
 ###############################################################################
 ##
 RISCV_PREFIX     = $(CV_SW_PREFIX)

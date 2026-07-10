@@ -1,5 +1,6 @@
 ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
-mkfile_path         := $(shell git rev-parse --show-toplevel)/isolde/system
+mkfile_path         := $(ROOT_DIR)/isolde/system
+SCRIPTS_DIR         := $(ROOT_DIR)/isolde/scripts
 IBEX_CONFIG         ?=  isolde
 FUSESOC_CONFIG_OPTS ?= 
 FUSESOC_PARAMS      ?=

@@ -55,9 +55,11 @@ manifest.flist: Bender.yml
 	$(BENDER) script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(VLT_BENDER)  >$@
 	touch $@
 
+VERILATE_LOG      := $(VERI_LOG_DIR)/verilate.log
+VERILATE_WARNINGS := $(VERI_LOG_DIR)/verilate_warnings.log
 
 verilate:  ibex_sim.flist manifest.flist
-#	mkdir -p $(dir $@)
+	mkdir -p  $(VERI_LOG_DIR)
 	cat manifest.flist	>  manifest.verilator.flist
 	python $(ROOT_DIR)/util/verilator_manifest.py  Verilator.yml \
 											    -t  $(verilator_target)    \
@@ -69,7 +71,9 @@ verilate:  ibex_sim.flist manifest.flist
 												   RUN_INDEX=$(IMEM_LATENCY)           \
 											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
 									   VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS)    \
-											  verilate      
+											  verilate      2>&1 | \
+	tee "$(VERILATE_LOG)" | \
+	gawk -v warnings_file="$(VERILATE_WARNINGS)" -f "$(SCRIPTS_DIR)/questa.awk"
 
 
 veri-lint:  ibex_sim.flist manifest.flist

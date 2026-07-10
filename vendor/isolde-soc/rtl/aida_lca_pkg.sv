@@ -44,8 +44,13 @@ MEMORY
 
   // === hardware accelerator parameters ===
   localparam int unsigned NC = 1;
+  `ifdef TARGET_COHEN_CVXIF
+  localparam int unsigned HCI_AW = cohen_pkg::ADDR_W;
+  localparam int unsigned HCI_DW = cohen_pkg::DATA_W;
+  `elsif TARGET_REDMULE_COMPLEX
   localparam int unsigned HCI_AW = redmule_pkg::ADDR_W;
   localparam int unsigned HCI_DW = redmule_pkg::DATA_W;
+  `endif
   localparam int unsigned MP = HCI_DW / 32;
   localparam int unsigned N_TCDM_BANKS = HCI_DW / 32;
   localparam logic REDMULE_TEST_MODE = 1'b0;  // set to 1 to enable test mode

@@ -12,7 +12,7 @@ module tb_top_questa;
   //  Clock toggles every 1 time unit → period = 2 units
   //  We use 1ns half-period to match "timeInc(1)" steps
   // -------------------------------------------------------m
-  localparam SIM_CYCLES=4000;
+  localparam SIM_CYCLES=40_000_000;
   localparam time CLK_HALF_PERIOD = 1ns;
   localparam time RST_TIME = 20*2*CLK_HALF_PERIOD;  // rst_time
   localparam time SIM_TIME = SIM_CYCLES*2*CLK_HALF_PERIOD;  // rst_time
