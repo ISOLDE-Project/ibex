@@ -32,9 +32,12 @@ sources:
     - rtl/uart/udma_uart_tx.sv
     - rtl/uart/isolde_uart_top.sv
     - rtl/io/aida_io.sv
+    - rtl/cluster/isolde_tile.sv
     ##level 2
     - rtl/noc/isolde_router.sv
     - rtl/ibex_rst.sv
+    - rtl/cluster/isolde_cluster.sv
+
     - target: any(redmule_complex, redmule_hwpe)
       files:
        - rtl/hwe/isolde_redmule_top.sv
@@ -71,9 +74,11 @@ sources:
       files:
         - tb/tb_tcdm_mem.sv
         - fpga/rtl/aida_top.sv
+        - fpga/rtl/cluster_top.sv
         - fpga/sim/tcdm_mem.sv
         - fpga/tb/aida_tb.sv
-#        - fpga/tb/aida_lca_tb.sv
+        - fpga/tb/cluster_tb.sv
+#       -vendor/isolde-soc/rtl/cluster/isolde_tile.sv
     - target: yosys
       files:
         - asic/rtl/aida_top.sv
