@@ -1,61 +1,35 @@
-# ISOLDE Loosely-coupled accelerator (LCA) model. 
+# ISOLDE 
+## Generate test data
+```sh
+cd isolde/system
+. ./eth.sh
+make -f Makefile.fpgasim.nodbg  golden
+```
+## build test application
+
+```sh
+cd isolde/system
+. ./eth.sh
+make -f Makefile.fpgasim.nodbg  test-clean test-build
+```
+# verilator
+```sh
+cd isolde/system
+. ./eth.sh
+make -f Makefile.fpgasim.nodbg  veri-clean verilate veri-run
+```
+
+# QUESTA
+```sh
+cd isolde/system
+. ./eth.sh
+make -f Makefile.fpgasim.nodbg  questa-clean questa-run
+```
+
 ## [REDMULE](https://github.com/ISOLDE-Project/redmule) hardware accelerator
 Details about the accelerator are [here](https://github.com/ISOLDE-Project/redmule?tab=readme-ov-file#redmule)
-## Prerequisites
-in folder **isolde/lca_system**:  
-```sh
-. ./eth.sh
-```
-## Building Simulation
-in folder **isolde/lca_system**:  
-* get a clean slate:
-```sh
-make rtl-update
-```
-make sure you have simulation data for the hardware accelerator
-```sh
-make TEST=redmule_test golden
-```
-### isolde/sw/redmule128b_test
-```sh
-cd isolde/sw/redmule128b_test
-make golden
-```
-### Build scratchpad memory simulation (SPM, NO JTAG )
-it will execute *isolde/sw/redmule128b_test*
-```sh
-make -f ./Makefile.systca  veri-clean verilate test-build veri-run
-```
-for a different test from *isolde/sw/<app_test>*:
-```sh
-make -f ./Makefile.systca TEST=xmas_test veri-clean verilate test-build veri-run
-```
-
-### Build scratchpad memory simulation (SPM, JTAG simulation)
-it will load into system memmories *isolde/sw/redmule128b_test*
-```sh
-make -f ./Makefile.wrapper veri-clean verilate veri-run
-```
-for a different test from *isolde/sw/<app_test>*, use openocd scripts(JTAG), i.e. *isolde/lca_system/load_and_run.tcl*
 
 
-### Build simple system(no scratchpad memory)
-```sh
-make  veri-clean verilate
-make TEST=redmule test-clean test-build veri-run
-```
-or, with code memory latency
-```sh
-make IMEM_LATENCY=1  rtl-update veri-clean verilate
-```
-
-
-LLVM is the default toolchain   
-for **gcc** you specify:
-
-```sh
-make  COMPILER=gcc PE=redmule TEST=redmule test-clean test-build veri-run
-```
 
 
 # other tests

@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
   printf("[SPM TCA ] x_spm_addr= 0x%08x\n, w_spm_addr= 0x%08x\n, y_spm_addr= 0x%08x\n", x_spm_addr, w_spm_addr,
          y_spm_addr);
 
-  printf("[SPM TCA ] Starting test. Y = (X x W) + Y\n");
+  printf("[SPM TCA ] Starting test. Y = (X * W) + Y\n");
   printf("[SPM TCA ] fp_fmt: FP16\n");
   printf("[SPM TCA ] M     : 12\n");
   printf("[SPM TCA ] N     : 16\n");

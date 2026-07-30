@@ -178,7 +178,7 @@ clean-test-programs: clean-bsp
 	find  $(CORE_V_VERIF)/../sw -name "*.itb" -delete	
 
 ###ISOLDE specific
-ifneq ($(filter redmule_%,$(TEST)),)
+ifneq ($(filter redmule%,$(TEST)),)
 
 golden:
 	make -C $(REDMULE_ROOT_DIR) $@
