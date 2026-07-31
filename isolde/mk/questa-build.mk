@@ -67,6 +67,7 @@ QUESTA_COMMON_ARGS     := $(QUESTA_COMMON_FFILES)            \
 # Clean all build directories and temporary files for QuestaSim simulation
 # ---------------------------------------------------------------------------
 questa-clean:
+	rm -f ibex_sim.flist manifest.flist
 	rm -f ibex_questa.flist manifest_questa.flist
 	rm -rf $(BIN_DIR)
 	rm -rf $(QUESTA_LOG_DIR)

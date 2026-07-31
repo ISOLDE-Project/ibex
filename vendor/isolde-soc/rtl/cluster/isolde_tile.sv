@@ -52,6 +52,7 @@ module isolde_tile
           .req_data(spm_req[i].data),
           .gnt(spm_rsp[i].gnt),
           .valid(spm_rsp[i].valid),
+          .err(),
           .rsp_data(spm_rsp[i].data)
       );
     end
