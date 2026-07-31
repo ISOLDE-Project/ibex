@@ -2,12 +2,12 @@
 module isolde_decoder_top
   import isolde_register_file_pkg::RegDataWidth, isolde_register_file_pkg::RegCount, isolde_register_file_pkg::RegSize, isolde_register_file_pkg::RegAddrWidth;
 (
-    input logic clk_i,
-    input logic rst_ni,
+    input logic        clk_i,
+    input logic        rst_ni,
     // Interface to IF stage
-    input logic instr_valid_i,
-    input  logic [31:0]      instr_rdata_i,           // from IF-ID pipeline registers
-    input logic  instr_exec_i,
+    input logic        instr_valid_i,
+    input logic [31:0] instr_rdata_i,  // from IF-ID pipeline registers
+    input logic        instr_exec_i,
 
     // output to ID stage
     output logic illegal_custom_instr_o,  //custom illegal operation
@@ -16,6 +16,7 @@ module isolde_decoder_top
     //ISOLDE Register file interface
     isolde_register_file_if.cpu isolde_rf_bus,
     isolde_x_register_file_if.cpu x_rf_bus,
+    isolde_csr_if.rf isolde_csr_if_i,
     // eXtension interface
     isolde_cv_x_if.cpu_compressed xif_compressed_if,
     isolde_cv_x_if.cpu_issue xif_issue_if,
@@ -93,6 +94,7 @@ module isolde_decoder_top
       .x_rf_data_i             (x_rf_data),
       .isolde_exec_from_decoder(fetch_exec_conn.exec),
       .isolde_exec_busy_o      (),
+      .isolde_csr_if_i,
       // eXtension interface
       .xif_compressed_if,
       .xif_issue_if,

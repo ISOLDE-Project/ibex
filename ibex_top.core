@@ -23,6 +23,7 @@ filesets:
       - rtl/isolde_x_register_file_if.sv
       - rtl/isolde_register_file_if.sv
       - rtl/isolde_register_file_ff.sv
+      - rtl/isolde_csr_if.sv
       - rtl/ibex_register_file_ff.sv # generic FF-based
       - rtl/ibex_register_file_fpga.sv # FPGA
       - rtl/ibex_register_file_latch.sv # ASIC

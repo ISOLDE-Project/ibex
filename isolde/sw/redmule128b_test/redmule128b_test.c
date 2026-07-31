@@ -68,6 +68,9 @@ int main(int argc, char *argv[]) {
   elems = y_size;
   spm_next_addr = spm_write(spm_addr, src, elems);
 
+  isolde_set_tile(TILE_ID);
+
+  printf("[SPM TCA ] TILE_ID= 0x%08x\n\n",isolde_get_tile());
   printf("[SPM TCA ] x_spm_addr= 0x%08x\n, w_spm_addr= 0x%08x\n, y_spm_addr= 0x%08x\n", x_spm_addr, w_spm_addr,
          y_spm_addr);
 

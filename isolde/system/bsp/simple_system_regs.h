@@ -6,15 +6,15 @@
 #define SIMPLE_SYSTEM_REGS_H__
 
 
-
+#define TILE_ID                    0x1
 #define MMADDR_EXIT                0x80000000
 #define MMADDR_PRINT               0x80000004
 #define MMADDR_CYCLE_COUNTER       MMADDR_EXIT
 #define MMADDR_PERF_TTY            0x80000008
 #define MMADDR_PERF_COUNTERS       0x8000000C
-#define SPM_NARROW_ADDR            0x80001000
-#define SPM_NARROW_SIZE            0x00001000;  //64kB                                   
-
-
+#define SPM_NARROW_SIZE            0x00001000   //64kB                                   
+#define SPM_NARROW_ADDR            0x80001000+TILE_ID*SPM_NARROW_SIZE
+// take it from rtl/ibex_pkg.sv
+enum{ CSR_ISOLDE_TILESEL    = 0x7C2 };
 
 #endif  // SIMPLE_SYSTEM_REGS_H__

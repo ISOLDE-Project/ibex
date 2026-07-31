@@ -130,6 +130,24 @@ inline uint32_t getTicks(){
    return  (*cycle_counter);
 }
 
+static inline void isolde_set_tile(unsigned tile)
+{
+    asm volatile ("csrw %0, %1"
+                  :
+                  : "i"(CSR_ISOLDE_TILESEL), "r"(tile)
+                  : "memory");
+}
+
+static inline unsigned isolde_get_tile(void)
+{
+    unsigned tile;
+    asm volatile ("csrr %0, %1"
+                  : "=r"(tile)
+                  : "i"(CSR_ISOLDE_TILESEL)
+                  : "memory");
+    return tile;
+}
+
 // Define START_TIMING and END_TIMING macros
 #define START_TIMING(value) \
     uint32_t initval_##value = getTicks()

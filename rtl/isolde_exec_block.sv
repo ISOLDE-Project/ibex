@@ -13,8 +13,8 @@ module isolde_exec_block
     input logic clk_i,  // Clock signal
     input logic rst_ni,  // Active-low reset signal
     // ISOLDE register file
-    isolde_rf_raddr_t  isolde_rf_raddr_i,
-    isolde_rf_rdata_t  isolde_rf_rdata_i,
+    isolde_rf_raddr_t isolde_rf_raddr_i,
+    isolde_rf_rdata_t isolde_rf_rdata_i,
     isolde_rf_waddr_t isolde_rf_waddr_i,
     isolde_rf_wdata_t isolde_rf_wecho_i,
     //isolde_x_register_file_if.cpu x_rf_bus,
@@ -22,6 +22,7 @@ module isolde_exec_block
     isolde_x_rf_data_t x_rf_data_i,
     isolde_fetch2exec_if.exec isolde_exec_from_decoder,
     output logic isolde_exec_busy_o,
+    isolde_csr_if.rf isolde_csr_if_i,
     // eXtension interface
     isolde_cv_x_if.cpu_compressed xif_compressed_if,
     isolde_cv_x_if.cpu_issue xif_issue_if,
@@ -30,6 +31,12 @@ module isolde_exec_block
     isolde_cv_x_if.cpu_mem_result xif_mem_result_if,
     isolde_cv_x_if.cpu_result xif_result_if
 );
+  // === Result interface
+  logic result_ready;
+  assign xif_result_if.result_ready = result_ready;
+// === tile selection
+  logic [RegAddrWidth-1:0] tile_selection;
+  assign tile_selection = isolde_csr_if_i.tile_selection;
 
   /********************************************************/
   /**   tie-off unused interfaces                        **/
@@ -46,8 +53,6 @@ module isolde_exec_block
   // === Memory result interface
   assign xif_mem_result_if.mem_result_valid = 0;
   assign xif_mem_result_if.mem_result = '0;
-  // === Result interface
-  assign xif_result_if.result_ready = 0;
 
 `ifndef SYNTHESIS
   integer log_fh;
@@ -107,10 +112,10 @@ module isolde_exec_block
             isolde_opcode_redmule: exec_action = start_nop_redmule();
             isolde_opcode_R_type: exec_action = start_nop_RType();
             isolde_opcode_vle32_4: exec_action = start_vle32_4();
-            isolde_opcode_gemm: exec_action = start_gemm();
+            isolde_opcode_gemm: exec_action <= start_gemm();
             isolde_opcode_conv2d: exec_action = start_conv2d();
-            isolde_opcode_redmule_gemm: exec_action = start_redmule_gemm();
-            isolde_opcode_redmule_gemm1: exec_action = start_redmule_gemm1();
+            isolde_opcode_redmule_gemm: exec_action <= start_redmule_gemm();
+            isolde_opcode_redmule_gemm1: exec_action <= start_redmule_gemm1();
             default: begin
               exec_action = EXEC_NOP;
             end
@@ -131,6 +136,7 @@ module isolde_exec_block
     exec_dne = 0;
     exec_gnt = 0;
     isolde_exec_busy_o = 0;
+    result_ready = 0;
     ievli_next = IDLE;
     case (ievli_state)
       IDLE: begin
@@ -150,6 +156,7 @@ module isolde_exec_block
         if (cnt == cnt_max) begin
           exec_dne = 1;
           isolde_exec_busy_o = 0;
+          result_ready = 1;
           ievli_next = IDLE;
         end
       end
@@ -226,6 +233,7 @@ module isolde_exec_block
 `ifndef SYNTHESIS
     //  $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_gemm");
+    $fwrite(log_fh, "  tile=%h\n", tile_selection);
     $fwrite(log_fh, "  func3=%b\n", isolde_exec_from_decoder.func3);
     $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_addr_i[0], x_rf_data_i[0]);
     $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_addr_i[1], x_rf_data_i[1]);
@@ -249,6 +257,7 @@ module isolde_exec_block
 `ifndef SYNTHESIS
     //  $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_redmule_gemm");
+    $fwrite(log_fh, "  tile=%h\n", tile_selection);
     $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
     $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_addr_i[0], x_rf_data_i[0]);
     $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_addr_i[1], x_rf_data_i[1]);

@@ -539,7 +539,7 @@ aida_io #(
 
 isolde_xif_relay #(
     .N_TILES(N_REDMULE_TILES),
-    .TILE_IDX(0),
+    .TILE_IDX(1),
     .NC(NC)
 ) i_xif_relay (
     .cpu_xif   (itf_core_xif),

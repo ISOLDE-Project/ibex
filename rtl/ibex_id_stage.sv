@@ -36,18 +36,18 @@ module ibex_id_stage
     output logic illegal_insn_o,
 
     // Interface to IF stage
-    input  logic              instr_valid_i,
-    input  logic [31:0]       instr_rdata_i,           // from IF-ID pipeline registers
-    input  logic [31:0]       instr_rdata_alu_i,       // from IF-ID pipeline registers
-    input  logic [15:0]       instr_rdata_c_i,         // from IF-ID pipeline registers
-    input  logic              instr_is_compressed_i,
-    input  logic              instr_bp_taken_i,
-    output logic              instr_req_o,
-    output logic              instr_first_cycle_id_o,
-    output logic              instr_valid_clear_o,     // kill instr in IF-ID reg
-    output logic              id_in_ready_o,           // ID stage is ready for next instr
-    input  logic              instr_exec_i,
-    output logic              icache_inval_o,
+    input  logic        instr_valid_i,
+    input  logic [31:0] instr_rdata_i,           // from IF-ID pipeline registers
+    input  logic [31:0] instr_rdata_alu_i,       // from IF-ID pipeline registers
+    input  logic [15:0] instr_rdata_c_i,         // from IF-ID pipeline registers
+    input  logic        instr_is_compressed_i,
+    input  logic        instr_bp_taken_i,
+    output logic        instr_req_o,
+    output logic        instr_first_cycle_id_o,
+    output logic        instr_valid_clear_o,     // kill instr in IF-ID reg
+    output logic        id_in_ready_o,           // ID stage is ready for next instr
+    input  logic        instr_exec_i,
+    output logic        icache_inval_o,
 
     // Jumps and branches
     input logic branch_decision_i,
@@ -195,6 +195,7 @@ module ibex_id_stage
     output logic perf_mul_wait_o,
     output logic perf_div_wait_o,
     output logic instr_id_done_o,
+    isolde_csr_if.rf isolde_csr_if_i,
     // eXtension interface
     isolde_cv_x_if.cpu_compressed xif_compressed_if,
     isolde_cv_x_if.cpu_issue xif_issue_if,
@@ -275,7 +276,7 @@ module ibex_id_stage
 
   // while ISOLDE decoder is bussy, standard decoder( ibex_decoder) shall be disable(  reset asserted)
   assign std_decoder_rst_n = ~isolde_decoder_busy & rst_ni;
-  assign id_in_ready_o = isolde_decoder_busy? 1'b1: controller_stall_fetch ;
+  assign id_in_ready_o = isolde_decoder_busy ? 1'b1 : controller_stall_fetch;
 
   // Read enables should only be asserted for valid and legal instructions
   assign rf_ren_a = instr_valid_i & ~instr_fetch_err_i & ~illegal_insn_o & rf_ren_a_dec;
@@ -574,25 +575,25 @@ module ibex_id_stage
   /////////////////////
   // ISOLDE decoder //
   ///////////////////
- // Reset gating: ibex_decoder is held in reset whenever ISOLDE is busy. 
-//  That matches the comment “while ISOLDE decoder is busy, standard decoder shall be disabled”.
-// Instruction selection: when ISOLDE is busy, you feed 0x0 to the standard decoder. 
-// That avoids decoding garbage, but note that:
-// Assertions in ibex_decoder regard instr_valid_i and illegal conditions, not strictly the value.
-//  Feeding 0x0 is acceptable as long as you ensure instr_valid_i to the decoder is coherent with not using its outputs.
-// You are still passing the original instr_valid_i into ibex_decoder. Since the decoder is held in reset (std_decoder_rst_n = 0), 
-// its outputs will remain in reset state, so the value of instr_rdata_std doesn’t matter functionally. 
-// 
-// illegal_insn_dec is 1 only when both decoders think the instruction is illegal.
+  // Reset gating: ibex_decoder is held in reset whenever ISOLDE is busy. 
+  //  That matches the comment “while ISOLDE decoder is busy, standard decoder shall be disabled”.
+  // Instruction selection: when ISOLDE is busy, you feed 0x0 to the standard decoder. 
+  // That avoids decoding garbage, but note that:
+  // Assertions in ibex_decoder regard instr_valid_i and illegal conditions, not strictly the value.
+  //  Feeding 0x0 is acceptable as long as you ensure instr_valid_i to the decoder is coherent with not using its outputs.
+  // You are still passing the original instr_valid_i into ibex_decoder. Since the decoder is held in reset (std_decoder_rst_n = 0), 
+  // its outputs will remain in reset state, so the value of instr_rdata_std doesn’t matter functionally. 
+  // 
+  // illegal_insn_dec is 1 only when both decoders think the instruction is illegal.
 
-// isolde_decoder_busy_o
-// Meaning: ISOLDE is currently processing a custom instruction 
-// (multi-word decode or waiting for exec) and the standard RV32 decoder must be disabled.
-// Active-high, long-lived: Stays high for the entire life of the custom instruction 
-// in ID/EX (from decode start until the custom instruction is fully handed off to 
-// the execute block and no further special decode is needed).
-// Use in ID stage:
-// Gate the standard ibex_decoder reset.
+  // isolde_decoder_busy_o
+  // Meaning: ISOLDE is currently processing a custom instruction 
+  // (multi-word decode or waiting for exec) and the standard RV32 decoder must be disabled.
+  // Active-high, long-lived: Stays high for the entire life of the custom instruction 
+  // in ID/EX (from decode start until the custom instruction is fully handed off to 
+  // the execute block and no further special decode is needed).
+  // Use in ID stage:
+  // Gate the standard ibex_decoder reset.
 
 
   isolde_decoder_top isolde_decoder_top_i (
@@ -606,6 +607,7 @@ module ibex_id_stage
       .illegal_custom_instr_o(illegal_custom_instr),
       .isolde_stall_fetch_o(isolde_stall_fetch),
       .isolde_decoder_busy_o(isolde_decoder_busy),
+      .isolde_csr_if_i,
       //ISOLDE register file
       .isolde_rf_bus,
       .x_rf_bus,

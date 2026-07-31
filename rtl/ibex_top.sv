@@ -188,6 +188,7 @@ module ibex_top
   isolde_x_register_file_if x_rf_bus ();
 
 
+
   // Combined data and integrity for data and instruction busses
   logic [MemDataWidth-1:0] data_wdata_core;
   logic [MemDataWidth-1:0] data_rdata_core;
