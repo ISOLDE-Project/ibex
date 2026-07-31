@@ -1,5 +1,7 @@
 
 %:
+	@echo "OBSOLETE DO NOT USE"
+	@exit 1
 	 @echo  $(MAKECMDGOALS)
 	 make DBG_MODULE=0 ENABLE_SPM=1 \
 	    VLT_TOP_MODULE=aida_tb     \

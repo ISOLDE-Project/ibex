@@ -17,7 +17,7 @@ export_include_dirs:
 sources:
   files:   
     - rtl/common/isolde_tcdm_pkg.sv
-    - rtl/aida_lca_pkg.sv
+    - rtl/aida_pkg.sv
     - rtl/io/aida_io_pkg.sv
     - rtl/isolde_tcdm_if.sv
     - rtl/isolde_tcdm_to_axi.sv
@@ -33,6 +33,7 @@ sources:
     - rtl/uart/isolde_uart_top.sv
     - rtl/io/aida_io.sv
     - rtl/cluster/isolde_tile.sv
+    - rtl/cluster/isolde_xif_relay.sv
     ##level 2
     - rtl/noc/isolde_router.sv
     - rtl/ibex_rst.sv
@@ -70,6 +71,7 @@ sources:
         - fpga/rtl/aida_padframe.sv
         - fpga/rtl/tcdm_mem.sv
         - fpga/rtl/aida_top.sv
+        - fpga/rtl/cluster_top.sv
     - target: fpga_sim
       files:
         - tb/tb_tcdm_mem.sv
@@ -77,7 +79,6 @@ sources:
         - fpga/rtl/cluster_top.sv
         - fpga/sim/tcdm_mem.sv
         - fpga/tb/aida_tb.sv
-        - fpga/tb/cluster_tb.sv
 #       -vendor/isolde-soc/rtl/cluster/isolde_tile.sv
     - target: yosys
       files:

@@ -98,9 +98,13 @@ module xilinx_aida (
       .rst_ni(~sys_mb_reset),
       .fetch_enable_o(fetch_enable)
   );
-
+  //todo: fix this with a proper SV define
+`ifdef TARGET_VERILATOR
   // Main AIDA top-level instance
   aida_top i_aida_top (
+ `else   
+  cluster_top i_cluster_top (
+ `endif
       .clk_i         (ref_clk),
       .rst_ni        (~sys_mb_reset),  // Use system reset controller output
       .fetch_enable_i(fetch_enable),

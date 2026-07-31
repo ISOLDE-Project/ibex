@@ -2,7 +2,7 @@ module isolde_cluster
   import ibex_pkg::*;
   //import redmule_pkg::*;
   import isolde_tcdm_pkg::*;
-  import aida_lca_package::*;
+  import aida_package::*;
 #(
     parameter bit          PMPEnable        = 1'b0,
     parameter int unsigned PMPGranularity   = 0,
@@ -49,7 +49,8 @@ module isolde_cluster
 
   logic [rv_dm_pkg::NrHarts-1:0]      debug_req;
   logic                               core_sleep;
-  logic [                NC-1:0][1:0] evt;
+  logic [N_REDMULE_TILES-1:0][                NC-1:0][1:0] tile_evt;
+  logic [                NC-1:0][1:0] core_evt;
 
    logic [31:0] BOOT_ADDR;
 
@@ -68,7 +69,8 @@ module isolde_cluster
     DATA_IDX,
     STACK_IDX,
     MMIO_IDX,
-    SPM_IDX,
+    SPM_IDX0,
+    SPM_IDX1,
 `ifdef TARGET_RV_DEBUG
     DEBUG_IDX,
 `endif
@@ -84,7 +86,8 @@ module isolde_cluster
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},           
       '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
-      '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + SPM_NARROW_SIZE}
+      '{start_addr: SPM_NARROW_ADDR0, end_addr: SPM_NARROW_ADDR0 + SPM_NARROW_SIZE},
+      '{start_addr: SPM_NARROW_ADDR1, end_addr: SPM_NARROW_ADDR1 + SPM_NARROW_SIZE}
 `ifdef TARGET_RV_DEBUG
       , '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
 `endif
@@ -157,8 +160,8 @@ module isolde_cluster
   isolde_tcdm_if tcdm_dm_sba ();
 
   // === Scratchpad memory(SPM) ports ===
-  isolde_tcdm_if tcdm_spm_dma ();
-  isolde_tcdm_if tcdm_spm_dma_muxed ();
+  isolde_tcdm_if tcdm_spm_dma[N_REDMULE_TILES] ();
+  isolde_tcdm_if tcdm_spm_dma_muxed[N_REDMULE_TILES] ();
 
 
   // === Data Network on Chip NoC interfaces ===
@@ -314,8 +317,12 @@ aida_io #(
   );
 `else
 // === tcdm_spm_dma_muxed assignment ===
-    assign tcdm_spm_dma_muxed.req = noc_data_reqs[SPM_IDX];
-    assign noc_data_rsps[SPM_IDX] = tcdm_spm_dma_muxed.rsp;
+    generate
+    for (genvar i = 0; i < N_REDMULE_TILES; i++) begin : gen_spm_assign
+        assign tcdm_spm_dma_muxed[i].req = noc_data_reqs[SPM_IDX0+i];
+        assign noc_data_rsps[SPM_IDX0+i] = tcdm_spm_dma_muxed[i].rsp;
+    end
+  endgenerate
 // === tcdm_dmem_muxed assignment ===
     assign tcdm_dmem_muxed.req = noc_data_reqs[DATA_IDX];
     assign noc_data_rsps[DATA_IDX] = tcdm_dmem_muxed.rsp;
@@ -326,18 +333,24 @@ aida_io #(
     assign tcdm_stack_muxed.req = noc_data_reqs[STACK_IDX];
     assign noc_data_rsps[STACK_IDX] = tcdm_stack_muxed.rsp;    
 `endif
+
   /********************************************************/
-  /**     TCDM                                           **/
+  /**     ADDRESS SHIM FOR TILES                        **/
   /*******************************************************/
+    generate
+    for (genvar i = 0; i < N_REDMULE_TILES; i++) begin : gen_tile_addr_shim
+      
+        isolde_addr_shim_wrp #(
+            .START_ADDR(SPM_NARROW_ADDR_BASE+i*SPM_NARROW_SIZE),  // Set start address
+            .END_ADDR(SPM_NARROW_ADDR_BASE+(i+1)*SPM_NARROW_SIZE )  // Set end address
+        ) i_tcdm_spm_dma_shim (
+            .tcdm_slave_i (tcdm_spm_dma_muxed[i]),
+            .tcdm_master_o(tcdm_spm_dma[i])
+        );
+    end
+  endgenerate
 
-
-  isolde_addr_shim_wrp #(
-      .START_ADDR(SPM_NARROW_ADDR),  // Set start address
-      .END_ADDR(SPM_NARROW_ADDR + SPM_NARROW_SIZE)  // Set end address
-  ) i_tcdm_spm_dma_shim (
-      .tcdm_slave_i (tcdm_spm_dma_muxed),
-      .tcdm_master_o(tcdm_spm_dma)
-  );
+  
 
 
 
@@ -412,6 +425,16 @@ aida_io #(
       .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
   ) itf_core_xif ();
 
+  isolde_cv_x_if #(
+      .X_NUM_RS   (isolde_cv_x_if_pkg::X_NUM_RS),
+      .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
+      .X_MEM_WIDTH(isolde_cv_x_if_pkg::X_MEM_WIDTH),
+      .X_RFR_WIDTH(isolde_cv_x_if_pkg::X_RFR_WIDTH),
+      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH),
+      .X_MISA     (isolde_cv_x_if_pkg::X_MISA),
+      .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
+  ) itf_hwe_xif[N_REDMULE_TILES] ();
+
 `ifdef TARGET_VERILATOR
   xif_monitor_cpu_issue xif_monitor_cpu_issue_i (
       clk_i,
@@ -478,7 +501,7 @@ aida_io #(
       .data_rdata_intg_i('0),
       .data_err_i       (1'b0),
 
-      .irq_software_i(evt[0][0]),
+      .irq_software_i(core_evt[0][0]),
       .irq_timer_i   (1'b0),
       .irq_external_i(1'b0),
       .irq_fast_i    ('0),
@@ -512,18 +535,34 @@ aida_io #(
   /*******************************************************/
   
   `ifdef TARGET_REDMULE_COMPLEX
+ //todo: introduce a dispatcher here
 
+isolde_xif_relay #(
+    .N_TILES(N_REDMULE_TILES),
+    .TILE_IDX(0),
+    .NC(NC)
+) i_xif_relay (
+    .cpu_xif   (itf_core_xif),
+    .tile_xif  (itf_hwe_xif),
+    .tile_evt_i(tile_evt),
+    .core_evt_o(core_evt)
+);
+    generate
+    for (genvar i = 0; i < N_REDMULE_TILES; i++) begin : gen_tile
+      // Instantiate memory bank
     isolde_tile i_tile (
       .clk_i         (clk_i),
       .rst_ni        (rst_ni),
       .fetch_enable_i(fetch_enable_i),
-      .evt_o         (evt),
-      .tcdm_spm_dma    (tcdm_spm_dma),
-      .xif_issue_if_i     (itf_core_xif.coproc_issue),
-      .xif_result_if_o    (itf_core_xif.coproc_result),
-      .xif_compressed_if_i(itf_core_xif.coproc_compressed),
-      .xif_mem_if_o       (itf_core_xif.coproc_mem)
+      .evt_o         (tile_evt[i]),
+      .tcdm_spm_dma    (tcdm_spm_dma[i]),
+      .xif_issue_if_i     (itf_hwe_xif[i].coproc_issue),
+      .xif_result_if_o    (itf_hwe_xif[i].coproc_result),
+      .xif_compressed_if_i(itf_hwe_xif[i].coproc_compressed),
+      .xif_mem_if_o       (itf_hwe_xif[i].coproc_mem)
   );
+    end
+  endgenerate
 
 `elsif TARGET_REDMULE_HWPE
 

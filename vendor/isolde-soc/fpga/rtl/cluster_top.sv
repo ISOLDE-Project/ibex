@@ -8,7 +8,7 @@ module cluster_top
   import ibex_pkg::*;
   // import redmule_pkg::*;
   import isolde_tcdm_pkg::*;
-  import aida_lca_package::*;
+  import aida_package::*;
 #(
     //ibex parameter(s)
     parameter bit BootROMEnable = 1'b1
@@ -96,7 +96,7 @@ module cluster_top
 
   isolde_cluster #(
       .BootROMEnable(BootROMEnable)
-  ) i_aida (
+  ) i_cluster (
       .clk_i(clk_i),
       .rst_ni(rst_ni),
       .fetch_enable_i(fetch_enable_i),

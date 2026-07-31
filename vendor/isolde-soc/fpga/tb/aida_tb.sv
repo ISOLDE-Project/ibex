@@ -9,7 +9,7 @@ module aida_tb (
 
   // import redmule_pkg::*;
   import isolde_tcdm_pkg::*;
-  import aida_lca_package::*;
+  import aida_package::*;
   //ibex parameters
   parameter bit SecureIbex = 1'b0;
   parameter bit ICacheScramble = 1'b0;
@@ -129,10 +129,16 @@ module aida_tb (
   );
 
 
-  // Main AIDA top-level instance
+ 
+ `ifdef REDMULE_CLUSTER
+   cluster_top #(
+      .BootROMEnable(BootROMEnable)
+  ) i_cluster (
+ `else // Main AIDA top-level instance
   aida_top #(
       .BootROMEnable(BootROMEnable)
   ) i_aida_top (
+  `endif  
       .clk_i         (ref_clk),
       .rst_ni        (sys_mb_reset),  // Use system reset controller output
       .fetch_enable_i(fetch_enable),
@@ -171,7 +177,11 @@ module aida_tb (
       $finish;
     end else begin
       $display("[FPGA SIM] @ t=%0t: loading %0s into imemory", $time, stim_instr);
+ `ifdef REDMULE_CLUSTER
+      $readmemh(stim_instr, aida_tb.i_cluster.i_imemory.u_tcdm_mem.memory);
+ `else      
       $readmemh(stim_instr, aida_tb.i_aida_top.i_imemory.u_tcdm_mem.memory);
+  `endif    
     end
 
     if (!$value$plusargs("STIM_DATA=%s", stim_data)) begin
@@ -179,7 +189,11 @@ module aida_tb (
       $finish;
     end else begin
       $display("[FPGA SIM] @ t=%0t: loading %0s into dmemory", $time, stim_data);
+ `ifdef REDMULE_CLUSTER
+      $readmemh(stim_data, aida_tb.i_cluster.i_dmemory.u_tcdm_mem.memory);
+ `else      
       $readmemh(stim_data, aida_tb.i_aida_top.i_dmemory.u_tcdm_mem.memory);
+  `endif    
     end
 
 

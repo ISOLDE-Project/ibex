@@ -3,7 +3,7 @@
 
 module aida_io
   import isolde_tcdm_pkg::*;
-  import aida_lca_package::*;
+  import aida_package::*;
 #(
     parameter logic [31:0] MMIO_ADDR = 32'h8000_0000
 ) (
