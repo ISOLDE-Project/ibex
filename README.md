@@ -98,7 +98,35 @@ git add .
 # Step 6: Commit the changes with a custom message
 git commit -m "Squash merge tmp/exp into isolde/dev using theirs strategy"
 ```
-
+## recover the branch in a submodule
+The problem:
+```
+git status
+HEAD detached at 970dc75
+```
+The solution:  
+```sh
+git branch -a -vv
+```
+the output  
+```
+* (HEAD detached at 970dc75) 970dc75 cleaned up
+  main                       7bcfad6 [origin/main: behind 1] fixed cv_x_if.core
+  tmp/yosys                  7bcfad6 fixed cv_x_if.core
+  remotes/origin/HEAD        -> origin/main
+  remotes/origin/ibex/dev    2f08b24 new:beder file
+  remotes/origin/main        970dc75 cleaned up
+```
+it is observed that remotes/origin/main        **970dc75** corespond to the *(HEAD detached at 970dc75)*. Next step  
+```sh
+git checkout -b tmp/fix
+git add .
+git commit 
+git switch main
+git merge tmp/fix
+git push
+git branch -d tmp/fix
+```
 # Open EDA
 ## Install tools
 for a lst of available targets:

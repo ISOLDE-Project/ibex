@@ -49,7 +49,7 @@ module isolde_cluster
 
   logic [rv_dm_pkg::NrHarts-1:0]      debug_req;
   logic                               core_sleep;
-  logic [N_REDMULE_TILES-1:0][                NC-1:0][1:0] tile_evt;
+  logic [                NC-1:0][1:0] tile_evt[N_REDMULE_TILES-1:0];
   logic [                NC-1:0][1:0] core_evt;
 
    logic [31:0] BOOT_ADDR;
@@ -539,7 +539,6 @@ aida_io #(
 
 isolde_xif_relay #(
     .N_TILES(N_REDMULE_TILES),
-    .TILE_IDX(1),
     .NC(NC)
 ) i_xif_relay (
     .cpu_xif   (itf_core_xif),

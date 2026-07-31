@@ -6,7 +6,7 @@
 #define SIMPLE_SYSTEM_REGS_H__
 
 
-#define TILE_ID                    0x1
+#define TILE_ID                    0x0
 #define MMADDR_EXIT                0x80000000
 #define MMADDR_PRINT               0x80000004
 #define MMADDR_CYCLE_COUNTER       MMADDR_EXIT

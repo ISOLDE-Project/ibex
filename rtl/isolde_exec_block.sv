@@ -37,7 +37,7 @@ module isolde_exec_block
 // === tile selection
   logic [RegAddrWidth-1:0] tile_selection;
   assign tile_selection = isolde_csr_if_i.tile_selection;
-
+  assign xif_issue_if.issue_req.hwe_id = tile_selection;
   /********************************************************/
   /**   tie-off unused interfaces                        **/
   /********************************************************/
