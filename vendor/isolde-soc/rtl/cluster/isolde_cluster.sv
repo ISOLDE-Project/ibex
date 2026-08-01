@@ -69,8 +69,7 @@ module isolde_cluster
     DATA_IDX,
     STACK_IDX,
     MMIO_IDX,
-    SPM_IDX0,
-    SPM_IDX1,
+    SPM_IDX,
 `ifdef TARGET_RV_DEBUG
     DEBUG_IDX,
 `endif
@@ -86,11 +85,15 @@ module isolde_cluster
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},           
       '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
-      '{start_addr: SPM_NARROW_ADDR0, end_addr: SPM_NARROW_ADDR0 + SPM_NARROW_SIZE},
-      '{start_addr: SPM_NARROW_ADDR1, end_addr: SPM_NARROW_ADDR1 + SPM_NARROW_SIZE}
+      '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + N_REDMULE_TILES*SPM_NARROW_SIZE}
 `ifdef TARGET_RV_DEBUG
       , '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
 `endif
+  };
+
+localparam addr_range_t tiles_map[N_REDMULE_TILES] = '{
+      '{start_addr: SPM_NARROW_ADDR0, end_addr: SPM_NARROW_ADDR0 + SPM_NARROW_SIZE},
+      '{start_addr: SPM_NARROW_ADDR1, end_addr: SPM_NARROW_ADDR1 + SPM_NARROW_SIZE}
   };
 
 `ifdef TARGET_RV_DEBUG
@@ -159,10 +162,14 @@ module isolde_cluster
   isolde_tcdm_if tcdm_dm_periph ();
   isolde_tcdm_if tcdm_dm_sba ();
 
-  // === Scratchpad memory(SPM) ports ===
+  // === CPU -> SPM-s ports ===
   isolde_tcdm_if tcdm_spm_dma[N_REDMULE_TILES] ();
-  isolde_tcdm_if tcdm_spm_dma_muxed[N_REDMULE_TILES] ();
+  isolde_tcdm_if tcdm_spm_cpu[N_REDMULE_TILES] ();
+  isolde_tcdm_if tcdm_spm_dma_muxed ();
 
+// === Data sub-network on Chip NoC interfaces ===
+  isolde_tcdm_pkg::req_t noc_spm_reqs[N_REDMULE_TILES];
+  isolde_tcdm_pkg::rsp_t noc_spm_rsps[N_REDMULE_TILES];
 
   // === Data Network on Chip NoC interfaces ===
   isolde_tcdm_pkg::req_t noc_data_reqs[LAST_IDX];
@@ -190,6 +197,17 @@ module isolde_cluster
       .tcdm_slave_i(tcdm_core_data),
       .req_o       (noc_data_reqs),
       .rsp_i       (noc_data_rsps)
+  );
+
+  isolde_router #(
+      .N_RULES(N_REDMULE_TILES),
+      .ADDR_RANGES(tiles_map)
+  ) i_isolde_spm_router (
+      .clk_i,
+      .rst_ni,
+      .tcdm_slave_i(tcdm_spm_dma_muxed),
+      .req_o       (noc_spm_reqs),
+      .rsp_i       (noc_spm_rsps)
   );
 `ifdef TARGET_RV_DEBUG
 
@@ -317,10 +335,14 @@ aida_io #(
   );
 `else
 // === tcdm_spm_dma_muxed assignment ===
+    
+    assign tcdm_spm_dma_muxed.req = noc_data_reqs[SPM_IDX];
+    assign noc_data_rsps[SPM_IDX] = tcdm_spm_dma_muxed.rsp;
+
     generate
     for (genvar i = 0; i < N_REDMULE_TILES; i++) begin : gen_spm_assign
-        assign tcdm_spm_dma_muxed[i].req = noc_data_reqs[SPM_IDX0+i];
-        assign noc_data_rsps[SPM_IDX0+i] = tcdm_spm_dma_muxed[i].rsp;
+        assign tcdm_spm_cpu[i].req = noc_spm_reqs[i];
+        assign noc_spm_rsps[i] = tcdm_spm_cpu[i].rsp;
     end
   endgenerate
 // === tcdm_dmem_muxed assignment ===
@@ -344,7 +366,7 @@ aida_io #(
             .START_ADDR(SPM_NARROW_ADDR_BASE+i*SPM_NARROW_SIZE),  // Set start address
             .END_ADDR(SPM_NARROW_ADDR_BASE+(i+1)*SPM_NARROW_SIZE )  // Set end address
         ) i_tcdm_spm_dma_shim (
-            .tcdm_slave_i (tcdm_spm_dma_muxed[i]),
+            .tcdm_slave_i (tcdm_spm_cpu[i]),
             .tcdm_master_o(tcdm_spm_dma[i])
         );
     end
