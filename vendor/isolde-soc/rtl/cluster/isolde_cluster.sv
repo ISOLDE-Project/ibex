@@ -143,9 +143,6 @@ localparam addr_range_t tiles_map[N_REDMULE_TILES] = '{
   /**           Interface Definitions                   **/
   /*******************************************************/
 
-
-
-
   // === Data port ===
   isolde_tcdm_if tcdm_core_data ();
   isolde_tcdm_if tcdm_dmem_muxed ();
@@ -163,8 +160,7 @@ localparam addr_range_t tiles_map[N_REDMULE_TILES] = '{
   isolde_tcdm_if tcdm_dm_sba ();
 
   // === CPU -> SPM-s ports ===
-  isolde_tcdm_if tcdm_spm_dma[N_REDMULE_TILES] ();
-  isolde_tcdm_if tcdm_spm_cpu[N_REDMULE_TILES] ();
+  isolde_tcdm_if tcdm_spm_hwe[N_REDMULE_TILES] ();
   isolde_tcdm_if tcdm_spm_dma_muxed ();
 
 // === Data sub-network on Chip NoC interfaces ===
@@ -184,6 +180,26 @@ localparam addr_range_t tiles_map[N_REDMULE_TILES] = '{
   isolde_tcdm_pkg::rsp_t noc_dm_sba_rsps[DM_SBA_LAST_IDX];
 `endif
 
+  // === CV-X-IF ===
+  isolde_cv_x_if #(
+      .X_NUM_RS   (isolde_cv_x_if_pkg::X_NUM_RS),
+      .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
+      .X_MEM_WIDTH(isolde_cv_x_if_pkg::X_MEM_WIDTH),
+      .X_RFR_WIDTH(isolde_cv_x_if_pkg::X_RFR_WIDTH),
+      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH),
+      .X_MISA     (isolde_cv_x_if_pkg::X_MISA),
+      .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
+  ) itf_core_xif ();
+  isolde_cv_x_if #(
+      .X_NUM_RS   (isolde_cv_x_if_pkg::X_NUM_RS),
+      .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
+      .X_MEM_WIDTH(isolde_cv_x_if_pkg::X_MEM_WIDTH),
+      .X_RFR_WIDTH(isolde_cv_x_if_pkg::X_RFR_WIDTH),
+      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH),
+      .X_MISA     (isolde_cv_x_if_pkg::X_MISA),
+      .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
+  ) itf_hwe_xif[N_REDMULE_TILES] ();
+
   /********************************************************/
   /**           Router(s)                                **/
   /*******************************************************/
@@ -198,14 +214,20 @@ localparam addr_range_t tiles_map[N_REDMULE_TILES] = '{
       .req_o       (noc_data_reqs),
       .rsp_i       (noc_data_rsps)
   );
+    
+    logic[31:0] csr_tile_sel;
+    assign csr_tile_sel = 32'h1; //itf_core_xif.issue_req.hwe_id;
 
-  isolde_router #(
-      .N_RULES(N_REDMULE_TILES),
-      .ADDR_RANGES(tiles_map)
-  ) i_isolde_spm_router (
+  isolde_tile_router #(
+       .START_ADDR(SPM_NARROW_ADDR_BASE),  // Set start address
+       .END_ADDR(SPM_NARROW_ADDR_BASE+SPM_NARROW_SIZE ),  // Set end address
+       .N_TILES(N_REDMULE_TILES)      
+    ) i_isolde_tile_router (
       .clk_i,
       .rst_ni,
-      .tcdm_slave_i(tcdm_spm_dma_muxed),
+      .req_idx_i(csr_tile_sel),
+      .req_i(tcdm_spm_dma_muxed.req),
+      .rsp_o(tcdm_spm_dma_muxed.rsp),
       .req_o       (noc_spm_reqs),
       .rsp_i       (noc_spm_rsps)
   );
@@ -237,6 +259,8 @@ localparam addr_range_t tiles_map[N_REDMULE_TILES] = '{
     assign  noc_instr_reqs[INSTR_MEM_IDX]  = tcdm_core_inst.req;
     assign  tcdm_core_inst.rsp = noc_instr_rsps[INSTR_MEM_IDX] ;
 `endif
+
+
   /********************************************************/
   /**           memory mapped I/O                        **/
   /*******************************************************/
@@ -339,12 +363,6 @@ aida_io #(
     assign tcdm_spm_dma_muxed.req = noc_data_reqs[SPM_IDX];
     assign noc_data_rsps[SPM_IDX] = tcdm_spm_dma_muxed.rsp;
 
-    generate
-    for (genvar i = 0; i < N_REDMULE_TILES; i++) begin : gen_spm_assign
-        assign tcdm_spm_cpu[i].req = noc_spm_reqs[i];
-        assign noc_spm_rsps[i] = tcdm_spm_cpu[i].rsp;
-    end
-  endgenerate
 // === tcdm_dmem_muxed assignment ===
     assign tcdm_dmem_muxed.req = noc_data_reqs[DATA_IDX];
     assign noc_data_rsps[DATA_IDX] = tcdm_dmem_muxed.rsp;
@@ -362,13 +380,9 @@ aida_io #(
     generate
     for (genvar i = 0; i < N_REDMULE_TILES; i++) begin : gen_tile_addr_shim
       
-        isolde_addr_shim_wrp #(
-            .START_ADDR(SPM_NARROW_ADDR_BASE+i*SPM_NARROW_SIZE),  // Set start address
-            .END_ADDR(SPM_NARROW_ADDR_BASE+(i+1)*SPM_NARROW_SIZE )  // Set end address
-        ) i_tcdm_spm_dma_shim (
-            .tcdm_slave_i (tcdm_spm_cpu[i]),
-            .tcdm_master_o(tcdm_spm_dma[i])
-        );
+        assign tcdm_spm_hwe[i].req = noc_spm_reqs[i];
+        assign noc_spm_rsps[i] = tcdm_spm_hwe[i].rsp;
+  
     end
   endgenerate
 
@@ -433,30 +447,10 @@ aida_io #(
     endgenerate
 `endif
 
+  
   /********************************************************/
-  /**     CV-X-IF                                        **/
+  /**     CV-X-IF  logging                              **/
   /*******************************************************/
-
-  isolde_cv_x_if #(
-      .X_NUM_RS   (isolde_cv_x_if_pkg::X_NUM_RS),
-      .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
-      .X_MEM_WIDTH(isolde_cv_x_if_pkg::X_MEM_WIDTH),
-      .X_RFR_WIDTH(isolde_cv_x_if_pkg::X_RFR_WIDTH),
-      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH),
-      .X_MISA     (isolde_cv_x_if_pkg::X_MISA),
-      .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
-  ) itf_core_xif ();
-
-  isolde_cv_x_if #(
-      .X_NUM_RS   (isolde_cv_x_if_pkg::X_NUM_RS),
-      .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
-      .X_MEM_WIDTH(isolde_cv_x_if_pkg::X_MEM_WIDTH),
-      .X_RFR_WIDTH(isolde_cv_x_if_pkg::X_RFR_WIDTH),
-      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH),
-      .X_MISA     (isolde_cv_x_if_pkg::X_MISA),
-      .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
-  ) itf_hwe_xif[N_REDMULE_TILES] ();
-
 `ifdef TARGET_VERILATOR
   xif_monitor_issue xif_monitor_cpu_issue_i (
       .clk_i(clk_i),
@@ -567,7 +561,7 @@ aida_io #(
   );
 
   /********************************************************/
-  /**     Hardware Engine HWE                            **/
+  /**     Hardware Engine (HWE) Cluster                  **/
   /*******************************************************/
   
   `ifdef TARGET_REDMULE_COMPLEX
@@ -585,12 +579,14 @@ isolde_xif_relay #(
     generate
     for (genvar i = 0; i < N_REDMULE_TILES; i++) begin : gen_tile
       // Instantiate memory bank
-    isolde_tile i_tile (
+    isolde_tile #(
+        .ID(i)
+    ) i_tile(
       .clk_i         (clk_i),
       .rst_ni        (rst_ni),
       .fetch_enable_i(fetch_enable_i),
       .evt_o         (tile_evt[i]),
-      .tcdm_spm_dma    (tcdm_spm_dma[i]),
+      .tcdm_spm_dma    (tcdm_spm_hwe[i]),
       .xif_issue_if_i     (itf_hwe_xif[i].coproc_issue),
       .xif_result_if_o    (itf_hwe_xif[i].coproc_result),
       .xif_compressed_if_i(itf_hwe_xif[i].coproc_compressed),

@@ -36,6 +36,7 @@ sources:
     - rtl/cluster/isolde_xif_relay.sv
     ##level 2
     - rtl/noc/isolde_router.sv
+    - rtl/noc/isolde_tile_router.sv
     - rtl/ibex_rst.sv
     - rtl/cluster/isolde_cluster.sv
 
