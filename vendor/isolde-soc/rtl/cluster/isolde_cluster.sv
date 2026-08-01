@@ -436,10 +436,24 @@ aida_io #(
   ) itf_hwe_xif[N_REDMULE_TILES] ();
 
 `ifdef TARGET_VERILATOR
-  xif_monitor_cpu_issue xif_monitor_cpu_issue_i (
-      clk_i,
-      itf_core_xif
+  xif_monitor_issue xif_monitor_cpu_issue_i (
+      .clk_i(clk_i),
+      .issue_if(itf_core_xif)
   );
+
+  genvar i;
+  generate
+    for (i = 0; i < N_REDMULE_TILES; i++) begin : g_tile_monitor_issue
+      xif_monitor_issue #(
+          .FILENAME($sformatf("xif_tile_%0d_issue", i)),
+          .NAME    ($sformatf("XIF_TILE_%0d", i)),
+          .ID      (i)
+      ) xif_monitor_tile_issue_i (
+          .clk_i(clk_i),
+          .issue_if(itf_hwe_xif[i])
+      );
+    end
+  endgenerate
 `endif
 
   /********************************************************/
