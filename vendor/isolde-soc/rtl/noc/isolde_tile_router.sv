@@ -11,7 +11,7 @@ module isolde_tile_router
 ) (
     input logic clk_i,
     input logic rst_ni,
-    input logic [IDXWidth-1:0] req_idx_i,
+    isolde_cv_x_if.monitor_issue issue_if,
     // Interface for CPU requests
     input isolde_tcdm_pkg::req_t req_i,
     output isolde_tcdm_pkg::rsp_t rsp_o,
@@ -53,7 +53,7 @@ module isolde_tile_router
   assign push_id_fifo = |rsp_gnt_vec;
   assign pop_id_fifo  = |rsp_valid_vec;
 
-  assign selected_idx = req_idx_i;
+  assign selected_idx = idx_t'(issue_if.issue_req.hwe_id);;
 
 
 

@@ -215,8 +215,7 @@ localparam addr_range_t tiles_map[N_REDMULE_TILES] = '{
       .rsp_i       (noc_data_rsps)
   );
     
-    logic[31:0] csr_tile_sel;
-    assign csr_tile_sel = 32'h1; //itf_core_xif.issue_req.hwe_id;
+    
 
   isolde_tile_router #(
        .START_ADDR(SPM_NARROW_ADDR_BASE),  // Set start address
@@ -225,7 +224,7 @@ localparam addr_range_t tiles_map[N_REDMULE_TILES] = '{
     ) i_isolde_tile_router (
       .clk_i,
       .rst_ni,
-      .req_idx_i(csr_tile_sel),
+      .issue_if(itf_core_xif),
       .req_i(tcdm_spm_dma_muxed.req),
       .rsp_o(tcdm_spm_dma_muxed.rsp),
       .req_o       (noc_spm_reqs),

@@ -19,7 +19,7 @@
 #include "golden.h"
 
 
-static const int TILE_ID = 0x1;
+static const int TILE_ID = 0x0;
 
 static const int y_flat_size=sizeof(golden) / sizeof(golden[0]) +1 ;
 uint32_t y_flat[y_flat_size];
@@ -47,6 +47,7 @@ int main(int argc, char *argv[]) {
   uint32_t elems;
  
 
+  isolde_set_tile(TILE_ID);
   
   // x_inp
   x_spm_addr = spm_next_addr;
@@ -69,7 +70,6 @@ int main(int argc, char *argv[]) {
   elems = y_size;
   spm_next_addr = spm_write(spm_addr, src, elems);
 
-  isolde_set_tile(TILE_ID);
 
   printf("[SPM TCA ] TILE_ID= 0x%08x\n\n",isolde_get_tile());
   printf("[SPM TCA ] x_spm_addr= 0x%08x\n, w_spm_addr= 0x%08x\n, y_spm_addr= 0x%08x\n", x_spm_addr, w_spm_addr,
