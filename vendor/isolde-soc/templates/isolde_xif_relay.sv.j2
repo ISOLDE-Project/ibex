@@ -6,7 +6,7 @@
 ********************************************
 */
 module isolde_xif_relay #(
-    parameter int unsigned N_TILES  = 2,
+    parameter int unsigned N_TILES  = {{ n_tiles }},
     parameter int unsigned NC       = 1,
     parameter int unsigned ID_WIDTH = (N_TILES > 1) ? $clog2(N_TILES) : 1
 ) (
@@ -94,8 +94,9 @@ assign rsp_idx = rsp_idx_fifo;
     always_comb begin
         core_evt_o = '0;
         unique case (rsp_idx_hold)
-            0: core_evt_o = tile_evt_i[0];
-            1: core_evt_o = tile_evt_i[1];
+{% for i in range(n_tiles) %}
+            {{ i }}: core_evt_o = tile_evt_i[{{ i }}];
+{% endfor %}
             default: core_evt_o = '0;
         endcase
     end
@@ -125,8 +126,9 @@ assign rsp_idx = rsp_idx_fifo;
     always_comb begin
         cpu_xif_issue.issue_ready = 1'b0;
         unique case (req_idx)
-            0: cpu_xif_issue.issue_ready = tile_xif_issue[0].issue_ready;
-            1: cpu_xif_issue.issue_ready = tile_xif_issue[1].issue_ready;
+{% for i in range(n_tiles) %}
+            {{ i }}: cpu_xif_issue.issue_ready = tile_xif_issue[{{ i }}].issue_ready;
+{% endfor %}
             default: cpu_xif_issue.issue_ready = 1'b0;
         endcase
     end
@@ -139,14 +141,12 @@ assign rsp_idx = rsp_idx_fifo;
         cpu_xif_result.result       = '0;
 
         unique case (rsp_idx)
-            0: begin
-                cpu_xif_result.result_valid = tile_xif_result[0].result_valid;
-                cpu_xif_result.result       = tile_xif_result[0].result;
+{% for i in range(n_tiles) %}
+            {{ i }}: begin
+                cpu_xif_result.result_valid = tile_xif_result[{{ i }}].result_valid;
+                cpu_xif_result.result       = tile_xif_result[{{ i }}].result;
             end
-            1: begin
-                cpu_xif_result.result_valid = tile_xif_result[1].result_valid;
-                cpu_xif_result.result       = tile_xif_result[1].result;
-            end
+{% endfor %}
             default: begin
                 cpu_xif_result.result_valid = 1'b0;
                 cpu_xif_result.result       = '0;

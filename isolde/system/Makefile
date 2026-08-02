@@ -80,7 +80,8 @@ include $(mkfile_path)/../mk/questa-build.mk
 include $(mkfile_path)/../mk/vivado.mk
 
 
-
+generate:
+	make -C $(ROOT_DIR)/vendor/isolde-soc -f Makefile.jinja N_TILES=2 clean generate
 	
 
 

@@ -43,8 +43,6 @@ MEMORY
   localparam int unsigned SPM_NARROW_SIZE = 32'h0000_1000;  //4kB
 `ifdef REDMULE_CLUSTER
   localparam int unsigned N_REDMULE_TILES  = 2;
-  localparam rule_addr_t SPM_NARROW_ADDR0 = SPM_NARROW_ADDR_BASE;
-  localparam rule_addr_t SPM_NARROW_ADDR1 = SPM_NARROW_ADDR0 + SPM_NARROW_SIZE;
 `endif
   localparam rule_addr_t SPM_NARROW_ADDR = SPM_NARROW_ADDR_BASE;
   // === hardware accelerator parameters ===

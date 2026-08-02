@@ -91,10 +91,7 @@ module isolde_cluster
 `endif
   };
 
-localparam addr_range_t tiles_map[N_REDMULE_TILES] = '{
-      '{start_addr: SPM_NARROW_ADDR0, end_addr: SPM_NARROW_ADDR0 + SPM_NARROW_SIZE},
-      '{start_addr: SPM_NARROW_ADDR1, end_addr: SPM_NARROW_ADDR1 + SPM_NARROW_SIZE}
-  };
+
 
 `ifdef TARGET_RV_DEBUG
   // DEBUG MODULE PERIPHERAL, instructions memory map
@@ -567,7 +564,6 @@ aida_io #(
  
 
 isolde_xif_relay #(
-    .N_TILES(N_REDMULE_TILES),
     .NC(NC)
 ) i_xif_relay (
     .clk_i,

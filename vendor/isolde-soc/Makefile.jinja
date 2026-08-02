@@ -1,0 +1,28 @@
+ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
+mkfile_path         :=  $(ROOT_DIR)/vendor/isolde-soc
+
+
+
+N_TILES      ?= 2
+GEN_DIR      ?= $(ROOT_DIR)/vendor/isolde-soc/rtl/cluster
+TEMPLATE_DIR ?= $(ROOT_DIR)/vendor/isolde-soc/templates
+TEMPLATE     := isolde_xif_relay.sv.j2
+GEN_SCRIPT   := $(ROOT_DIR)/util/render_jinja.py
+OUT_SV       := $(GEN_DIR)/isolde_xif_relay.sv
+
+.PHONY: generate clean
+
+## generate: render isolde_xif_relay.sv from the Jinja2 template for N_TILES (default 2)
+generate: $(OUT_SV)
+
+$(OUT_SV): $(TEMPLATE_DIR)/$(TEMPLATE) $(GEN_SCRIPT)
+	@mkdir -p $(GEN_DIR)
+	python3 $(GEN_SCRIPT) \
+		--n-tiles $(N_TILES) \
+		--template-dir $(TEMPLATE_DIR) \
+		--template $(TEMPLATE) \
+		-o $(OUT_SV)
+
+## clean: remove generated files
+clean:
+	rm -f $(OUT_SV)
