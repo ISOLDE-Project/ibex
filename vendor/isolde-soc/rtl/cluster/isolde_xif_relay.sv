@@ -22,8 +22,8 @@ module isolde_xif_relay #(
     isolde_cv_x_if.cpu_result tile_xif_result[N_TILES],
 
     // Events
-    input  logic [NC-1:0][1:0] tile_evt_i[N_TILES-1:0],
-    output logic [NC-1:0][1:0] core_evt_o
+    input logic [NC-1:0][1:0] tile_evt_i[N_TILES-1:0],
+    output logic [N_TILES-1:0] core_evt_o
 );
 
     initial begin
@@ -36,7 +36,7 @@ module isolde_xif_relay #(
 
     logic fifo_full, fifo_empty;
     logic push_id_fifo, pop_id_fifo;
-    idx_t req_idx, rsp_idx,rsp_idx_fifo;
+  idx_t req_idx, rsp_idx, rsp_idx_fifo;
 
     assign req_idx = idx_t'(cpu_xif_issue.issue_req.hwe_id[ID_WIDTH-1:0]);
 
@@ -45,9 +45,9 @@ module isolde_xif_relay #(
     // (NOT simply "any tile happens to be ready/valid" - that fires even when
     // the CPU/tile did not actually complete the corresponding handshake.)
     assign push_id_fifo = cpu_xif_issue.issue_valid;
-    assign pop_id_fifo  = cpu_xif_result.result_ready ;
+    assign pop_id_fifo = cpu_xif_result.result_ready;
 
-    //todo: fix this fifo, it is not working properly, it is not needed for the testbench, but it will be needed for the real implementation
+
 
     // Remember selected master for correct forwarding of read data/acknowledge.
     // FALL_THROUGH=1 is required: when the FIFO is empty, a push must be
@@ -55,17 +55,17 @@ module isolde_xif_relay #(
     // tile that responds in the same cycle it accepts an issue (zero
     // // latency) would be muxed against a stale/previous rsp_idx.
 
-    logic [ID_WIDTH-1:0] rsp_idx_hold;
+//   logic [ID_WIDTH-1:0] rsp_idx_hold;
 
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) begin
-        rsp_idx_hold <= '0;
-    end else if (pop_id_fifo && !fifo_empty) begin
-        // Capture the value that is being popped
-        rsp_idx_hold <= rsp_idx_fifo;
-    end
-    // else: keep previous value automatically
-    end
+//   always_ff @(posedge clk_i or negedge rst_ni) begin
+//     if (!rst_ni) begin
+//       rsp_idx_hold <= '0;
+//     end else if (pop_id_fifo && !fifo_empty) begin
+//       // Capture the value that is being popped
+//       rsp_idx_hold <= rsp_idx_fifo;
+//     end
+//     // else: keep previous value automatically
+//   end
 
     fifo_v3 #(
         .FALL_THROUGH(1'b1),
@@ -81,7 +81,7 @@ module isolde_xif_relay #(
         .usage_o(),
         .data_i(req_idx),
         .push_i(push_id_fifo),
-        .data_o(rsp_idx_fifo), //<-- fixme
+        .data_o(rsp_idx_fifo),  
         .pop_i(pop_id_fifo)
     );
 
@@ -91,14 +91,14 @@ assign rsp_idx = rsp_idx_fifo;
     // --------------------------------------------------
     // Events
     // --------------------------------------------------
-    always_comb begin
-        core_evt_o = '0;
-        unique case (rsp_idx_hold)
-            0: core_evt_o = tile_evt_i[0];
-            1: core_evt_o = tile_evt_i[1];
-            default: core_evt_o = '0;
-        endcase
-    end
+  //   always_comb begin
+  //     core_evt_o = '0;
+  //     unique case (rsp_idx_hold)
+  //       0: core_evt_o = tile_evt_i[0];
+  //       1: core_evt_o = tile_evt_i[1];
+  //       default: core_evt_o = '0;
+  //     endcase
+  //   end
 
     // --------------------------------------------------
     // CPU -> tile dispatch (issue channel, keyed by req_idx)
@@ -112,6 +112,7 @@ assign rsp_idx = rsp_idx_fifo;
             // (req_idx) - these differ whenever more than one transaction
             // is outstanding.
             assign tile_xif_result[i].result_ready = (rsp_idx == i) ? cpu_xif_result.result_ready : 1'b0;
+            assign core_evt_o[i:i]                 = tile_evt_i[i][0][0:0];
         end
     endgenerate
 

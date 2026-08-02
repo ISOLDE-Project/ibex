@@ -50,7 +50,7 @@ module isolde_cluster
   logic [rv_dm_pkg::NrHarts-1:0]      debug_req;
   logic                               core_sleep;
   logic [                NC-1:0][1:0] tile_evt[N_REDMULE_TILES-1:0];
-  logic [                NC-1:0][1:0] core_evt;
+  logic [                N_REDMULE_TILES-1:0] core_evt;
 
    logic [31:0] BOOT_ADDR;
 
@@ -527,7 +527,7 @@ aida_io #(
       .data_rdata_intg_i('0),
       .data_err_i       (1'b0),
 
-      .irq_software_i(core_evt[0][0]),
+      .irq_software_i(|core_evt),
       .irq_timer_i   (1'b0),
       .irq_external_i(1'b0),
       .irq_fast_i    ('0),
