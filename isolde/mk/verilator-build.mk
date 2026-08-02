@@ -91,7 +91,7 @@ veri-run: $(BIN_DIR)/verilator_executable
 	@echo "* Running with Verilator: "
 	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
 	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/trace_core_00000000.log"
-	@echo "*                              *.vcd: $(VERI_LOG_DIR)"
+	@echo "*                              *.vcd: $(VERI_LOG_DIR)/$(TEST).vcd"
 	@echo "$(BANNER)"
 	# === Create/clean-up destination log folder ===
 	mkdir -p $(VERI_LOG_DIR)

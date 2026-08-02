@@ -21,7 +21,7 @@ module isolde_tile_router
 );
 
   typedef logic [IDXWidth-1:0] idx_t;
-  isolde_tcdm_if tcdm_slave_i ();  // Interface for memory response
+  isolde_tcdm_if tcdm_slave_tmp ();  // Interface for memory response
 
   isolde_addr_shim #(
       .START_ADDR(START_ADDR),
@@ -29,7 +29,7 @@ module isolde_tile_router
   ) i_addr_shim (
       .req_i(req_i),
       .rsp_o(rsp_o),
-      .tcdm_master_o(tcdm_slave_i)
+      .tcdm_master_o(tcdm_slave_tmp)
   );
 
 
@@ -53,7 +53,8 @@ module isolde_tile_router
   assign push_id_fifo = |rsp_gnt_vec;
   assign pop_id_fifo  = |rsp_valid_vec;
 
-  assign selected_idx = idx_t'(issue_if.issue_req.hwe_id);;
+  assign selected_idx = idx_t'(issue_if.issue_req.hwe_id);
+  ;
 
 
 
@@ -84,7 +85,7 @@ module isolde_tile_router
     for (int i = 0; i < N_TILES; i++) begin
       req_o[i] = '0;
       if (req_idx == idx_t'(i)) begin
-        req_o[i] = tcdm_slave_i.req;
+        req_o[i] = tcdm_slave_tmp.req;
       end
     end
     //end
@@ -93,13 +94,13 @@ module isolde_tile_router
 
   always_comb begin : bind_rsp
 
-    tcdm_slave_i.rsp.gnt   = |rsp_gnt_vec;
-    tcdm_slave_i.rsp.valid = |rsp_valid_vec;
-    tcdm_slave_i.rsp.err   = '0;
-    tcdm_slave_i.rsp.data  = '0;
+    tcdm_slave_tmp.rsp.gnt   = |rsp_gnt_vec;
+    tcdm_slave_tmp.rsp.valid = |rsp_valid_vec;
+    tcdm_slave_tmp.rsp.err   = '0;
+    tcdm_slave_tmp.rsp.data  = '0;
     for (int i = 0; i < N_TILES; i++) begin
       if (rsp_idx == idx_t'(i)) begin
-        tcdm_slave_i.rsp.data = rsp_i[i].data;
+        tcdm_slave_tmp.rsp.data = rsp_i[i].data;
       end
     end
   end
@@ -114,14 +115,13 @@ module isolde_tile_router
     assert (N_TILES > 0)
     else $fatal("[isolde_demux_tcdm] ERROR: N_TILES parameter must be > 0 (got %0d)", N_TILES);
   end
-`ifndef SYNTHESIS
+
   always_ff @(posedge clk_i) begin
     assert (!(push_id_fifo && fifo_full))
     else $fatal("ID FIFO overflow");
     assert (!(pop_id_fifo && fifo_empty))
     else $fatal("ID FIFO underflow");
   end
-`endif
 `endif
 endmodule
 

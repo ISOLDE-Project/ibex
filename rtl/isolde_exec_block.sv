@@ -112,10 +112,10 @@ module isolde_exec_block
             isolde_opcode_redmule: exec_action = start_nop_redmule();
             isolde_opcode_R_type: exec_action = start_nop_RType();
             isolde_opcode_vle32_4: exec_action = start_vle32_4();
-            isolde_opcode_gemm: exec_action <= start_gemm();
+            isolde_opcode_gemm: exec_action = start_gemm();
             isolde_opcode_conv2d: exec_action = start_conv2d();
-            isolde_opcode_redmule_gemm: exec_action <= start_redmule_gemm();
-            isolde_opcode_redmule_gemm1: exec_action <= start_redmule_gemm1();
+            isolde_opcode_redmule_gemm: exec_action = start_redmule_gemm();
+            isolde_opcode_redmule_gemm1: exec_action = start_redmule_gemm1();
             default: begin
               exec_action = EXEC_NOP;
             end
@@ -123,7 +123,7 @@ module isolde_exec_block
           cnt_max <= exec_action.cnt_max;
         end
         WAIT: begin
-          cnt <= cnt + 1;
+          cnt <= (cnt_max)? cnt + 1 : cnt;
           xif_issue_if.issue_valid <= 0;
         end
 
