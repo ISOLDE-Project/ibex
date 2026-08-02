@@ -453,7 +453,7 @@ aida_io #(
 `ifdef TARGET_VERILATOR
   xif_monitor_issue xif_monitor_cpu_issue_i (
       .clk_i(clk_i),
-      .issue_if(itf_core_xif)
+      .issue_if(itf_core_xif.monitor_issue)
   );
 
   genvar i;
@@ -465,7 +465,7 @@ aida_io #(
           .ID      (i)
       ) xif_monitor_tile_issue_i (
           .clk_i(clk_i),
-          .issue_if(itf_hwe_xif[i])
+          .issue_if(itf_hwe_xif[i].monitor_issue)
       );
     end
   endgenerate
@@ -564,14 +564,18 @@ aida_io #(
   /*******************************************************/
   
   `ifdef TARGET_REDMULE_COMPLEX
- //todo: introduce a dispatcher here
+ 
 
 isolde_xif_relay #(
     .N_TILES(N_REDMULE_TILES),
     .NC(NC)
 ) i_xif_relay (
-    .cpu_xif   (itf_core_xif),
-    .tile_xif  (itf_hwe_xif),
+    .clk_i,
+    .rst_ni,
+    .cpu_xif_issue   (itf_core_xif.cpu_issue),
+    .cpu_xif_result  (itf_core_xif.cpu_result),
+    .tile_xif_issue  (itf_hwe_xif.coproc_issue),
+    .tile_xif_result (itf_hwe_xif.coproc_result),
     .tile_evt_i(tile_evt),
     .core_evt_o(core_evt)
 );
