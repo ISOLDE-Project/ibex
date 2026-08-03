@@ -8,7 +8,6 @@ description: "Ibex, a small RV32 CPU core"
 filesets:
   files_rtl:
     depend:
-      - isolde:ibex:cv_x_if
       - lowrisc:ibex:ibex_pkg
       - lowrisc:ibex:ibex_core
       - lowrisc:prim:and2
@@ -19,6 +18,7 @@ filesets:
       - lowrisc:prim:ram_1p_scr
       - lowrisc:prim:onehot_check
       - lowrisc:prim:onehot
+      - isolde:ibex:cv_x_if
     files:
       - rtl/isolde_x_register_file_if.sv
       - rtl/isolde_register_file_if.sv

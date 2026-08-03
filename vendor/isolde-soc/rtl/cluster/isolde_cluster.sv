@@ -47,10 +47,17 @@ module isolde_cluster
 
 );
 
+  localparam int unsigned N_REDMULE_TILES  = isolde_hwe_cluster_pkg::N_HWE_TILES;
+
   logic [rv_dm_pkg::NrHarts-1:0]      debug_req;
   logic                               core_sleep;
   logic [                NC-1:0][1:0] tile_evt[N_REDMULE_TILES-1:0];
   logic [                N_REDMULE_TILES-1:0] core_evt;
+  logic [                N_REDMULE_TILES-1:0] core_evt_mask;
+  logic [                N_REDMULE_TILES-1:0] _tile_evt;
+  logic [                N_REDMULE_TILES-1:0] core_evt_cpu;
+
+  assign core_evt_cpu = _tile_evt & core_evt_mask;
 
    logic [31:0] BOOT_ADDR;
 
@@ -575,6 +582,7 @@ isolde_xif_relay #(
     .tile_evt_i(tile_evt),
     .core_evt_o(core_evt)
 );
+//assign core_evt_mask = itf_core_xif.issue_req.evt_mask;
     generate
     for (genvar i = 0; i < N_REDMULE_TILES; i++) begin : gen_tile
       // Instantiate memory bank

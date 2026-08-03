@@ -302,8 +302,15 @@ module ibex_cs_registers #(
   logic [ 2:0] unused_csr_addr;
 
   // ISOLDE
+  // === tile selection ===
   logic [31:0] isolde_tilesel_q;
   logic        isolde_tilesel_en;
+  // === tile interrupt enable ===
+  isolde_hwe_cluster_pkg::isolde_tile_csr_t isolde_tile_intr_q;
+  logic        isolde_tile_intr_en;
+
+
+
   assign unused_boot_addr = boot_addr_i[7:0];
 
   /////////////
@@ -552,6 +559,7 @@ module ibex_cs_registers #(
         csr_rdata_int = '0;
       end
       CSR_ISOLDE_TILESEL: csr_rdata_int = isolde_tilesel_q;
+      CSR_ISOLDE_TILE_INTR_EN: csr_rdata_int = isolde_tile_intr_q;
 
       default: begin
         illegal_csr = 1'b1;
@@ -614,7 +622,10 @@ module ibex_cs_registers #(
     cpuctrlsts_part_d = cpuctrlsts_part_q;
 
     double_fault_seen_o = 1'b0;
+    // === ISOLDE ===
     isolde_tilesel_en = 1'b0;
+    isolde_tile_intr_en= 1'b0;
+
 
     if (csr_we_int) begin
       unique case (csr_addr_i)
@@ -718,6 +729,7 @@ module ibex_cs_registers #(
           cpuctrlsts_part_we = 1'b1;
         end
         CSR_ISOLDE_TILESEL: isolde_tilesel_en = 1'b1;
+        CSR_ISOLDE_TILE_INTR_EN: isolde_tile_intr_en = 1'b1;
         default: ;
       endcase
     end
@@ -1712,6 +1724,23 @@ module ibex_cs_registers #(
   );
 
   assign isolde_csr_if_o.tile_selection = isolde_tilesel_q;
+
+  //ISOLDE interrupt enable register
+  ibex_csr #(
+      .Width     (isolde_hwe_cluster_pkg::TileCSRWidth),
+      .ShadowCopy(1'b0),
+      .ResetValue(isolde_hwe_cluster_pkg::isolde_tile_csr_t'('1))
+  ) u_isolde_intr_en_csr (
+      .clk_i     (clk_i),
+      .rst_ni    (rst_ni),
+      .wr_data_i (csr_wdata_int[isolde_hwe_cluster_pkg::TileCSRWidth-1:0]),
+      .wr_en_i   (isolde_tile_intr_en),
+      .rd_data_o (isolde_tile_intr_q),
+      .rd_error_o()
+  );
+  assign isolde_csr_if_o.tile_intr_en = isolde_tile_intr_q;
+
+
 
   assign csr_shadow_err_o =
     mstatus_err | mtvec_err | pmp_csr_err | cpuctrlsts_part_err | cpuctrlsts_ic_scr_key_err;

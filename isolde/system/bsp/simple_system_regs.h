@@ -15,6 +15,9 @@
 #define SPM_NARROW_SIZE            0x00001000   //64kB                                   
 #define SPM_NARROW_ADDR            0x80001000
 // take it from rtl/ibex_pkg.sv
-enum{ CSR_ISOLDE_TILESEL    = 0x7C2 };
+enum{ 
+    CSR_ISOLDE_TILESEL       = 0x7C2
+    ,CSR_ISOLDE_TILE_INTR_EN = 0x7C3
+ };
 
 #endif  // SIMPLE_SYSTEM_REGS_H__

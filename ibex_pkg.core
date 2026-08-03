@@ -13,6 +13,7 @@ filesets:
       - rtl/isolde_register_file_pkg.sv
       - rtl/isolde_x_register_file_pkg.sv
       - rtl/isolde_decoder_pkg.sv
+      - rtl/isolde_hwe_cluster_pkg.sv
     file_type: systemVerilogSource
 
 targets:

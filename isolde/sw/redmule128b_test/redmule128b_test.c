@@ -47,6 +47,10 @@ int main(int argc, char *argv[]) {
   uint32_t elems;
  
 
+  printf("[SPM TCA ]interrupt_enable= 0x%08x\n\n",isolde_get_intr_en());
+
+  isolde_set_intr_en(TILE_ID+1);
+  printf("[SPM TCA ] interrupt_enable= 0x%08x\n\n",isolde_get_intr_en());
   isolde_set_tile(TILE_ID);
   
   // x_inp

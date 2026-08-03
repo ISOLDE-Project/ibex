@@ -41,9 +41,6 @@ MEMORY
   // === spm narrow port start ====
   localparam rule_addr_t SPM_NARROW_ADDR_BASE = 32'h8000_1000;
   localparam int unsigned SPM_NARROW_SIZE = 32'h0000_1000;  //4kB
-`ifdef REDMULE_CLUSTER
-  localparam int unsigned N_REDMULE_TILES  = 2;
-`endif
   localparam rule_addr_t SPM_NARROW_ADDR = SPM_NARROW_ADDR_BASE;
   // === hardware accelerator parameters ===
   localparam int unsigned NC = 1;

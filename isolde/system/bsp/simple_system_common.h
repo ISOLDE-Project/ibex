@@ -148,6 +148,25 @@ static inline unsigned isolde_get_tile(void)
     return tile;
 }
 
+static inline void isolde_set_intr_en(unsigned tile)
+{
+    asm volatile ("csrw %0, %1"
+                  :
+                  : "i"(CSR_ISOLDE_TILE_INTR_EN), "r"(tile)
+                  : "memory");
+}
+
+static inline unsigned isolde_get_intr_en(void)
+{
+    unsigned tile;
+    asm volatile ("csrr %0, %1"
+                  : "=r"(tile)
+                  : "i"(CSR_ISOLDE_TILE_INTR_EN)
+                  : "memory");
+    return tile;
+}
+
+
 // Define START_TIMING and END_TIMING macros
 #define START_TIMING(value) \
     uint32_t initval_##value = getTicks()

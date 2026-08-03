@@ -146,6 +146,47 @@ questa-run:  ibex_questa.flist  manifest_questa.flist
 
 	$(QRUN) $(QUESTA_COMMON_ARGS) \
 	        -batch \
+	        -O0 \
+	        -debug \
+	        -logfile $(QUESTA_LOG_DIR)/$(TEST).log \
+	        +STIM_INSTR=$(test-program)-m.hex \
+	        +STIM_DATA=$(test-program)-d.hex \
+	        -do "run -all; quit -f" 2>&1 | \
+			tee "$(QUESTA_RUN_LOG)" | \
+			gawk -v warnings_file="$(QUESTA_RUN_WARNINGS)" -f "$(SCRIPTS_DIR)/questa.awk"
+
+	@if [ ! -f "trace_core_00000000.log" ]; then \
+		echo "WARNING: Output file missing: trace_core_00000000.log"; \
+	else \
+		mv trace_core_00000000.log $(QUESTA_LOG_DIR); \
+	fi
+
+	@if [ -f "perfcnt.csv" ]; then \
+		mv perfcnt.csv $(QUESTA_LOG_DIR)/$(TEST).csv; \
+	fi
+
+questa-frun:  ibex_questa.flist  manifest_questa.flist
+	@echo "$(BANNER)"
+	@echo "* Running with QuestaSim:"
+	@echo "* logfile: $(QUESTA_LOG_DIR)/$(TEST).log"
+	@echo "* rtl debug trace: $(QUESTA_LOG_DIR)/trace_core_00000000.log"
+	@echo "* *.vcd: $(QUESTA_LOG_DIR)"
+	@echo "$(BANNER)"
+
+	mkdir -p $(QUESTA_LOG_DIR)
+	rm -f $(QUESTA_LOG_DIR)/*
+
+	@if [ ! -f "$(test-program)-m.hex" ]; then \
+		echo "ERROR: Missing file: $(test-program)-m.hex"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(test-program)-d.hex" ]; then \
+		echo "ERROR: Missing file: $(test-program)-d.hex"; \
+		exit 1; \
+	fi
+
+	$(QRUN) $(QUESTA_COMMON_ARGS) \
+	        -batch \
 	        -O5 \
 	        -nodebug \
 	        -logfile $(QUESTA_LOG_DIR)/$(TEST).log \
@@ -164,7 +205,6 @@ questa-run:  ibex_questa.flist  manifest_questa.flist
 	@if [ -f "perfcnt.csv" ]; then \
 		mv perfcnt.csv $(QUESTA_LOG_DIR)/$(TEST).csv; \
 	fi
-
 # ---------------------------------------------------------------------------
 # Simulate design with GUI
 # ---------------------------------------------------------------------------
