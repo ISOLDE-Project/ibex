@@ -303,7 +303,7 @@ module ibex_core
   logic                  illegal_csr_insn_id;  // CSR access to non-existent register,
                                                // with wrong priviledge level,
                                                // or missing write permissions
-
+  isolde_csr_if u_isolde_csr_if();
   // Data Memory Control
   logic                  lsu_we;
   logic           [ 1:0] lsu_type;
@@ -704,7 +704,7 @@ module ibex_core
       .ready_wb_i            (ready_wb),
       .outstanding_load_wb_i (outstanding_load_wb),
       .outstanding_store_wb_i(outstanding_store_wb),
-      .isolde_csr_if_i(isolde_csr_if),
+      .isolde_csr_if_i(u_isolde_csr_if),
       //ISOLDE register file
       .isolde_rf_bus    (isolde_rf_bus),
       .x_rf_bus         (x_rf_bus),
@@ -1063,7 +1063,7 @@ module ibex_core
 
   assign csr_wdata = alu_operand_a_ex;
   assign csr_addr  = csr_num_e'(csr_access ? alu_operand_b_ex[11:0] : 12'b0);
-  isolde_csr_if isolde_csr_if();
+
 
   ibex_cs_registers #(
       .DbgTriggerEn     (DbgTriggerEn),
@@ -1170,7 +1170,7 @@ module ibex_core
       .dside_wait_i               (perf_dside_wait),
       .mul_wait_i                 (perf_mul_wait),
       .div_wait_i                 (perf_div_wait),
-      .isolde_csr_if_o(isolde_csr_if)
+      .isolde_csr_if_o(u_isolde_csr_if)
   );
 
   // These assertions are in top-level as instr_valid_id required as the enable term
