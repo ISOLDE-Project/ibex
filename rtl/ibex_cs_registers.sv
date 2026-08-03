@@ -1727,18 +1727,18 @@ module ibex_cs_registers #(
 
   //ISOLDE interrupt enable register
   ibex_csr #(
-      .Width     (isolde_hwe_cluster_pkg::TileCSRWidth),
+      .Width     (isolde_hwe_cluster_pkg::CSR_WIDTH),
       .ShadowCopy(1'b0),
       .ResetValue(isolde_hwe_cluster_pkg::isolde_tile_csr_t'('1))
   ) u_isolde_intr_en_csr (
       .clk_i     (clk_i),
       .rst_ni    (rst_ni),
-      .wr_data_i (csr_wdata_int[isolde_hwe_cluster_pkg::TileCSRWidth-1:0]),
+      .wr_data_i (csr_wdata_int[isolde_hwe_cluster_pkg::CSR_WIDTH-1:0]),
       .wr_en_i   (isolde_tile_intr_en),
       .rd_data_o (isolde_tile_intr_q),
       .rd_error_o()
   );
-  assign isolde_csr_if_o.tile_intr_en = isolde_tile_intr_q;
+  assign isolde_csr_if_o.tile_intrerrupt_en = isolde_tile_intr_q;
 
 
 

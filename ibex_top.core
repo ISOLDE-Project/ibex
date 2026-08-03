@@ -18,7 +18,6 @@ filesets:
       - lowrisc:prim:ram_1p_scr
       - lowrisc:prim:onehot_check
       - lowrisc:prim:onehot
-      - isolde:ibex:cv_x_if
     files:
       - rtl/isolde_x_register_file_if.sv
       - rtl/isolde_register_file_if.sv
@@ -28,7 +27,17 @@ filesets:
       - rtl/ibex_register_file_fpga.sv # FPGA
       - rtl/ibex_register_file_latch.sv # ASIC
       - rtl/ibex_lockstep.sv
+
+    # --- merged from isolde:ibex:cv_x_if / files_rtl ---
+      - vendor/core-v-xif/rtl/isolde_cv_x_if.sv
+
       - rtl/ibex_top.sv
+    file_type: systemVerilogSource
+
+  files_sim:
+    # --- merged from isolde:ibex:cv_x_if / files_sim ---
+    files:
+      - vendor/core-v-xif/tb/xif_monitor_cpu_issue.sv
     file_type: systemVerilogSource
 
   files_lint_verilator:
@@ -160,6 +169,7 @@ targets:
     filesets:
       - tool_verilator ? (files_lint_verilator)
       - files_rtl
+      - files_sim
       - files_check_tool_requirements
     toplevel: ibex_top
     parameters:

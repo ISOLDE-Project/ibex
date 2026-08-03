@@ -1,18 +1,14 @@
 // Copyleft 2024
 
 interface isolde_csr_if
-//import  isolde_hwe_cluster_pkg::*;
- #(
-  parameter int unsigned RegDataWidth = isolde_hwe_cluster_pkg::RegDataWidth,  // Default register data width
-  parameter int unsigned TileCSRWidth = isolde_hwe_cluster_pkg::TileCSRWidth   // Default tile status & configuration register width
-
-)
+import  isolde_hwe_cluster_pkg::*; 
 ();
 
 
-    logic [RegDataWidth-1:0] tile_selection;  // Tile selection register      
-    logic [TileCSRWidth-1:0] tile_intr_en;  // interrupt enable register   
-    logic [TileCSRWidth-1:0] tile_evt;  // tile event status   
+
+    isolde_reg_data_t  tile_selection;  // Tile selection register      
+    isolde_tile_csr_t  tile_intrerrupt_en;  // interrupt enable register   
+   
   // ------------------------
 
 
@@ -23,15 +19,15 @@ interface isolde_csr_if
   modport cpu(
       
       output tile_selection,
-      output tile_intr_en,
-      input tile_evt
+      output tile_intrerrupt_en
+      
   );
 
   modport rf(
       
       input tile_selection ,
-      input tile_intr_en,
-      output tile_evt
+      input tile_intrerrupt_en
+      
   );
 
 endinterface

@@ -35,8 +35,12 @@ module isolde_exec_block
   logic result_ready;
   assign xif_result_if.result_ready = result_ready;
 // === tile selection
-  logic [RegAddrWidth-1:0] tile_selection;
+  isolde_hwe_cluster_pkg::isolde_reg_data_t tile_selection;
   assign tile_selection = isolde_csr_if_i.tile_selection;
+  // === interrupt enable
+  isolde_hwe_cluster_pkg::isolde_tile_csr_t tile_intr_mask;
+  assign tile_intr_mask = isolde_csr_if_i.tile_intrerrupt_en;
+
   //assign xif_issue_if.issue_req.hwe_id = tile_selection;
   /********************************************************/
   /**   tie-off unused interfaces                        **/
@@ -103,6 +107,7 @@ module isolde_exec_block
       xif_issue_if.issue_valid <= 0;
       xif_issue_if.issue_req   <= '0;
       xif_issue_if.issue_req.hwe_id <= tile_selection;
+      xif_issue_if.issue_req.interrupt_enable_mask <= tile_intr_mask;
     end else begin
       ievli_state <= ievli_next;
       case (ievli_next)

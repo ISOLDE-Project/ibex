@@ -19,7 +19,7 @@
 #include "golden.h"
 
 
-static const int TILE_ID = 0x01;
+static const int TILE_ID = 0x0;
 
 static const int y_flat_size=sizeof(golden) / sizeof(golden[0]) +1 ;
 uint32_t y_flat[y_flat_size];
