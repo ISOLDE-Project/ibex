@@ -34,7 +34,7 @@ module isolde_exec_block
   // === Result interface
   logic result_ready;
   assign xif_result_if.result_ready = result_ready;
-// === tile selection
+  // === tile selection
   isolde_hwe_cluster_pkg::isolde_reg_data_t tile_selection;
   assign tile_selection = isolde_csr_if_i.tile_selection;
   // === interrupt enable
@@ -57,6 +57,10 @@ module isolde_exec_block
   // === Memory result interface
   assign xif_mem_result_if.mem_result_valid = 0;
   assign xif_mem_result_if.mem_result = '0;
+
+
+      assign xif_issue_if.hwe_id = tile_selection;
+      assign xif_issue_if.interrupt_enable_mask = tile_intr_mask;
 
 `ifndef SYNTHESIS
   integer log_fh;
@@ -105,9 +109,8 @@ module isolde_exec_block
       ievli_state <= IDLE;
       exec_action = EXEC_NOP;
       xif_issue_if.issue_valid <= 0;
-      xif_issue_if.issue_req   <= '0;
-      xif_issue_if.issue_req.hwe_id <= tile_selection;
-      xif_issue_if.issue_req.interrupt_enable_mask <= tile_intr_mask;
+      xif_issue_if.issue_req <= '0;
+
     end else begin
       ievli_state <= ievli_next;
       case (ievli_next)
@@ -129,7 +132,7 @@ module isolde_exec_block
           cnt_max <= exec_action.cnt_max;
         end
         WAIT: begin
-          cnt <= (cnt_max)? cnt + 1 : cnt;
+          cnt <= (cnt_max) ? cnt + 1 : cnt;
           xif_issue_if.issue_valid <= 0;
         end
 
@@ -260,10 +263,13 @@ module isolde_exec_block
   endfunction
 
   function automatic isolde_exec_action_t start_redmule_gemm();
+
 `ifndef SYNTHESIS
     //  $fwrite(fh, "Simulation Time: %t\n", $time); // Print the current simulation time
     $fwrite(log_fh, " --- @t=%t    %s\n", $time, "isolde_exec_block::start_redmule_gemm");
-    $fwrite(log_fh, "  tile=%h\n", tile_selection);
+    $fwrite(log_fh, "    tile=%h\n", tile_selection);
+    $fwrite(log_fh, "    csr_mask=%h\n", isolde_csr_if_i.tile_intrerrupt_en);
+    $fwrite(log_fh, "    xif_mask=%h\n", xif_issue_if.interrupt_enable_mask);
     $fwrite(log_fh, "    instr=%h\n", isolde_exec_from_decoder.isolde_decoder_instr);
     $fwrite(log_fh, "    @rd1=%d: %h\n", x_rf_addr_i[0], x_rf_data_i[0]);
     $fwrite(log_fh, "    @rs1=%d: %h\n", x_rf_addr_i[1], x_rf_data_i[1]);
@@ -352,5 +358,12 @@ module isolde_exec_block
     end
   endfunction
 
+
+  always @(posedge clk_i) begin
+    if (xif_issue_if.issue_valid) begin
+      $strobe("@%0t issue_valid=1 hwe_id=%0h intr_mask=%0h", $time, xif_issue_if.hwe_id,
+              xif_issue_if.interrupt_enable_mask);
+    end
+  end
 
 endmodule

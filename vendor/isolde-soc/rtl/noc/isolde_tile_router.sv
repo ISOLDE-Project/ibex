@@ -53,7 +53,7 @@ module isolde_tile_router
   assign push_id_fifo = |rsp_gnt_vec;
   assign pop_id_fifo  = |rsp_valid_vec;
 
-  assign selected_idx = idx_t'(issue_if.issue_req.hwe_id);
+  assign selected_idx = idx_t'(issue_if.hwe_id);
   ;
 
 

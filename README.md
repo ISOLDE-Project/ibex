@@ -127,6 +127,11 @@ git merge tmp/fix
 git push
 git branch -d tmp/fix
 ```
+shortcut:   
+```sh
+git push origin HEAD:<name-of-remote-branch>
+```
+where *<name-of-remote-branch>* is identified as above
 # Open EDA
 ## Install tools
 for a lst of available targets:

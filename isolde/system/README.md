@@ -75,7 +75,7 @@ make -f Makefile.fpgasim.nodbg  questa-compile
 ```sh
 make -f Makefile.fpgasim.nodbg  questa-clean questa-lint
 ```
-## headless simulation
+## headless simulation(with debug info)
 ```sh
 make -f Makefile.fpgasim.nodbg  questa-run
 ```

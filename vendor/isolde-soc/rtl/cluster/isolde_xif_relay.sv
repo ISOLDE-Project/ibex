@@ -38,7 +38,7 @@ module isolde_xif_relay #(
     logic push_id_fifo, pop_id_fifo;
   idx_t req_idx, rsp_idx, rsp_idx_fifo;
 
-    assign req_idx = idx_t'(cpu_xif_issue.issue_req.hwe_id[ID_WIDTH-1:0]);
+    assign req_idx = idx_t'(cpu_xif_issue.hwe_id[ID_WIDTH-1:0]);
 
     // Push a new outstanding-transaction entry only on an actually-accepted
     // issue handshake; pop only on an actually-accepted result handshake.

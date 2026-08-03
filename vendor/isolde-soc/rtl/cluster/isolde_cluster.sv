@@ -534,7 +534,7 @@ aida_io #(
       .data_rdata_intg_i('0),
       .data_err_i       (1'b0),
 
-      .irq_software_i(|core_evt),
+      .irq_software_i(|core_evt_cpu),
       .irq_timer_i   (1'b0),
       .irq_external_i(1'b0),
       .irq_fast_i    ('0),
@@ -582,7 +582,7 @@ isolde_xif_relay #(
     .tile_evt_i(tile_evt),
     .core_evt_o(core_evt)
 );
-   assign core_evt_mask = itf_core_xif.issue_req.interrupt_enable_mask;
+   assign core_evt_mask = itf_core_xif.interrupt_enable_mask;
 
     generate
     for (genvar i = 0; i < N_REDMULE_TILES; i++) begin : gen_tile
