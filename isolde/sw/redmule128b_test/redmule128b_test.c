@@ -51,6 +51,9 @@ int main(int argc, char *argv[]) {
 
   isolde_set_intr_en(TILE_ID+1);
   printf("[SPM TCA ] interrupt_enable= 0x%08x\n\n",isolde_get_intr_en());
+  printf("[SPM TCA ] TILES counter= 0x%08x\n\n",isolde_get_tile_cnt());
+  printf("[SPM TCA ] BASE_ADDRESS= 0x%08x\n\n",isolde_get_base_addr());
+  printf("[SPM TCA ] TILES_WINDOW= 0x%08x\n\n",isolde_get_addr_wnd());
   isolde_set_tile(TILE_ID);
   
   // x_inp

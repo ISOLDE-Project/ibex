@@ -279,35 +279,35 @@ module ibex_cs_registers #(
   // CPU control bits
   cpu_ctrl_sts_part_t cpuctrlsts_part_q, cpuctrlsts_part_d;
   cpu_ctrl_sts_part_t cpuctrlsts_part_wdata_raw, cpuctrlsts_part_wdata;
-  logic        cpuctrlsts_part_we;
-  logic        cpuctrlsts_part_err;
+  logic                                            cpuctrlsts_part_we;
+  logic                                            cpuctrlsts_part_err;
 
-  logic        cpuctrlsts_ic_scr_key_valid_q;
-  logic        cpuctrlsts_ic_scr_key_err;
+  logic                                            cpuctrlsts_ic_scr_key_valid_q;
+  logic                                            cpuctrlsts_ic_scr_key_err;
 
   // CSR update logic
-  logic [31:0] csr_wdata_int;
-  logic [31:0] csr_rdata_int;
-  logic        csr_we_int;
-  logic        csr_wr;
+  logic                                     [31:0] csr_wdata_int;
+  logic                                     [31:0] csr_rdata_int;
+  logic                                            csr_we_int;
+  logic                                            csr_wr;
 
   // Access violation signals
-  logic        dbg_csr;
-  logic        illegal_csr;
-  logic        illegal_csr_priv;
-  logic        illegal_csr_dbg;
-  logic        illegal_csr_write;
+  logic                                            dbg_csr;
+  logic                                            illegal_csr;
+  logic                                            illegal_csr_priv;
+  logic                                            illegal_csr_dbg;
+  logic                                            illegal_csr_write;
 
-  logic [ 7:0] unused_boot_addr;
-  logic [ 2:0] unused_csr_addr;
+  logic                                     [ 7:0] unused_boot_addr;
+  logic                                     [ 2:0] unused_csr_addr;
 
   // ISOLDE
   // === tile selection ===
-  logic [31:0] isolde_tilesel_q;
-  logic        isolde_tilesel_en;
+  logic                                     [31:0] isolde_tilesel_q;
+  logic                                            isolde_tilesel_en;
   // === tile interrupt enable ===
-  isolde_hwe_cluster_pkg::isolde_tile_csr_t isolde_tile_intr_q;
-  logic        isolde_tile_intr_en;
+  isolde_hwe_cluster_pkg::isolde_tile_csr_t        isolde_tile_intr_q;
+  logic                                            isolde_tile_intr_en;
 
 
 
@@ -560,6 +560,10 @@ module ibex_cs_registers #(
       end
       CSR_ISOLDE_TILESEL: csr_rdata_int = isolde_tilesel_q;
       CSR_ISOLDE_TILE_INTR_EN: csr_rdata_int = isolde_tile_intr_q;
+      CSR_ISOLDE_TILE_CNT:
+      csr_rdata_int = (isolde_hwe_cluster_pkg::N_HWE_TILES) ;
+      CSR_ISOLDE_TILE_BASE_ADDR: csr_rdata_int = aida_package::SPM_NARROW_ADDR_BASE;
+      CSR_ISOLDE_TILE_ADDR_WND: csr_rdata_int = aida_package::SPM_NARROW_SIZE;
 
       default: begin
         illegal_csr = 1'b1;
@@ -624,7 +628,7 @@ module ibex_cs_registers #(
     double_fault_seen_o = 1'b0;
     // === ISOLDE ===
     isolde_tilesel_en = 1'b0;
-    isolde_tile_intr_en= 1'b0;
+    isolde_tile_intr_en = 1'b0;
 
 
     if (csr_we_int) begin
@@ -1739,6 +1743,7 @@ module ibex_cs_registers #(
       .rd_error_o()
   );
   assign isolde_csr_if_o.tile_intrerrupt_en = isolde_tile_intr_q;
+
 
 
 

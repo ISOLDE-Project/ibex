@@ -18,5 +18,6 @@ package isolde_hwe_cluster_pkg;
   // Common typedefs
   typedef logic [RegDataWidth-1:0] isolde_reg_data_t;
   typedef logic [CSR_WIDTH-1:0] isolde_tile_csr_t; //one extra global bit
+  typedef logic [ID_WIDTH-1:0] isolde_tile_cnt_t; //one extra global bit
 
 endpackage : isolde_hwe_cluster_pkg

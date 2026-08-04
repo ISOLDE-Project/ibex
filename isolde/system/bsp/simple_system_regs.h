@@ -16,8 +16,11 @@
 #define SPM_NARROW_ADDR            0x80001000
 // take it from rtl/ibex_pkg.sv
 enum{ 
-    CSR_ISOLDE_TILESEL       = 0x7C2
-    ,CSR_ISOLDE_TILE_INTR_EN = 0x7C3
+    CSR_ISOLDE_TILESEL         = 0x7C2
+    ,CSR_ISOLDE_TILE_INTR_EN   = 0x7C3
+    ,CSR_ISOLDE_TILE_CNT       = 0x7C5
+    ,CSR_ISOLDE_TILE_BASE_ADDR = 0x7C6
+    ,CSR_ISOLDE_TILE_ADDR_WND  = 0x7C7 //Tile Address Window (TAW)
  };
 
 #endif  // SIMPLE_SYSTEM_REGS_H__
