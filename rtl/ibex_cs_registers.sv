@@ -562,8 +562,8 @@ module ibex_cs_registers #(
       CSR_ISOLDE_TILE_INTR_EN: csr_rdata_int = isolde_tile_intr_q;
       CSR_ISOLDE_TILE_CNT:
       csr_rdata_int = (isolde_hwe_cluster_pkg::N_HWE_TILES) ;
-      CSR_ISOLDE_TILE_BASE_ADDR: csr_rdata_int = aida_package::SPM_NARROW_ADDR_BASE;
-      CSR_ISOLDE_TILE_ADDR_WND: csr_rdata_int = aida_package::SPM_NARROW_SIZE;
+      CSR_ISOLDE_TILE_BASE_ADDR: csr_rdata_int = isolde_hwe_cluster_pkg::SPM_NARROW_ADDR_BASE;
+      CSR_ISOLDE_TILE_ADDR_WND: csr_rdata_int = isolde_hwe_cluster_pkg::SPM_NARROW_SIZE;
 
       default: begin
         illegal_csr = 1'b1;

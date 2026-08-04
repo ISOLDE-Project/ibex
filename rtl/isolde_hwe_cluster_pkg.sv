@@ -14,6 +14,9 @@ package isolde_hwe_cluster_pkg;
   parameter int unsigned CSR_WIDTH = N_HWE_TILES +1 ;
   //parameter int unsigned RegByteWidth = RegDataWidth / 8;
 
+  // === spm narrow port start ====
+  localparam int unsigned SPM_NARROW_ADDR_BASE = 32'h8000_1000;
+  localparam int unsigned SPM_NARROW_SIZE = 32'h0000_1000;  //4kB
 
   // Common typedefs
   typedef logic [RegDataWidth-1:0] isolde_reg_data_t;
