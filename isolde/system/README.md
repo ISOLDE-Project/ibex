@@ -3,27 +3,27 @@
 ```sh
 cd isolde/system
 . ./eth.sh
-make -f Makefile.fpgasim.nodbg  golden
+make -f Makefile.cluster.nodbg  golden
 ```
 ## build test application
 
 ```sh
 cd isolde/system
 . ./eth.sh
-make -f Makefile.fpgasim.nodbg  test-clean test-build
+make -f Makefile.cluster.nodbg  test-clean test-build
 ```
 # verilator
 ```sh
 cd isolde/system
 . ./eth.sh
-make -f Makefile.fpgasim.nodbg  veri-clean verilate veri-run
+make -f Makefile.cluster.nodbg  veri-clean verilate veri-run
 ```
 
 # QUESTA
 ```sh
 cd isolde/system
 . ./eth.sh
-make -f Makefile.fpgasim.nodbg  questa-clean questa-run
+make -f Makefile.cluster.nodbg  questa-clean questa-run
 ```
 
 ## [REDMULE](https://github.com/ISOLDE-Project/redmule) hardware accelerator
@@ -69,19 +69,19 @@ make TEST=hello_test test-clean test-build
 ```
 ## compile
 ```sh
-make -f Makefile.fpgasim.nodbg  questa-compile
+make -f Makefile.cluster.nodbg  questa-compile
 ```
 ## lint
 ```sh
-make -f Makefile.fpgasim.nodbg  questa-clean questa-lint
+make -f Makefile.cluster.nodbg  questa-clean questa-lint
 ```
 ## headless simulation(with debug info)
 ```sh
-make -f Makefile.fpgasim.nodbg  questa-run
+make -f Makefile.cluster.nodbg  questa-run
 ```
 ## GUI simulation
 ```sh
-make -f Makefile.fpgasim.nodbg  questa-qui
+make -f Makefile.cluster.nodbg  questa-qui
 ```
 # QUESTA FAQ
 ```
