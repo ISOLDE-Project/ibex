@@ -749,12 +749,17 @@ module ibex_top
             .rdata_o(ic_data_rdata[way]),
             .cfg_i  (ram_cfg_i)
         );
-
-        assign icache_tag_alert  = '{default: 'b0};
-        assign icache_data_alert = '{default: 'b0};
+        /** 
+ ** slang error: cannot have multiple continuous assignments to variable 'icache_tag_alert' [-Wmultiple-cont-assigns]
+         //assign icache_tag_alert  = '{default: 'b0};
+        //assign icache_data_alert = '{default: 'b0};
+**/
       end
     end
-
+    if (!ICacheScramble) begin : gen_noscramble_alert_tieoff
+      assign icache_tag_alert  = '{default: 'b0};
+      assign icache_data_alert = '{default: 'b0};
+    end
   end else begin : gen_norams
 
     prim_ram_1p_pkg::ram_1p_cfg_t unused_ram_cfg;

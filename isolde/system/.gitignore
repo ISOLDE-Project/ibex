@@ -18,3 +18,4 @@ vivado_synth.tcl
 *.wlf
 *.vstf
 *.do
+*.slang

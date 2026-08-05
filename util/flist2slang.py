@@ -1,0 +1,190 @@
+#!/usr/bin/env python3
+"""
+verilator_flist_to_slang.py
+
+Convert a Verilator-style command file (.f / flist) into a command file
+that slang (https://github.com/MikePopoloski/slang) can consume via -f.
+
+What gets translated:
+  +incdir+<path>            -> kept as-is (slang accepts +incdir+ natively)
+  -DNAME=VALUE / -DNAME     -> kept, normalized to "-D NAME=VALUE" (slang accepts
+                                both the concatenated and spaced forms; the
+                                spaced form is the one shown in slang's own docs)
+  -GNAME=VALUE               -> kept, normalized to "-G NAME=VALUE" (slang has a
+                                native -G top-level parameter override, same
+                                semantics as Verilator's, and unlike Verilator's
+                                it can also take package-qualified enum values)
+  *.sv / *.svh / *.v / *.vh  -> kept as source files
+  everything else            -> dropped, and reported on stderr:
+    -CFLAGS <arg>             Verilator-only: forwards <arg> to the C++
+                               compiler for the DPI/testbench side. Meaningless
+                               to slang, which never invokes a C++ compiler.
+    *.vlt                     Verilator lint-waiver files, written in
+                               Verilator's own pragma syntax. slang has its own
+                               waiver mechanism (TOML, see --waiver-file) that
+                               these can't be mechanically translated into.
+    *.c / *.cc / *.cpp / *.h / *.hpp
+                               C/C++ sources -- not HDL, nothing for an SV
+                               compiler to do with them.
+
+Anything that doesn't match a known pattern is left out of the output but
+printed under "UNRECOGNIZED" so you can decide by hand whether it needs a
+slang equivalent -- it is never silently discarded without being reported.
+
+Usage:
+    python3 verilator_flist_to_slang.py INPUT.f -o OUTPUT.f
+    python3 verilator_flist_to_slang.py INPUT.f            # prints to stdout
+
+Notes:
+  - slang treats separate source files as independent compilation units by
+    default, so (unlike Verilator) file order generally does not matter.
+    This script still preserves the original relative order of source files
+    and of +incdir+ entries, in case you rely on include-path search order
+    or later pass --single-unit.
+  - Tokenization uses shlex (POSIX shell rules: quotes group text, backslash
+    escapes). That matches slang's own command-file rules closely enough for
+    typical flists, but isn't a byte-for-byte reimplementation of slang's
+    grammar (e.g. slang's $VAR/$(VAR)/${VAR} env-var expansion is untouched
+    here -- it's left in the output text as-is, for slang itself to expand).
+"""
+
+import argparse
+import shlex
+import sys
+from pathlib import Path
+
+DROP_EXTENSIONS = {".vlt", ".c", ".cc", ".cpp", ".cxx", ".h", ".hpp"}
+
+
+def convert(tokens):
+    incdirs, defines, params, sources = [], [], [], []
+    dropped, unrecognized = [], []
+    seen_incdirs, seen_sources = set(), set()
+
+    i, n = 0, len(tokens)
+    while i < n:
+        tok = tokens[i]
+
+        if tok.startswith("+incdir+"):
+            path = tok[len("+incdir+"):]
+            if path not in seen_incdirs:
+                seen_incdirs.add(path)
+                incdirs.append(path)
+            i += 1
+
+        elif tok == "-CFLAGS":
+            arg = tokens[i + 1] if i + 1 < n else ""
+            dropped.append(f"-CFLAGS {arg}".strip())
+            i += 2 if i + 1 < n else 1
+
+        elif tok.startswith("+define+"):
+            define = tok[len("+define+"):]
+            if define:
+                defines.append(define)
+            i += 1
+
+        elif tok.startswith("-G"):
+            rest = tok[2:]
+            if not rest and i + 1 < n:  # spaced form: -G NAME=VALUE
+                rest = tokens[i + 1]
+                i += 1
+            params.append(rest)
+            i += 1
+
+        elif tok.startswith("-D"):
+            rest = tok[2:]
+            if not rest and i + 1 < n:  # spaced form: -D NAME=VALUE
+                rest = tokens[i + 1]
+                i += 1
+            defines.append(rest)
+            i += 1
+
+        elif tok.startswith("-") or tok.startswith("+"):
+            # Some other flag this script doesn't know about. Don't guess --
+            # report it so a human decides whether it needs a slang equivalent.
+            unrecognized.append(tok)
+            i += 1
+
+        else:
+            # Bare positional argument -- treat as a file path.
+            ext = Path(tok).suffix.lower()
+            if ext in DROP_EXTENSIONS:
+                dropped.append(tok)
+            else:
+                if tok not in seen_sources:
+                    seen_sources.add(tok)
+                    sources.append(tok)
+            i += 1
+
+    return incdirs, defines, params, sources, dropped, unrecognized
+
+
+def format_output(incdirs, defines, params, sources):
+    lines = [
+        "# Auto-generated by verilator_flist_to_slang.py",
+        "# Usage: slang -f <this file>",
+        "",
+    ]
+    if incdirs:
+        lines.append("# Include directories")
+        lines += [f"+incdir+{d}" for d in incdirs]
+        lines.append("")
+    if defines:
+        lines.append("# Preprocessor defines")
+        lines += [f"-D {d}" for d in defines]
+        lines.append("")
+    if params:
+        lines.append("# Top-level parameter overrides")
+        lines += [f"-G {p}" for p in params]
+        lines.append("")
+    if sources:
+        lines.append("# Source files")
+        lines += sources
+        lines.append("")
+    return "\n".join(lines)
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Convert a Verilator-style .f/flist file into a slang -f command file."
+    )
+    ap.add_argument("input", help="Path to the Verilator flist to convert")
+    ap.add_argument("-o", "--output", help="Path to write the slang flist to (default: stdout)")
+    args = ap.parse_args()
+
+    text = Path(args.input).read_text()
+    tokens = shlex.split(text, comments=True)
+
+    incdirs, defines, params, sources, dropped, unrecognized = convert(tokens)
+    output = format_output(incdirs, defines, params, sources)
+
+    if args.output:
+        Path(args.output).write_text(output + "\n")
+        print(f"Wrote {args.output}", file=sys.stderr)
+    else:
+        print(output)
+
+    print(
+        f"\n{len(incdirs)} incdirs, {len(defines)} defines, "
+        f"{len(params)} param overrides, {len(sources)} source files kept.",
+        file=sys.stderr,
+    )
+    if dropped:
+        print(
+            f"{len(dropped)} Verilator-only entries dropped "
+            f"(-CFLAGS / .vlt / C source) -- see script docstring for why:",
+            file=sys.stderr,
+        )
+        for d in dropped:
+            print(f"  - {d}", file=sys.stderr)
+    if unrecognized:
+        print(
+            f"\n{len(unrecognized)} UNRECOGNIZED token(s) -- excluded from output, review by hand:",
+            file=sys.stderr,
+        )
+        for u in unrecognized:
+            print(f"  - {u}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

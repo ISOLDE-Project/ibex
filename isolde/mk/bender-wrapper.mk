@@ -2,8 +2,8 @@
 ## clean .bender directory
 bender-clean:
 	@echo "Cleaning Bender project..."
-	$(BENDER) clean
-	rm -rf  Bender.lock
+	$(BENDER) clean --all
+# 	rm -rf  Bender.lock
 	@echo "Bender project cleaned."
 
 ## update the rtl code base
@@ -12,5 +12,5 @@ bender-update:	bender-clean
 	$(BENDER) update
 
 ## bender packages hierarchy
-bender-packages:
+bender-pkg:
 	$(BENDER) packages
