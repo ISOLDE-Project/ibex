@@ -18,7 +18,7 @@ OSS_CAD_SUITE_INSTALL_DIR ?= ${INSTALL_DIR}/oss-cad-suite
 OPENROAD_INSTALL_DIR      ?= ${INSTALL_DIR}/openroad
 OPENROAD_VERSION          ?= a008522d88b669ac4c985609533cf5a3d2649222
 VERIL_INSTALL_DIR         ?= ${INSTALL_DIR}/verilator
-VERIL_VERSION             ?= v5.048
+VERIL_VERSION             ?= v5.050
 BENDER_INSTALL_DIR        ?= ${INSTALL_DIR}/bender
 
 all: dev-dep verilator riscv32-gcc riscv32-llvm  openocd
@@ -29,8 +29,20 @@ ${TOOLS_DIR}:
 ${INSTALL_DIR}:
 	mkdir -p $@
 
+.PHONY: check_python3
+check_python3:
+	@command -v python3 >/dev/null 2>&1 || { \
+		echo "ERROR: python3 >= 3.8 is required, but python3 was not found."; \
+		exit 1; \
+	}
+	@python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,8) else 1)' || { \
+		echo "ERROR: python3 >= 3.8 is required."; \
+		echo "Found: $$(python3 --version)"; \
+		exit 1; \
+	}
+
 ## Install Verilator
-verilator: ${TOOLS_DIR} ${INSTALL_DIR} ${VERIL_INSTALL_DIR}/bin/verilator
+verilator:  check_python3 ${TOOLS_DIR} ${INSTALL_DIR} ${VERIL_INSTALL_DIR}/bin/verilator
 
 ${VERIL_INSTALL_DIR}/bin/verilator:
 	rm -fr $(TOOLS_DIR)/verilator
