@@ -58,6 +58,7 @@ manifest.flist: Bender.yml
 VERILATE_LOG      := $(VERI_LOG_DIR)/verilate.log
 VERILATE_WARNINGS := $(VERI_LOG_DIR)/verilate_warnings.log
 
+## build the simulation
 verilate:  ibex_sim.flist manifest.flist
 	mkdir -p  $(VERI_LOG_DIR)
 	cat manifest.flist	>  manifest.verilator.flist
@@ -84,7 +85,7 @@ veri-lint:  ibex_sim.flist manifest.flist
 											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
 									   VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS)    \
 									   $@      
-
+## run the verilator simulation
 .PHONY: veri-run
 veri-run: $(BIN_DIR)/verilator_executable 
 	@echo "$(BANNER)"
@@ -149,24 +150,5 @@ veri-run-u-test: $(BIN_DIR)/verilator_executable
 	mv verilator_tb.vcd $(VERI_LOG_DIR)/$(VLT_TOP_MODULE).vcd
 	
 
-
-.PHONY: help
-help:
-	@echo "verilator related available targets:"
-	@echo verilate                                 -- builds verilator simulation, available here: $(BIN_DIR)/verilator_executable
-	@echo veri-run                                 -- runs the test
-	@echo veri-clean                               -- gets a clean slate for simulation
-	@echo verilate VLT_TOP_MODULE=tb_top_verilator
 	
 
-.PHONY: bender-clean
-bender-clean:
-	@echo "Cleaning Bender project..."
-	rm -rf .bender
-	rm -rf  Bender.lock
-	@echo "Bender project cleaned."
-
-.PHONY: rtl-update
-rtl-update:	bender-clean
-	git submodule update --init
-	$(BENDER) update

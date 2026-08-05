@@ -42,17 +42,8 @@ check_python3:
 	}
 
 ## Install Verilator
-verilator:  check_python3 ${TOOLS_DIR} ${INSTALL_DIR} ${VERIL_INSTALL_DIR}/bin/verilator
-
-${VERIL_INSTALL_DIR}/bin/verilator:
-	rm -fr $(TOOLS_DIR)/verilator
-	cd $(TOOLS_DIR) && git clone https://github.com/verilator/verilator.git
-	# Checkout the right version
-	cd $(TOOLS_DIR)/verilator  && git reset --hard && git fetch && git checkout ${VERIL_VERSION}
-	# Compile verilator
-	cd $(TOOLS_DIR)/verilator  && git clean -xfdf && autoconf && \
-	./configure --prefix=$(VERIL_INSTALL_DIR) CXX=$(VLT_CXX) CC=$(VLT_CC) && make -j$(num_cores_half)  && make install
-	touch ${VERIL_INSTALL_DIR}/bin/verilator
+verilator:  
+	@echo "OBSOLETE, use make -f Makefile.eda"
 
 
 
@@ -111,10 +102,8 @@ $(HOME)/eth/$(BENDER_ARCH_FILE):
 .PHONY: bender
 ## Install Bender
 bender: 
-	@echo "Installing Bender..."
-	mkdir -p $(BENDER_INSTALL_DIR)
-	cd $(BENDER_INSTALL_DIR) &&  \
-	curl --proto '=https' --tlsv1.2 https://pulp-platform.github.io/bender/init -sSf | sh
+	@echo "OBSOLETE, use make -f Makefile.eda"
+
 	
 
 $(TOOLS_DIR)/xpack-openocd.tar.gz: ${TOOLS_DIR} vendor/xpack-openocd.url

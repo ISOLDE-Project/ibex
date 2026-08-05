@@ -32,10 +32,11 @@ export CXX=g++-11
 source $MINICONDA
 conda activate $MINICONDA_ENV
 
+export BENDER=$ROOT_DIR/eda/bender/bin/bender
 export    YOSYS=$ROOT_DIR/install/oss-cad-suite/bin/yosys
 export OPENROAD=$ROOT_DIR/install/openroad/usr/local/bin/openroad
 
-export PATH=$ROOT_DIR/install/bender:~/verible/bin:$ROOT_DIR/install/verilator/bin:$ROOT_DIR/install/openocd/bin:$GCC_TOOLCHAIN:$PATH
+export PATH=~/verible/bin:$ROOT_DIR/eda/verilator/bin:$ROOT_DIR/install/openocd/bin:$GCC_TOOLCHAIN:$PATH
 source ~/vivado.sh
 
 echo  `verilator --version`

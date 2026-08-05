@@ -49,3 +49,5 @@ doc/06_misc/gant.ipynb
 vivado.jou
 *.zip
 transcript
+eda/
+eda

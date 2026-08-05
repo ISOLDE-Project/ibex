@@ -7,7 +7,8 @@ package:
     - daro <daro@tsr>
 
 dependencies:
-  axi:                { git: "https://github.com/pulp-platform/axi.git"               , version: 0.39.6    }
+  redmule:            { path: ../../vendor/redmule }
+ # axi:                { git: "https://github.com/pulp-platform/axi.git"               , version: 0.39.6    }
  # udma_core:          {git: "https://github.com/pulp-platform/udma_core.git"          , version: 2.0.0     }
   
 export_include_dirs:
@@ -20,7 +21,7 @@ sources:
     - rtl/aida_pkg.sv
     - rtl/io/aida_io_pkg.sv
     - rtl/isolde_tcdm_if.sv
-    - rtl/isolde_tcdm_to_axi.sv
+    # - rtl/isolde_tcdm_to_axi.sv
     - rtl/isolde_addr_shim.sv
     - rtl/isolde_demux_tcdm.sv
     - rtl/isolde_mux_tcdm.sv   
@@ -54,7 +55,7 @@ sources:
         - tb/monitor/perfCounters.sv
         - tb/monitor/isolde_hci_monitor.sv
         - tb/tb_sram_mem.sv
-        - tb/tb_axi_mem.sv
+        # - tb/tb_axi_mem.sv
     - target: u_test
       files:
         - tb/tb_tcdm_mem.sv

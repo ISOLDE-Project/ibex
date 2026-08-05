@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 
   printf("[SPM TCA ]interrupt_enable= 0x%08x\n\n",isolde_get_intr_en());
 
-  //isolde_set_intr_en(0x0);
+  isolde_set_intr_en(TILE_ID+1);
   printf("[SPM TCA ] interrupt_enable= 0x%08x\n\n",isolde_get_intr_en());
   printf("[SPM TCA ] TILES counter= 0x%08x\n\n",isolde_get_tile_cnt());
   printf("[SPM TCA ] BASE_ADDRESS= 0x%08x\n\n",isolde_get_base_addr());

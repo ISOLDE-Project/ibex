@@ -1,0 +1,27 @@
+prj_path := $(shell git rev-parse --show-toplevel)
+TOOLS_DIR      ?= $(prj_path)/tools
+INSTALL_PREFIX ?= eda
+INSTALL_DIR    ?= $(prj_path)/$(INSTALL_PREFIX)
+
+EDA_URL     := https://github.com/ISOLDE-Project/task5.2/releases/download/v0.01/eda-ol-8.10-2026-08-05.tar.gz
+EDA_ARCHIVE := eda.tar.gz
+EDA_ARCHIVE_PATH := $(TOOLS_DIR)/$(EDA_ARCHIVE)
+
+.PHONY: all eda clean
+
+all: eda
+
+$(TOOLS_DIR):
+	mkdir -p "$@"
+
+$(INSTALL_DIR):
+	mkdir -p "$@"
+
+$(EDA_ARCHIVE_PATH): $(TOOLS_DIR)
+	curl -L --fail --show-error --output "$@" "$(EDA_URL)"
+
+eda: $(INSTALL_DIR) $(EDA_ARCHIVE_PATH)
+	tar xzf "$(EDA_ARCHIVE_PATH)" -C "$(INSTALL_DIR)"
+
+clean:
+	rm -rf "$(INSTALL_DIR)" "$(EDA_ARCHIVE_PATH)"
