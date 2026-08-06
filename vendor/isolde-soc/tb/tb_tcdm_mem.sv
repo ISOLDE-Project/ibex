@@ -60,7 +60,7 @@ module tb_tcdm_mem #(
   end
 
   // Always block to process read and write operations
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) begin
       tcdm_slave_i.rsp.data  <= '0;
       tcdm_slave_i.rsp.valid <= '0;

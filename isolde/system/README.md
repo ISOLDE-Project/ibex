@@ -178,3 +178,13 @@ kill -9 27459
  ```sh
   make -f Makefile.wrapper  veri-clean verilate veri-run
  ```
+
+ # slang
+ 
+
+| Phase | Target | Purpose | Log | Success criterion |
+|---|---|---|---|---|
+| 1 | `slang-lint` | Broad `--Weverything` sweep; must elaborate cleanly enough to emit `_all_deps.f` | `*_lint_full.log` | "good enough to generate deps" |
+| 2 | `slang` | Curated re-run on the trimmed dep set | `*_lint.log` | "zero warnings" |
+
+So the last column just says how good each phase has to be: phase 1 only needs to elaborate far enough to produce the dependency list; phase 2 must be fully clean.
