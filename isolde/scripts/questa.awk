@@ -16,8 +16,7 @@ function ts() {
 }
 
 # ---------------------------------------------------------------------------
-# slang diagnostics:  path:line:col: error: msg [-Wflag]
-#                     path:line:col: warning: msg [-Wflag]
+# slang diagnostics:  path:line:col: error|warning: msg [-Wflag]
 # ---------------------------------------------------------------------------
 /^[^ ].*:[0-9]+:[0-9]+:[[:space:]]*error:/ {
     n_err++
@@ -33,18 +32,7 @@ function ts() {
 }
 
 # ---------------------------------------------------------------------------
-# slang summary line:  "Build failed: N errors, M warnings"
-#                      "Build succeeded: ..."
-# ---------------------------------------------------------------------------
-/^Build (failed|succeeded)/ {
-    print line >> warnings_file
-    if ($0 ~ /failed/) print RED line RESET
-    else               print YELLOW line RESET
-    next
-}
-
-# ---------------------------------------------------------------------------
-# Questa-style diagnostics (kept for compatibility)
+# Questa-style diagnostics
 # ---------------------------------------------------------------------------
 /^\*\*[[:space:]]Warning:/ {
     n_warn++
@@ -60,7 +48,7 @@ function ts() {
 }
 
 # ---------------------------------------------------------------------------
-# Verilator-style diagnostics (kept for compatibility)
+# Verilator-style diagnostics
 # ---------------------------------------------------------------------------
 /^%Error/ {
     n_err++
@@ -76,6 +64,15 @@ function ts() {
 }
 
 # ---------------------------------------------------------------------------
+# slang summary line: color to stdout only, do NOT write to warnings_file
+# ---------------------------------------------------------------------------
+/^Build (failed|succeeded)/ {
+    if ($0 ~ /failed/) print RED line RESET
+    else               print YELLOW line RESET
+    next
+}
+
+# ---------------------------------------------------------------------------
 # Everything else: pass through unchanged
 # ---------------------------------------------------------------------------
 {
@@ -83,8 +80,8 @@ function ts() {
 }
 
 END {
+    # Summary to stdout only (never to warnings_file, so a clean run leaves
+    # warnings_file empty for Makefile gating).
     printf("%s==== summary: %d error(s), %d warning(s) ====%s\n",
            (n_err ? RED : YELLOW), n_err, n_warn, RESET)
-    printf("[%s] ==== summary: %d error(s), %d warning(s) ====\n",
-           strftime("%Y-%m-%d %H:%M %Z"), n_err, n_warn) >> warnings_file
 }
