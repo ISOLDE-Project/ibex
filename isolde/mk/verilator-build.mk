@@ -59,14 +59,19 @@ VERILATE_LOG      := $(VERI_LOG_DIR)/verilate.log
 VERILATE_WARNINGS := $(VERI_LOG_DIR)/verilate_warnings.log
 
 ## build the simulation
-verilate:  ibex_sim.flist manifest.flist
+# verilate:  ibex_sim.flist manifest.flist
+verilate:  $(VLT_TOP_MODULE)_all_deps.f
 	mkdir -p  $(VERI_LOG_DIR)
-	cat manifest.flist	>  manifest.verilator.flist
+	cat ibex_sim.slang_veri_opts manifest.slang_veri_opts> ops.verilator.flist
+	python $(ROOT_DIR)/util/transform_paths.py  \
+										       $(mkfile_path)  \
+	                                           $(VLT_TOP_MODULE)_all_deps.f \
+											   manifest.verilator.flist
 	python $(ROOT_DIR)/util/verilator_manifest.py  Verilator.yml \
 											    -t  $(verilator_target)    \
 											    -o  manifest.verilator.flist	
 	mkdir -p $(BIN_DIR)
-	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist     \
+	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ops.verilator.flist     \
 											     PE_MANIFEST=${CURDIR}/manifest.verilator.flist    \
 	                                             SIM_RESULTS=$(BIN_DIR)                  \
 												   RUN_INDEX=$(IMEM_LATENCY)           \

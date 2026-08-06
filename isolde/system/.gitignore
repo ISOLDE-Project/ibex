@@ -20,4 +20,5 @@ vivado_synth.tcl
 *.do
 *.slang
 *_all_deps.f
-*.slang_opts
+*.slang*
+

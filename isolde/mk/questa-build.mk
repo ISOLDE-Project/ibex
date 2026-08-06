@@ -79,22 +79,26 @@ questa-clean:
 # ---------------------------------------------------------------------------
 
 
-ibex_questa.flist: ibex_sim.flist
+ibex_questa.flist:  $(VLT_TOP_MODULE)_all_deps.f
+	cat ibex_sim.slang_veri_opts manifest.slang_veri_opts> ops.verilator.flist
 	python $(ROOT_DIR)/util/flist2questa.py \
-	        ibex_sim.flist \
+	        ops.verilator.flist \
 	        $@ 
 
 
 
-manifest_questa.flist: manifest.flist
-	cat manifest.flist	 > $@_tmp
+manifest_questa.flist:  $(VLT_TOP_MODULE)_all_deps.f
+	python $(ROOT_DIR)/util/transform_paths.py  \
+											$(mkfile_path)  \
+											$(VLT_TOP_MODULE)_all_deps.f \
+											$@
 	python $(ROOT_DIR)/util/verilator_manifest.py Verilator.yml \
 	        -t questa \
-	        -o $@_tmp
-	python $(ROOT_DIR)/util/flist2questa.py \
+	        -o $@
+# 	python $(ROOT_DIR)/util/flist2questa.py \
 	        $@_tmp \
 	        $@ 
-	rm -f $@_tmp
+# 	rm -f $@_tmp
 
 # ---------------------------------------------------------------------------
 # Analyze + elaborate all RTL sources into the work library

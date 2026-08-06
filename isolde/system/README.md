@@ -188,3 +188,59 @@ kill -9 27459
 | 2 | `slang` | Curated re-run on the trimmed dep set | `*_lint.log` | "zero warnings" |
 
 So the last column just says how good each phase has to be: phase 1 only needs to elaborate far enough to produce the dependency list; phase 2 must be fully clean.
+
+Source input:
+```
+Bender.yml    ──▶ manifest.flist   ─┐
+fusesoc(ibex) ──▶ ibex_sim.flist   ─┤─▶ flist2slang.py ─▶ *.slang / *.slang_opts ─▶ slang ─▶ aida_tb_all_deps.f
+
+```
+###############
+
+
+## Key syntax differences
+
+| Thing | slang (`*_opts`) | Verilator | Questa (vlog) |
+|---|---|---|---|
+| Include dir | `+incdir+path` | `+incdir+path` ✅ same | `+incdir+path` ✅ same |
+| Define | `-D NAME=VAL` | `+define+NAME=VAL` or `-DNAME=VAL` | `+define+NAME=VAL` |
+| Param override | `-G NAME=VAL` | `-G NAME=VAL` (top only) | `-gNAME=VAL` (vsim/vopt) |
+| Source file | bare path | bare path ✅ | bare path ✅ |
+| `-f` command file | `-f file` | `-f file` ✅ | `-f file` ✅ |
+
+Good news: `+incdir+` and bare source paths are **identical** across all three, so `aida_tb_all_deps.f` is directly reusable. Only the **defines** (`-D` → `+define+`) and **params** need translating.
+
+## Recommendation: generate tool-specific option files, reuse the source list
+
+Since you already own `flist2slang.py`, the cleanest path is a small sibling converter (or an added mode) that emits the option file in Verilator/Questa syntax. But the source list (`aida_tb_all_deps.f`) needs **no translation** — feed it as-is.
+
+### Verilator
+```make
+verilator_build: aida_tb_all_deps.f ibex_sim.vlt_opts manifest.vlt_opts
+	verilator --binary --top-module aida_tb \
+		-f ibex_sim.vlt_opts \
+		-f manifest.vlt_opts \
+		-f aida_tb_all_deps.f
+```
+Where `*.vlt_opts` = the `*_opts` files with `-D NAME=VAL` rewritten to `+define+NAME=VAL`. `+incdir+` lines copy verbatim.
+
+⚠️ Verilator caveats:
+- Verilator **is order-sensitive** for packages — `aida_tb_all_deps.f` came from `--depfile-sort` (topological), which helps, but verify package files (`ibex_pkg`, `isolde_tcdm_pkg`) come first.
+- Include *fragments* (`.svh`) were excluded by `--Mmodule` — good, Verilator wants them via `+incdir+` too.
+- Verilator needs C++ testbench/harness for `aida_tb` unless you use `--binary`.
+
+### Questa (vlog + vopt/vsim)
+```make
+questa_build: aida_tb_all_deps.f ibex_sim.qsta_opts manifest.qsta_opts
+	vlib work
+	vlog -sv \
+		-f ibex_sim.qsta_opts \
+		-f manifest.qsta_opts \
+		-f aida_tb_all_deps.f
+	vopt aida_tb -o aida_tb_opt
+	vsim -c aida_tb_opt -do "run -all; quit"
+```
+Where `*.qsta_opts` = `+incdir+` verbatim + `-D` rewritten to `+define+`. Param overrides go to `vopt`/`vsim` as `-g`, not into `vlog`.
+
+
+###############

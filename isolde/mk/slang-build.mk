@@ -47,11 +47,13 @@ SLANG_BASE := $(SLANG) --top $(SLANG_TOP_MODULE) --timescale 1ns/1ps
 
 # ---------------------------------------------------------------------------
 slang-clean:
-	rm -f *.slang *.slang_opts $(SLANG_TOP_MODULE)_all_deps.f
+	rm -f *.slang *.slang* $(SLANG_TOP_MODULE)_all_deps.f
 
 # ---------------------------------------------------------------------------
 %.slang: %.flist
-	python $(ROOT_DIR)/util/flist2slang.py $< -o $@ -ops $@_opts
+	python $(ROOT_DIR)/util/flist2slang.py $< -o $@ \
+										-ops $@_opts \
+										-veri $@_veri_opts 
 
 # ---------------------------------------------------------------------------
 # Phase 1: Dependency extraction (trimmed, sorted; --Mmodule excludes .svh/.vh).
