@@ -19,7 +19,7 @@
 #include "golden.h"
 
 
-static const int TILE_ID = 0x0;
+static const int TILE_ID = 0x1;
 
 static const int y_flat_size=sizeof(golden) / sizeof(golden[0]) +1 ;
 uint32_t y_flat[y_flat_size];
@@ -81,7 +81,8 @@ int main(int argc, char *argv[]) {
   printf("[SPM TCA ] TILE_ID= 0x%08x\n\n",isolde_get_tile());
   printf("[SPM TCA ] x_spm_addr= 0x%08x\n, w_spm_addr= 0x%08x\n, y_spm_addr= 0x%08x\n", x_spm_addr, w_spm_addr,
          y_spm_addr);
-
+  printf("[SPM TCA ] TILE_STATUS= 0x%08x\n\n",isolde_get_tile_status());
+  printf("[SPM TCA ] TILE_IP= 0x%08x\n\n",isolde_get_tile_ip());
   printf("[SPM TCA ] Starting test. Y = (X * W) + Y\n");
   printf("[SPM TCA ] fp_fmt: FP16\n");
   printf("[SPM TCA ] M     : 12\n");
@@ -93,10 +94,18 @@ int main(int argc, char *argv[]) {
   asm volatile("addi t2, %0, 0" ::"r"(y_spm_addr));
   asm volatile("redmule.gemm t0,t1,t2,0x10,0xc,0x10");
 
-  
+  #if 0
     // Wait for end of computation
   asm volatile("wfi" ::: "memory");
-  
+  #else
+  int cnt=0;
+  while(isolde_get_tile_status()) {++cnt;}
+  printf("[SPM TCA ] cnt= 0x%08x\n\n",cnt);
+  #endif
+  printf("[SPM TCA ] TILE_IP= 0x%08x\n\n",isolde_get_tile_ip());
+  isolde_clear_tile_ip(-1);
+  printf("[SPM TCA ] TILE_IP= 0x%08x\n\n",isolde_get_tile_ip());
+
   
   elems = sizeof(y_flat) / sizeof(y_flat[0]);
   spm_read(y_flat, y_spm_addr, elems);

@@ -61,6 +61,9 @@ module isolde_exec_block
 
       assign xif_issue_if.hwe_id = tile_selection;
       assign xif_issue_if.interrupt_enable_mask = tile_intr_mask;
+//
+     assign isolde_csr_if_i.cluster_status = xif_issue_if.cluster_status;
+
 
 `ifndef SYNTHESIS
   integer log_fh;

@@ -31,6 +31,7 @@ module isolde_redmule_top
     input  logic                    fetch_enable_i,
     // evnets
     output logic [N_CORES-1:0][1:0] evt_o,
+    output logic busy_o,
 
     hci_core_intf.master             m_hci_core,
 `ifdef TARGET_REDMULE_COMPLEX
@@ -46,7 +47,7 @@ module isolde_redmule_top
   localparam int unsigned SysDataWidth = 32;
   localparam int unsigned SysInstWidth = 32;
 
-  logic busy;
+  // logic busy;
   logic s_clk, s_clk_en;
 
 `ifdef TARGET_REDMULE_HWPE
@@ -94,7 +95,7 @@ module isolde_redmule_top
       .rst_ni     (rst_ni),
       .test_mode_i(test_mode_i),
       .evt_o      (evt_o),
-      .busy_o     (busy),
+      .busy_o     (busy_o),
       .tcdm       (m_hci_core),
       .xif_issue_if_i,
       .xif_result_if_o,

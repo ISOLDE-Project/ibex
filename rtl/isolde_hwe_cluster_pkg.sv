@@ -22,5 +22,11 @@ package isolde_hwe_cluster_pkg;
   typedef logic [RegDataWidth-1:0] isolde_reg_data_t;
   typedef logic [CSR_WIDTH-1:0] isolde_tile_csr_t; //one extra global bit
   typedef logic [ID_WIDTH-1:0] isolde_tile_cnt_t; //one extra global bit
+  typedef struct packed {
+        isolde_tile_csr_t  ip;  // interrupt pending register 
+        isolde_tile_csr_t  status;  // interrupt enable register   
+        logic ip_wr_en;
+        logic status_wr_en;
+    }cluster_status_t;
 
 endpackage : isolde_hwe_cluster_pkg

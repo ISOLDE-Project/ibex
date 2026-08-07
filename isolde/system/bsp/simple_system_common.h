@@ -198,6 +198,33 @@ static inline unsigned isolde_get_addr_wnd(void)
     return tile;
 }
 
+static inline unsigned isolde_get_tile_ip(void)
+{
+    unsigned tile;
+    asm volatile ("csrr %0, %1"
+                  : "=r"(tile)
+                  : "i"(CSR_ISOLDE_TILE_IP)
+                  : "memory");
+    return tile;
+}
+
+static inline void isolde_clear_tile_ip(unsigned tile)
+{
+    asm volatile ("csrw %0, %1"
+                  :
+                  : "i"(CSR_ISOLDE_TILE_IP), "r"(tile)
+                  : "memory");
+}
+
+static inline unsigned isolde_get_tile_status(void)
+{
+    unsigned tile;
+    asm volatile ("csrr %0, %1"
+                  : "=r"(tile)
+                  : "i"(CSR_ISOLDE_TILE_STATUS)
+                  : "memory");
+    return tile;
+}
 
 // Define START_TIMING and END_TIMING macros
 #define START_TIMING(value) \

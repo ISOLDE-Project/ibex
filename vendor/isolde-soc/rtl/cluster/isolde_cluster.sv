@@ -52,6 +52,7 @@ module isolde_cluster
   logic [rv_dm_pkg::NrHarts-1:0]      debug_req;
   logic                               core_sleep;
   logic [                NC-1:0][1:0] tile_evt[N_REDMULE_TILES-1:0];
+  logic [N_REDMULE_TILES-1:0] tile_busy;
   logic [                N_REDMULE_TILES-1:0] core_evt;
 
   isolde_hwe_cluster_pkg::isolde_tile_csr_t  core_evt_mask;
@@ -583,6 +584,14 @@ isolde_xif_relay #(
     .core_evt_o(core_evt)
 );
    assign core_evt_mask = itf_core_xif.interrupt_enable_mask;
+   assign itf_core_xif.cluster_status.status ={1'b0, tile_busy};
+   assign itf_core_xif.cluster_status.ip ={1'b0,core_evt};
+   assign itf_core_xif.cluster_status.ip_wr_en =1'b1;
+   assign itf_core_xif.cluster_status.status_wr_en =1'b1;
+
+
+//
+
 
     generate
     for (genvar i = 0; i < N_REDMULE_TILES; i++) begin : gen_tile
@@ -594,12 +603,14 @@ isolde_xif_relay #(
       .rst_ni        (rst_ni),
       .fetch_enable_i(fetch_enable_i),
       .evt_o         (tile_evt[i]),
+      .busy_o(tile_busy[i]),
       .tcdm_spm_dma    (tcdm_spm_hwe[i]),
       .xif_issue_if_i     (itf_hwe_xif[i].coproc_issue),
       .xif_result_if_o    (itf_hwe_xif[i].coproc_result),
       .xif_compressed_if_i(itf_hwe_xif[i].coproc_compressed),
       .xif_mem_if_o       (itf_hwe_xif[i].coproc_mem)
   );
+
     end
   endgenerate
 

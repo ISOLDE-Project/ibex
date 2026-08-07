@@ -20,7 +20,9 @@ enum{
     ,CSR_ISOLDE_TILE_INTR_EN   = 0x7C3
     ,CSR_ISOLDE_TILE_CNT       = 0x7C5
     ,CSR_ISOLDE_TILE_BASE_ADDR = 0x7C6
-    ,CSR_ISOLDE_TILE_ADDR_WND  = 0x7C7 //Tile Address Window (TAW)
+    ,CSR_ISOLDE_TILE_ADDR_WND  = 0x7C7   //Tile Address Window (TAW)
+     ,CSR_ISOLDE_TILE_STATUS   = 0x7C8   //Tile status
+    ,CSR_ISOLDE_TILE_IP        = 0x7C9   //interrupt pending
  };
 
 #endif  // SIMPLE_SYSTEM_REGS_H__

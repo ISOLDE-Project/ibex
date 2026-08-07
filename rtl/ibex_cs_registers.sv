@@ -305,11 +305,20 @@ module ibex_cs_registers #(
   // === tile selection ===
   logic                                     [31:0] isolde_tilesel_q;
   logic                                            isolde_tilesel_en;
+  // === CSR_ISOLDE_TILE_STATUS
+isolde_hwe_cluster_pkg::isolde_tile_csr_t tile_status;
+isolde_hwe_cluster_pkg::isolde_tile_csr_t tile_status_q;
+
   // === tile interrupt enable ===
   isolde_hwe_cluster_pkg::isolde_tile_csr_t        isolde_tile_intr_q;
   logic                                            isolde_tile_intr_en;
 
-
+// === CSR_ISOLDE_TILE_IP
+isolde_hwe_cluster_pkg::isolde_tile_csr_t tile_ip;
+isolde_hwe_cluster_pkg::isolde_tile_csr_t tile_ip_d,tile_ip_q;
+logic tile_ip_hw_wr;
+logic tile_ip_sw_wr;
+logic tile_ip_wr_en;
 
   assign unused_boot_addr = boot_addr_i[7:0];
 
@@ -564,7 +573,8 @@ module ibex_cs_registers #(
       csr_rdata_int = (isolde_hwe_cluster_pkg::N_HWE_TILES) ;
       CSR_ISOLDE_TILE_BASE_ADDR: csr_rdata_int = isolde_hwe_cluster_pkg::SPM_NARROW_ADDR_BASE;
       CSR_ISOLDE_TILE_ADDR_WND: csr_rdata_int = isolde_hwe_cluster_pkg::SPM_NARROW_SIZE;
-
+      CSR_ISOLDE_TILE_STATUS: csr_rdata_int = tile_status_q;
+      CSR_ISOLDE_TILE_IP: csr_rdata_int = tile_ip_q;
       default: begin
         illegal_csr = 1'b1;
       end
@@ -629,6 +639,7 @@ module ibex_cs_registers #(
     // === ISOLDE ===
     isolde_tilesel_en = 1'b0;
     isolde_tile_intr_en = 1'b0;
+    tile_ip_sw_wr = 1'b0;
 
 
     if (csr_we_int) begin
@@ -734,6 +745,7 @@ module ibex_cs_registers #(
         end
         CSR_ISOLDE_TILESEL: isolde_tilesel_en = 1'b1;
         CSR_ISOLDE_TILE_INTR_EN: isolde_tile_intr_en = 1'b1;
+        CSR_ISOLDE_TILE_IP: tile_ip_sw_wr = 1'b1;
         default: ;
       endcase
     end
@@ -1713,7 +1725,10 @@ module ibex_cs_registers #(
       .rd_error_o(cpuctrlsts_part_err)
   );
 
-  //ISOLDE
+  /******************************************************/
+  /**          ISOLDE CSR                              **/
+  /******************************************************/
+  // === CSR_ISOLDE_TILESEL
   ibex_csr #(
       .Width     (32),
       .ShadowCopy(1'b0),
@@ -1729,7 +1744,7 @@ module ibex_cs_registers #(
 
   assign isolde_csr_if_o.tile_selection = isolde_tilesel_q;
 
-  //ISOLDE interrupt enable register
+  // === CSR_ISOLDE_TILE_INTR_EN ISOLDE interrupt enable register
   ibex_csr #(
       .Width     (isolde_hwe_cluster_pkg::CSR_WIDTH),
       .ShadowCopy(1'b0),
@@ -1744,7 +1759,50 @@ module ibex_cs_registers #(
   );
   assign isolde_csr_if_o.tile_intrerrupt_en = isolde_tile_intr_q;
 
+// === CSR_ISOLDE_TILE_IP
+assign tile_ip_wr_en = tile_ip_hw_wr | tile_ip_sw_wr;
+always_comb begin
+  tile_ip_d =tile_ip_q ;
+  if(tile_ip_hw_wr) begin
+    tile_ip_d =tile_ip_q | tile_ip;
+  end
+  if (tile_ip_sw_wr) begin
+    tile_ip_d =tile_ip_q & ~csr_wdata_int[isolde_hwe_cluster_pkg::CSR_WIDTH-1:0];   // W1C
+  end
+end
 
+  ibex_csr #(
+      .Width     (isolde_hwe_cluster_pkg::CSR_WIDTH),
+      .ShadowCopy(1'b0),
+      .ResetValue('0)
+  ) u_isolde_tile_ip_csr (
+      .clk_i     (clk_i),
+      .rst_ni    (rst_ni),
+      .wr_data_i (tile_ip_d),
+      .wr_en_i   (tile_ip_wr_en),
+      .rd_data_o (tile_ip_q),
+      .rd_error_o()
+  );
+  assign tile_ip = isolde_csr_if_o.cluster_status.ip;
+  assign tile_ip_hw_wr = isolde_csr_if_o.cluster_status.ip_wr_en;
+
+
+// === CSR_ISOLDE_TILE_STATUS
+logic tile_status_wr_en;
+  ibex_csr #(
+      .Width     (isolde_hwe_cluster_pkg::CSR_WIDTH),
+      .ShadowCopy(1'b0),
+      .ResetValue('0)
+  ) u_isolde_tile_status_csr (
+      .clk_i     (clk_i),
+      .rst_ni    (rst_ni),
+      .wr_data_i (tile_status),
+      .wr_en_i   (tile_status_wr_en),
+      .rd_data_o (tile_status_q),
+      .rd_error_o()
+  );
+  assign tile_status = isolde_csr_if_o.cluster_status.status;
+  assign tile_status_wr_en = isolde_csr_if_o.cluster_status.status_wr_en;
 
 
   assign csr_shadow_err_o =
