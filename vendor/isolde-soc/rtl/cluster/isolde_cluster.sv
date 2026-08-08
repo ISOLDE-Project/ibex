@@ -191,18 +191,14 @@ module isolde_cluster
       .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
       .X_MEM_WIDTH(isolde_cv_x_if_pkg::X_MEM_WIDTH),
       .X_RFR_WIDTH(isolde_cv_x_if_pkg::X_RFR_WIDTH),
-      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH),
-      .X_MISA     (isolde_cv_x_if_pkg::X_MISA),
-      .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
+      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH)
   ) itf_core_xif ();
   isolde_cv_x_if #(
       .X_NUM_RS   (isolde_cv_x_if_pkg::X_NUM_RS),
       .X_ID_WIDTH (isolde_cv_x_if_pkg::X_ID_WIDTH),
       .X_MEM_WIDTH(isolde_cv_x_if_pkg::X_MEM_WIDTH),
       .X_RFR_WIDTH(isolde_cv_x_if_pkg::X_RFR_WIDTH),
-      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH),
-      .X_MISA     (isolde_cv_x_if_pkg::X_MISA),
-      .X_ECS_XS   (isolde_cv_x_if_pkg::X_ECS_XS)
+      .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH)
   ) itf_hwe_xif[N_REDMULE_TILES] ();
 
   /********************************************************/

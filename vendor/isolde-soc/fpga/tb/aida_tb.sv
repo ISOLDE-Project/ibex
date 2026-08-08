@@ -8,8 +8,8 @@ module aida_tb (
 );
 
   // import redmule_pkg::*;
-  import isolde_tcdm_pkg::*;
-  import aida_package::*;
+  // import isolde_tcdm_pkg::*;
+  // import aida_package::*;
   //ibex parameters
   parameter bit SecureIbex = 1'b0;
   parameter bit ICacheScramble = 1'b0;

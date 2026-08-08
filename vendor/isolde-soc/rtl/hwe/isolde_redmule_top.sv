@@ -18,11 +18,11 @@ module isolde_redmule_top
     parameter int unsigned N_CORES = 8,
     // TCDM port dimension (in bits)
     parameter int unsigned DW = DATA_W,
-    parameter int unsigned AddrWidth = 32,
+    parameter int unsigned AddrWidth = 32
     // Number of PEs within a row
-    parameter int unsigned Height = ARRAY_HEIGHT,
+    // parameter int unsigned Height = ARRAY_HEIGHT,
     // Number of parallel rows
-    parameter int unsigned Width = ARRAY_WIDTH
+    // parameter int unsigned Width = ARRAY_WIDTH
     // Number of bits for the given format
 ) (
     input  logic                    clk_i,

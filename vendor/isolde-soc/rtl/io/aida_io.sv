@@ -3,7 +3,6 @@
 
 module aida_io
   import isolde_tcdm_pkg::*;
-  import aida_package::*;
 #(
     parameter logic [31:0] MMIO_ADDR = 32'h8000_0000
 ) (
@@ -29,7 +28,7 @@ module aida_io
   // Internal MMIO address mapping
   localparam logic [31:0] MMADDR_EXIT = MMIO_ADDR + 32'h0;
   localparam logic [31:0] MMADDR_PRINT = MMIO_ADDR + 32'h4;
-  localparam logic [31:0] MMADDR_PERF = MMIO_ADDR + 32'hC;
+//  localparam logic [31:0] MMADDR_PERF = MMIO_ADDR + 32'hC;
 
   /********************************************************/
   /**          Router configurations                     **/
