@@ -12,7 +12,7 @@ module isolde_tile
 
     // === evnets ===
     output logic                [NC-1:0][1:0] evt_o,
-    output logic busy_o,
+    output logic                              busy_o,
     // === spm narrow interface ===
            isolde_tcdm_if.slave               tcdm_spm_dma,
 
@@ -83,13 +83,19 @@ module isolde_tile
       .test_mode_i   (REDMULE_TEST_MODE),
       .fetch_enable_i(fetch_enable_i),
       .evt_o,
-      .busy_o,
+      .busy_o        (),
       .m_hci_core    (redmule_hci),
       .xif_issue_if_i,
       .xif_result_if_o,
       .xif_compressed_if_i,
       .xif_mem_if_o
   );
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) busy_o<= 1'b0;
+    else if (evt_o) busy_o<= 1'b0;
+    else if (xif_issue_if_i.issue_valid) busy_o<= 1'b1;
+  end
 
 `ifdef TARGET_VERILATOR
   isolde_hci_monitor #(

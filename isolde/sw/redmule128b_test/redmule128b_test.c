@@ -24,7 +24,8 @@ static const int TILE_ID = 0x1;
 static const int y_flat_size=sizeof(golden) / sizeof(golden[0]) +1 ;
 uint32_t y_flat[y_flat_size];
 
-uint32_t x_spm_addr, y_spm_addr, w_spm_addr, golden_spm_addr, spm_next_addr;
+
+uint32_t x_spm_addr, y_spm_addr, w_spm_addr, golden_spm_addr;
 uint32_t x_size =
     (sizeof(x_inp) / sizeof(x_inp[0])) / 2;  // size in 32 bits elements
 uint32_t y_size =
@@ -35,6 +36,7 @@ uint32_t w_size =
 int main(int argc, char *argv[]) {
   
   uint32_t errors;
+
   printf("***  \n");
   printf("***  BANK_DATA_WIDTH=0x%08x\n", BANK_DATA_WIDTH);
   printf("***  NUM_BANKS=0x%08x\n", NUM_BANKS);
@@ -45,6 +47,7 @@ int main(int argc, char *argv[]) {
   uint32_t spm_addr, spm_next_addr = get_addr_start(wide_data_row);
   uint32_t *src;
   uint32_t elems;
+  uint32_t tile_status;
  
 
   printf("[SPM TCA ]interrupt_enable= 0x%08x\n\n",isolde_get_intr_en());
@@ -93,18 +96,25 @@ int main(int argc, char *argv[]) {
   asm volatile("addi t1, %0, 0" ::"r"(w_spm_addr));
   asm volatile("addi t2, %0, 0" ::"r"(y_spm_addr));
   asm volatile("redmule.gemm t0,t1,t2,0x10,0xc,0x10");
-
+// === check TILE_STATUS 
+  //insert three NOPs to read the value of TILE_STATUS after the GEMM instruction has been issued
+   asm volatile ("addi x0, x0, 0" ::: "memory");
+   asm volatile ("addi x0, x0, 0" ::: "memory");
+   asm volatile ("addi x0, x0, 0" ::: "memory");
+   tile_status = isolde_get_tile_status();
+ // printf("[SPM TCA ]  GEMM instruction issued, TILE_STATUS= 0x%08x\n\n",isolde_get_tile_status());
   #if 0
     // Wait for end of computation
   asm volatile("wfi" ::: "memory");
   #else
-  int cnt=0;
+  uint32_t cnt=0;
   while(isolde_get_tile_status()) {++cnt;}
-  printf("[SPM TCA ] cnt= 0x%08x\n\n",cnt);
+  printf("[SPM TCA ] Waited for 0x%08x cycles\n\n",cnt);
   #endif
-  printf("[SPM TCA ] TILE_IP= 0x%08x\n\n",isolde_get_tile_ip());
+  printf("[SPM TCA ]  After GEMM instruction was issued, TILE_STATUS was: 0x%08x\n\n", tile_status);
+  printf("[SPM TCA ] TILE_STATUS= 0x%08x, TILE_IP= 0x%08x\n\n",isolde_get_tile_status(), isolde_get_tile_ip());
   isolde_clear_tile_ip(-1);
-  printf("[SPM TCA ] TILE_IP= 0x%08x\n\n",isolde_get_tile_ip());
+  printf("[SPM TCA ] Cleared interrupt pending flags, TILE_IP= 0x%08x\n\n",isolde_get_tile_ip());
 
   
   elems = sizeof(y_flat) / sizeof(y_flat[0]);
