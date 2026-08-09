@@ -42,8 +42,17 @@ SLANG_WARNINGS_SUPPRESS += finish-num
 SLANG_WARNING_FLAGS := $(foreach w,$(SLANG_WARNINGS_SUPPRESS),-Wno-$(w))
 SLANG_WARNING_FLAGS += -Wunused-wildcard-import -Wunused-parameter
 
+SLANG_VERSION_STR := $(strip $(shell $(SLANG) --version 2>/dev/null))
 
-SLANG_BASE := $(SLANG) --top $(SLANG_TOP_MODULE) --timescale 1ns/1ps
+ifeq ($(SLANG_VERSION_STR),slang version 11.0.447+430286070)
+  SLANG_BASE := $(SLANG) --top $(SLANG_TOP_MODULE) --timescale 1ns/1ps --waiver-file .slang/slang-waivers.toml
+else
+  SLANG_BASE := $(SLANG) --top $(SLANG_TOP_MODULE) --timescale 1ns/1ps
+endif
+
+$(info ⚠️  Using slang: $(SLANG_VERSION_STR))
+$(info ⚠️  SLANG_BASE=$(SLANG_BASE))
+
 
 # ---------------------------------------------------------------------------
 slang-clean:

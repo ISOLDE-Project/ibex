@@ -1,0 +1,45 @@
+# .slang/slang-waivers.toml
+
+# HWPE stream vendor checkout
+[[waivers]]
+file = "**/hwpe-stream-*/rtl/**"
+diagnostic = "unused-wildcard-import"
+
+# HCI vendor checkout
+[[waivers]]
+file = "**/hci-*/rtl/**"
+diagnostic = ["unused-wildcard-import", "unused-parameter"]
+
+# Redmule vendor RTL
+[[waivers]]
+file = "**/vendor/redmule/rtl/**"
+diagnostic = ["unused-wildcard-import", "unused-parameter"]
+
+# HWPE control vendor RTL
+[[waivers]]
+file = "**/hwpe-ctrl-*/rtl/**"
+diagnostic = ["unused-wildcard-import", "unused-parameter"]
+
+# LowRISC vendor IP
+[[waivers]]
+file = "**/vendor/lowrisc_ip/**"
+diagnostic = "unused-parameter"
+
+# ibex RTL package
+[[waivers]]
+file = "**/rtl/isolde_decoder_pkg.sv"
+diagnostic = "unused-parameter"
+
+# Tech cells vendor checkout
+[[waivers]]
+file = "**/tech_cells_generic-*/src/rtl/**"
+diagnostic = "unused-parameter"
+
+# Isolde SoC vendor tree
+[[waivers]]
+file = "**/vendor/isolde-soc/fpga/tb/aida_tb.sv"
+diagnostic = "unused-parameter"
+
+[[waivers]]
+file = "**/vendor/isolde-soc/fpga/sim/tcdm_mem.sv"
+diagnostic = "unused-parameter"

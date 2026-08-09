@@ -75,8 +75,8 @@ module isolde_tile
   /*******************************************************/
   isolde_redmule_top #(
       .N_CORES  (NC),
-      .DW       (HCI_DW),  // TCDM port dimension (in bits
-      .AddrWidth(HCI_AW)
+      .DW       (HCI_DW)  // TCDM port dimension (in bits
+      
   ) i_redmule_top (
       .clk_i         (clk_i),
       .rst_ni        (rst_ni),
