@@ -9,11 +9,13 @@ First time:
 ```sh
 . ./setup.sh 
 ```sh
-git checkout tmp/exp
+git checkout tmp/cluster
 git submodule update --init
-cd isolde/tca_system/
+. ./eda.sh 
 . ./eth.sh 
-bender update
+cd isolde/system/
+make bender-update
+make -f Makefile.cluster.nodbg  slang-clean slang
 ```
 * install toolchain
 

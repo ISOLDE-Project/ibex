@@ -43,7 +43,7 @@ fi
 #echo "[INFO] Building EDA tools..."
 
 pushd "$CHECKOUT_DIR" >/dev/null
-make -f Makefile.eda bender
+make -f Makefile.eda all
 popd >/dev/null
 
 # Create
