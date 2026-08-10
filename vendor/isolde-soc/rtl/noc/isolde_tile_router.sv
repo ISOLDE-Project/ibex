@@ -54,7 +54,7 @@ module isolde_tile_router
   assign pop_id_fifo  = |rsp_valid_vec;
 
   assign selected_idx = idx_t'(issue_if.hwe_id);
-  ;
+  
 
 
 
@@ -113,14 +113,14 @@ module isolde_tile_router
 `ifndef SYNTHESIS
   initial begin
     assert (N_TILES > 0)
-    else $fatal("[isolde_demux_tcdm] ERROR: N_TILES parameter must be > 0 (got %0d)", N_TILES);
+    else $fatal(1,"[isolde_demux_tcdm] ERROR: N_TILES parameter must be > 0 (got %0d)", N_TILES);
   end
 
   always_ff @(posedge clk_i) begin
     assert (!(push_id_fifo && fifo_full))
-    else $fatal("ID FIFO overflow");
+    else $fatal(1,"ID FIFO overflow");
     assert (!(pop_id_fifo && fifo_empty))
-    else $fatal("ID FIFO underflow");
+    else $fatal(1,"ID FIFO underflow");
   end
 `endif
 endmodule

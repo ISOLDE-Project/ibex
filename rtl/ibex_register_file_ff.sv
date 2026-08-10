@@ -245,16 +245,15 @@ module ibex_register_file_ff #(
   assign unused_test_en = test_en_i;
   
   //extended ports
-  genvar rp_i;
   generate
-    for (rp_i = 0; rp_i < NumReadPorts; rp_i++) begin : gen_read_ports
+    for (genvar rp_i = 0; rp_i < NumReadPorts; rp_i++) begin : gen_read_ports
       always_comb begin
         if (extended_ports.raddr[rp_i] < 32) begin
           extended_ports.rdata[rp_i] = rf_reg[extended_ports.raddr[rp_i]];
-          extended_ports.isolde_x_rf_err[rp_i] = 1'b0;
+          // extended_ports.isolde_x_rf_err[rp_i] = 1'b0;
         end else begin
           extended_ports.rdata[rp_i] = '0;
-          extended_ports.isolde_x_rf_err[rp_i] = 1'b1;
+          // extended_ports.isolde_x_rf_err[rp_i] = 1'b1;
         end
       end
     end

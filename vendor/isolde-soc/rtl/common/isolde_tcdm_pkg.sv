@@ -29,25 +29,25 @@ package isolde_tcdm_pkg;
     logic [CORE_DW-1:0] data;
   } rsp_t;
 
-  typedef logic [ISOLDE_CORE_REQ_SIZE-1:0] opaq_req_t;
-  typedef logic [ISOLDE_CORE_RSP_SIZE-1:0] opaq_rsp_t;
+  // typedef logic [ISOLDE_CORE_REQ_SIZE-1:0] opaq_req_t;
+  // typedef logic [ISOLDE_CORE_RSP_SIZE-1:0] opaq_rsp_t;
 
-  function automatic opaq_req_t to_opaq_req(req_t req);
-    return opaq_req_t'(req);  // Bit-cast
-  endfunction
+  // function automatic opaq_req_t to_opaq_req(req_t req);
+  //   return opaq_req_t'(req);  // Bit-cast
+  // endfunction
 
-  function automatic opaq_rsp_t to_opaq_rsp(rsp_t rsp);
-    return opaq_rsp_t'(rsp);
-  endfunction
+  // function automatic opaq_rsp_t to_opaq_rsp(rsp_t rsp);
+  //   return opaq_rsp_t'(rsp);
+  // endfunction
 
   //
-  function automatic req_t from_opaq_req(opaq_req_t opaq);
-    return req_t'(opaq);
-  endfunction
+  // function automatic req_t from_opaq_req(opaq_req_t opaq);
+  //   return req_t'(opaq);
+  // endfunction
 
-  function automatic rsp_t from_opaq_rsp(opaq_rsp_t opaq);
-    return rsp_t'(opaq);
-  endfunction
+  // function automatic rsp_t from_opaq_rsp(opaq_rsp_t opaq);
+  //   return rsp_t'(opaq);
+  // endfunction
 
 
   localparam int unsigned RuleAddrWidth = 32;

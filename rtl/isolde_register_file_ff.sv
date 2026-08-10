@@ -86,6 +86,6 @@ module isolde_register_file_ff
   // ------------------------------------------------------------
   // Combined error output
   // ------------------------------------------------------------
-  assign isolde_rf_bus.isolde_rf_err = isolde_rf_err_write | (|isolde_rf_err_read);
+  //assign isolde_rf_bus.isolde_rf_err = isolde_rf_err_write | (|isolde_rf_err_read);
 
 endmodule

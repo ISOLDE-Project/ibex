@@ -14,22 +14,22 @@ import isolde_x_register_file_pkg::*;
 
 
   // Error detection
-  isolde_x_rf_err_t isolde_x_rf_err;  // invalid reads
+//   isolde_x_rf_err_t isolde_x_rf_err;  // invalid reads
 
   modport cpu(
       // Read ports
       output raddr,
-      input rdata,
+      input rdata
       // Misc
-      input isolde_x_rf_err
+      //input isolde_x_rf_err
   );
 
   modport rf(
       // Read ports
       input raddr,
-      output rdata,
+      output rdata
       // Misc
-      output isolde_x_rf_err
+      //output isolde_x_rf_err
   );
 
 
