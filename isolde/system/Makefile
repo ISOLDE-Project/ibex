@@ -86,6 +86,7 @@ include $(ROOT_DIR)/common.mk
 generate:
 	make -C $(ROOT_DIR)/vendor/isolde-soc -f Makefile.jinja N_TILES=2 clean generate
 	
+## apply slang patches	
 patch:
 	make -C $(mkfile_path)/patches/fpnew
 		

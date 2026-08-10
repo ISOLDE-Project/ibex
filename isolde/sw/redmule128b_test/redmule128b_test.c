@@ -103,13 +103,20 @@ int main(int argc, char *argv[]) {
    asm volatile ("addi x0, x0, 0" ::: "memory");
    tile_status = isolde_get_tile_status();
  // printf("[SPM TCA ]  GEMM instruction issued, TILE_STATUS= 0x%08x\n\n",isolde_get_tile_status());
-  #if 0
+  #if 1
     // Wait for end of computation
   asm volatile("wfi" ::: "memory");
   #else
+  /**
+  ** this branch of #if is intended for smoke testing isolde_get_tile_status()
+  ** do not use it in production
+  */
   uint32_t cnt=0;
   while(isolde_get_tile_status()) {++cnt;}
-  printf("[SPM TCA ] Waited for 0x%08x cycles\n\n",cnt);
+  /** bufer overflow ?!?, the following line triggers an illegai instruction in questasim */
+  //printf("[SPM TCA ] Waited for 0x%08x cycles\n\n",cnt);
+  /** until here */
+  printf("[SPM TCA ] Opa %d cycles, hod op ste odon \n\n", cnt);
   #endif
   printf("[SPM TCA ]  After GEMM instruction was issued, TILE_STATUS was: 0x%08x\n\n", tile_status);
   printf("[SPM TCA ] TILE_STATUS= 0x%08x, TILE_IP= 0x%08x\n\n",isolde_get_tile_status(), isolde_get_tile_ip());

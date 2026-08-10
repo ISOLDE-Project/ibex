@@ -10,6 +10,8 @@ bender-clean:
 bender-update:	bender-clean
 	git submodule update --init
 	$(BENDER) update
+	# === apply patch(es) ===
+	make -C $(mkfile_path)/patches/fpnew
 
 ## bender packages hierarchy
 bender-pkg:
