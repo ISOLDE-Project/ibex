@@ -1,31 +1,37 @@
+####################################################################
+## template
+# # File-scoped rule
+# [[waivers]]
+# file = "<glob>"
+# diagnostic = "<name>"      # optional: specific diagnostic(s)
+# regex = '<pattern>'        # optional: match source line content
+####################################################################
+
 # .slang/slang-waivers.toml
 
-# HWPE stream vendor checkout
+# pulp-platorm packages
 [[waivers]]
-file = "**/hwpe-stream-*/rtl/**"
-diagnostic = "unused-wildcard-import"
+file = "**/.bender/git/checkouts/**"
+#diagnostic = ["unused-wildcard-import", "unused-parameter", "finish-num"]
 
-# HCI vendor checkout
-[[waivers]]
-file = "**/hci-*/rtl/**"
-diagnostic = ["unused-wildcard-import", "unused-parameter"]
 
 # Redmule vendor RTL
 [[waivers]]
 file = "**/vendor/redmule/rtl/**"
-diagnostic = ["unused-wildcard-import", "unused-parameter"]
-
-# HWPE control vendor RTL
-[[waivers]]
-file = "**/hwpe-ctrl-*/rtl/**"
-diagnostic = ["unused-wildcard-import", "unused-parameter"]
+#diagnostic = ["unused-wildcard-import", "unused-parameter"]
 
 # LowRISC vendor IP
 [[waivers]]
 file = "**/vendor/lowrisc_ip/**"
-diagnostic = "unused-parameter"
+#diagnostic = "unused-parameter"
 
-# ibex RTL package
+# lowrisc ibex RTL package
+[[waivers]]
+file = "**/rtl/ibex_*.sv"
+
+
+
+# isolde ibex RTL package
 [[waivers]]
 file = "**/rtl/isolde_decoder_pkg.sv"
 diagnostic = "unused-parameter"

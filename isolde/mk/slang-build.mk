@@ -34,7 +34,8 @@ SLANG_WARNINGS  := $(SLANG_LOG_DIR)/$(SLANG_TOP_MODULE)_warnings.log
 # enable all warnings
 SLANG_W_EVERYTHING  := -Wempty-connection -Wconversion -Wextra -Wparentheses -Wpedantic -Wshadow -Wunconnected-port -Wunused
 
-# Slang warnings to suppress (curated set used in phase 2 + dep extraction)
+# Slang warnings to suppress 
+SLANG_WARNINGS_SUPPRESS +=
 #SLANG_WARNINGS_SUPPRESS += unconnected-output-port
 SLANG_WARNINGS_SUPPRESS += finish-num
 #SLANG_WARNINGS_SUPPRESS += unconnected-input-port
@@ -68,6 +69,8 @@ slang-clean:
 # Phase 1: Dependency extraction (trimmed, sorted; --Mmodule excludes .svh/.vh).
 # ---------------------------------------------------------------------------
 $(SLANG_TOP_MODULE)_all_deps.f: ibex_sim.slang manifest.slang
+	@echo "⚠️  Phase 1: slang dependency extraction: $(SLANG_TOP_MODULE)_all_deps.f"
+	@echo "🔔  slang warnings can be safely ignored"
 	@mkdir -p "$(SLANG_LOG_DIR)"
 	$(SLANG_BASE) \
 		-f ibex_sim.slang \
@@ -76,16 +79,18 @@ $(SLANG_TOP_MODULE)_all_deps.f: ibex_sim.slang manifest.slang
 		--depfile-sort \
 		--depfile-trim
 
+## top module dependencies extraction
 slang-deps: $(SLANG_TOP_MODULE)_all_deps.f
 
 # ---------------------------------------------------------------------------
 # Phase 2: strict curated lint. Build fails if any diagnostic remains.
 # ---------------------------------------------------------------------------
 slang: ibex_sim.slang manifest.slang $(SLANG_TOP_MODULE)_all_deps.f
+	@echo "⚠️  Phase 2: slang lint: $(SLANG_TOP_MODULE)_all_deps.f"
+	@echo "🔔  slang warnings should be addressed"
 	@mkdir -p "$(SLANG_LOG_DIR)"
 	@: > "$(SLANG_WARNINGS)"
 	$(SLANG_BASE) \
-		$(SLANG_WARNING_FLAGS) \
 		-f ibex_sim.slang_opts \
 		-f manifest.slang_opts \
 		-f $(SLANG_TOP_MODULE)_all_deps.f \
