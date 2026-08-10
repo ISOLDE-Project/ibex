@@ -10,6 +10,7 @@ First time:
 . ./setup.sh 
 ```sh
 git checkout tmp/cluster
+git clean -ffdx
 git submodule update --init
 . ./eda.sh 
 . ./eth.sh 
