@@ -43,12 +43,12 @@ fi
 #echo "[INFO] Building EDA tools..."
 
 pushd "$CHECKOUT_DIR" >/dev/null
-#make -f Makefile.eda bender
+make -f Makefile.eda bender
 popd >/dev/null
 
 # Create
-#rm -rf "$EDA_DIR"
-#ln -s "$HIDDEN_EDA_DIR" "$EDA_DIR"
+rm -rf "$EDA_DIR"
+ln -s "$HIDDEN_EDA_DIR" "$EDA_DIR"
 
 
 echo "[INFO] Symlink created:"
