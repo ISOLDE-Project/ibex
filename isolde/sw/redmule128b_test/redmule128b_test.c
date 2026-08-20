@@ -52,13 +52,16 @@ int main(int argc, char *argv[]) {
 
   printf("[SPM TCA ]interrupt_enable= 0x%08x\n\n",isolde_get_intr_en());
 
-  isolde_set_intr_en(TILE_ID+1);
+  
   printf("[SPM TCA ] interrupt_enable= 0x%08x\n\n",isolde_get_intr_en());
   printf("[SPM TCA ] TILES counter= 0x%08x\n\n",isolde_get_tile_cnt());
   printf("[SPM TCA ] BASE_ADDRESS= 0x%08x\n\n",isolde_get_base_addr());
   printf("[SPM TCA ] TILES_WINDOW= 0x%08x\n\n",isolde_get_addr_wnd());
+  //**PREAMBLE */
   isolde_set_tile(TILE_ID);
-  
+  isolde_clear_tile_ip(-1);
+  isolde_set_intr_en(TILE_ID+1); //OPTIONAL
+  //**PREAMBLE */
   // x_inp
   x_spm_addr = spm_next_addr;
   spm_addr = x_spm_addr;
@@ -103,7 +106,7 @@ int main(int argc, char *argv[]) {
    asm volatile ("addi x0, x0, 0" ::: "memory");
    tile_status = isolde_get_tile_status();
  // printf("[SPM TCA ]  GEMM instruction issued, TILE_STATUS= 0x%08x\n\n",isolde_get_tile_status());
-  #if 1
+  #if 0
     // Wait for end of computation
   asm volatile("wfi" ::: "memory");
   #else
