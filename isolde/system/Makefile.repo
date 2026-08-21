@@ -1,0 +1,18 @@
+ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
+mkfile_path         := $(ROOT_DIR)/isolde/system
+##
+GIT_WORKING_REV     ?= tmp/cluster
+##
+include $(ROOT_DIR)/common.mk
+
+
+
+
+## fetch the latest version of the repository and reset to the specified working revision
+fetch:
+	git fetch --all
+	git checkout $(GIT_WORKING_REV)
+#	git reset --hard origin/$(GIT_WORKING_REV)
+#	git clean -fdx
+	git submodule update --init --recursive 
+	make bender-update

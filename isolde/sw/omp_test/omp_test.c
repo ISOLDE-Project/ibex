@@ -1,10 +1,30 @@
 // Copyleft 2024 ISOLDE
-// Copyright 2023 ETH Zurich and University of Bologna.
-// Licensed under the Apache License, Version 2.0, see LICENSE for details.
-// SPDX-License-Identifier: Apache-2.0
 //
-// Yvan Tortorella <yvan.tortorella@unibo.it>
-//
+/***
+ * There is private SPM per tile. That means the three GEMMs can be genuinely independent:
+ * Test execution model
+ *
+ *                 CPU
+ *                  │
+ *             ┌────┴────┐
+ *             │         │
+ *             ▼         ▼
+ *          Tile 0     Tile 1
+ *          SPM 0      SPM 1
+ *             │         │
+ *           X/W/Y     X/W/Y
+ *             │         │
+ *            GEMM      GEMM
+ *             │         │
+ *             └────┬────┘
+ *                  │
+ *          redmule_wait_all()
+ *                  │
+ *             all complete
+ *
+ *
+
+ */
 
 #include <stdint.h>
 #include <bsp/spm.h>
@@ -17,91 +37,104 @@
 #include "y_input.h"
 #include "golden.h"
 
+static const int NUM_TESTS =2;
+// static const int TILE_ID = 0x0;
 
-static const int TILE_ID = 0x1;
-
-static const int y_flat_size=sizeof(golden) / sizeof(golden[0]) +1 ;
-uint32_t y_flat[y_flat_size];
+static const int y_flat_size=sizeof(golden) / sizeof(golden[0])+1; //+1 to accomodate data alignment
+uint32_t y_flat[NUM_TESTS][y_flat_size];
 
 
-uint32_t x_spm_addr, y_spm_addr, w_spm_addr, golden_spm_addr;
-uint32_t x_size =
+// uint32_t x_spm_addr, y_spm_addr, w_spm_addr, golden_spm_addr;
+const uint32_t x_size =
     (sizeof(x_inp) / sizeof(x_inp[0])) / 2;  // size in 32 bits elements
-uint32_t y_size =
+const uint32_t y_size =
     (sizeof(y_inp) / sizeof(y_inp[0])) / 2;  // size in 32 bits elements
-uint32_t w_size =
+const uint32_t w_size =
     (sizeof(w_inp) / sizeof(w_inp[0])) / 2;  // size in 32 bits elements
+
+
+    
+static const gemm_inputs_t tests[NUM_TESTS] = {
+    {
+        .x = x_inp,
+        .w = w_inp,
+        .y = y_inp,
+        .golden = golden,
+        .x_size = x_size,
+        .w_size = w_size,
+        .y_size = y_size,
+        .golden_size = M_SIZE * K_SIZE / 2
+    },
+    {
+        .x = x_inp,
+        .w = w_inp,
+        .y = y_inp,
+        .golden = golden,
+        .x_size = x_size,
+        .w_size = w_size,
+        .y_size = y_size,
+        .golden_size = M_SIZE * K_SIZE / 2
+    },
+
+    // {
+    //     .x = x_inp_2,
+    //     .w = w_inp_2,
+    //     .y = y_inp_2,
+    //     .golden = golden_2,
+    //     .x_size = ...,
+    //     .w_size = ...,
+    //     .y_size = ...,
+    //     .golden_size = ...,
+    //     .N = 32,
+    //     .M = 16,
+    //     .K = 16,
+    // },
+};
+ gemm_spm_t spm_cfg[NUM_TESTS];
 
 int main(int argc, char *argv[]) {
   
   uint32_t errors;
-
-  printf("***  \n");
-  printf("***  BANK_DATA_WIDTH=0x%08x\n", BANK_DATA_WIDTH);
-  printf("***  NUM_BANKS=0x%08x\n", NUM_BANKS);
-  printf("***  WIDE_ADDR_ALIGNMENT=0x%08x\n", WIDE_ADDR_ALIGNMENT);
-  printf("***  \n");
   uint32_t wide_data_row =
       0;  // just a test position, aligned with WIDE_ADDR_ALIGNMENT
-  uint32_t spm_addr, spm_next_addr = get_addr_start(wide_data_row);
+  uint32_t spm_addr;
   uint32_t *src;
   uint32_t elems;
   uint32_t tile_status;
+  uint32_t tile_mask ;
  
-
-  printf("[OpenMP ]interrupt_enable= 0x%08x\n\n",isolde_get_intr_en());
-
-  
-  printf("[OpenMP ] interrupt_enable= 0x%08x\n\n",isolde_get_intr_en());
-  printf("[OpenMP ] TILES counter= 0x%08x\n\n",isolde_get_tile_cnt());
-  printf("[OpenMP ] BASE_ADDRESS= 0x%08x\n\n",isolde_get_base_addr());
-  printf("[OpenMP ] TILES_WINDOW= 0x%08x\n\n",isolde_get_addr_wnd());
+  print_system_info();
   //**PREAMBLE */
-  // isolde_set_tile(TILE_ID);
-  isolde_clear_tile_ip(-1);
-  // isolde_set_intr_en(TILE_ID+1); //OPTIONAL
-  //**PREAMBLE */
-  // x_inp
-  x_spm_addr = spm_next_addr;
-  spm_addr = x_spm_addr;
-  src = (uint32_t *)x_inp;
-  elems = x_size;
-  spm_next_addr = redmule_upload(TILE_ID,spm_addr, src, elems);
-  // w_input
-  w_spm_addr = spm_next_addr;
-  spm_addr = w_spm_addr;
-  src = (uint32_t *)w_inp;
-  elems = w_size;
-  spm_next_addr = redmule_upload(TILE_ID,spm_addr, src, elems);
+   spm_addr = get_addr_start(wide_data_row);
+   tile_mask = 0;
+   errors = 0;
+   isolde_clear_tile_ip(-1);
+   //**PREAMBLE */
 
-  // y_inp
-  y_spm_addr = spm_next_addr;
-  spm_addr = y_spm_addr;
-  src = (uint32_t *)y_inp;
-  elems = y_size;
-  spm_next_addr = redmule_upload(TILE_ID,spm_addr, src, elems);
-
-
-  printf("[OpenMP ] TILE_ID= 0x%08x\n\n",isolde_get_tile());
-  printf("[OpenMP ] x_spm_addr= 0x%08x\n, w_spm_addr= 0x%08x\n, y_spm_addr= 0x%08x\n", x_spm_addr, w_spm_addr,
-         y_spm_addr);
-  printf("[OpenMP ] TILE_STATUS= 0x%08x\n\n",isolde_get_tile_status());
-  printf("[OpenMP ] TILE_IP= 0x%08x\n\n",isolde_get_tile_ip());
-  printf("[OpenMP ] Starting test. Y = (X * W) + Y\n");
-  printf("[OpenMP ] fp_fmt: FP16\n");
-  printf("[OpenMP ] M     : 12\n");
-  printf("[OpenMP ] N     : 16\n");
-  printf("[OpenMP ] K     : 16\n");
-  printf("[OpenMP ] Godspeed!\n");
-  redmule_gemm_async(TILE_ID,x_spm_addr,w_spm_addr,y_spm_addr,0x10,0xc,0x10);
-  redmule_wait_all(TILE_ID+1);
+   
+   for (uint32_t i = 0; i < NUM_TESTS; ++i) {
+        spm_cfg[i].tile_id =i;
   
-  printf("[OpenMP ] hod op ste odon!\n");
- 
-  
-  elems = sizeof(y_flat) / sizeof(y_flat[0]);
-  redmule_download(TILE_ID,y_flat, y_spm_addr, elems);
-  errors = redmule16_compare_int(y_flat, golden, M_SIZE * K_SIZE / 2);
+        redmule_upload(
+            spm_addr
+        ,&tests[i]
+        ,&spm_cfg[i]
+        );
+        redmule_gemm_async(  spm_cfg[i].tile_id
+                            ,spm_cfg[i].x_spm_addr
+                            ,spm_cfg[i].w_spm_addr
+                            ,spm_cfg[i].y_spm_addr
+                            ,K_SIZE,M_SIZE,N_SIZE);
+        tile_mask |= REDMULE_BIT(spm_cfg[i].tile_id);
+    }  
+   redmule_wait_all(tile_mask);
+   printf("[OpenMP ] hod op ste odon!\n");
+   for (uint32_t i = 0; i < NUM_TESTS; ++i) {
+        redmule_download_result(&y_flat[i]
+                               ,&tests[i]
+                               ,&spm_cfg[i]);
+        errors += redmule16_compare_int(&y_flat[i], tests[i].golden, tests[i].golden_size);
+   }
 
   printf("[OpenMP ] Terminated test with %d errors. See you!\n", errors);
 

@@ -178,7 +178,7 @@ clean-test-programs: clean-bsp
 	find  $(CORE_V_VERIF)/../sw -name "*.itb" -delete	
 
 ###ISOLDE specific
-ifneq ($(filter redmule%,$(TEST)),)
+ifneq ($(filter redmule% omp%,$(TEST)),)
 
 golden:
 	make -C $(REDMULE_ROOT_DIR) $@
@@ -187,7 +187,7 @@ golden:
 else
 
 golden:
-	@echo "Skipped, redmule unrelated"
+	@echo "Skipped, redmule/openmp unrelated"
 
 endif
 

@@ -6,18 +6,45 @@
 #include <bsp/spm.h>
 
 #define REDMULE_BIT(t)  (1u << (t))
+#define REDMULE_STRINGIFY_(x) #x
+#define REDMULE_STRINGIFY(x)  REDMULE_STRINGIFY_(x)
+
+typedef struct {
+    const uint16_t *x;
+    const uint16_t *w;
+    const uint16_t *y;
+    const uint16_t *golden;
+
+    uint32_t x_size;
+    uint32_t w_size;
+    uint32_t y_size;
+    uint32_t golden_size;
+
+} gemm_inputs_t;
+
+typedef struct {
+    uint32_t tile_id;
+
+    uint32_t x_spm_addr;
+    uint32_t w_spm_addr;
+    uint32_t y_spm_addr;
+} gemm_spm_t;
+
 
 // ---- async launch: select tile, load operands, fire. Does NOT wait. ----
-#define redmule_gemm_async(t, x, w, y, N, M, K)                      \
-  do {                                                               \
-    isolde_set_tile(t);                                             \
-    register uint32_t _x asm("t0") = (x);                          \
-    register uint32_t _w asm("t1") = (w);                          \
-    register uint32_t _y asm("t2") = (y);                          \
-    asm volatile("redmule.gemm t0,t1,t2," #N "," #M "," #K         \
-                 :: "r"(_x),"r"(_w),"r"(_y) : "memory");           \
+#define redmule_gemm_async(t, x, w, y, K, M, N)                    \
+  do {                                                             \
+    isolde_set_tile(t);                                            \
+    register uint32_t _x asm("t0") = (x);                         \
+    register uint32_t _w asm("t1") = (w);                         \
+    register uint32_t _y asm("t2") = (y);                         \
+    asm volatile(                                                  \
+        "redmule.gemm t0,t1,t2,"                                   \
+        REDMULE_STRINGIFY(K) ","                                   \
+        REDMULE_STRINGIFY(M) ","                                   \
+        REDMULE_STRINGIFY(N)                                       \
+        :: "r"(_x), "r"(_w), "r"(_y) : "memory");                  \
   } while (0)
-
 // ---- Q1: which device is free? (scheduler / dispatch) ----
 static inline int redmule_alloc_tile(uint32_t pool) {
     uint32_t free = (~isolde_get_tile_status()) & pool;
@@ -36,14 +63,79 @@ static inline void redmule_wait_all(uint32_t mask) {
 }
 
 // ---- upload/download helpers (TILESEL steers the HW router) ----
-static inline uint32_t redmule_upload(int t, uint32_t at,
-                                      const uint32_t *src, uint32_t elems) {
-    isolde_set_tile(t);
-    return spm_write(at, (uint32_t*)src, elems);
+static inline uint32_t redmule_upload(uint32_t at,
+                                    const gemm_inputs_t *inputs,
+                                    gemm_spm_t *spm) {
+    isolde_set_tile( spm->tile_id);
+    spm->x_spm_addr = at;
+    at = spm_write(
+        spm->x_spm_addr,
+        (uint32_t *)inputs->x,
+        inputs->x_size);
+
+    spm->w_spm_addr = at;
+    at = spm_write(
+        spm->w_spm_addr,
+        (uint32_t *)inputs->w,
+        inputs->w_size);
+
+    spm->y_spm_addr = at;
+    at = spm_write(
+        spm->y_spm_addr,
+        (uint32_t *)inputs->y,
+        inputs->y_size);
+
+    return at;
 }
-static inline void redmule_download(int t, uint32_t *dst,
-                                    uint32_t at, uint32_t elems) {
-    isolde_set_tile(t);
-    spm_read(dst, at, elems);
+static inline void redmule_download_result( uint32_t *dst,
+    const gemm_inputs_t *inputs,
+    gemm_spm_t *spm){
+                                    // uint32_t at, uint32_t elems) {
+    isolde_set_tile( spm->tile_id);
+    spm_read(
+        dst,
+        spm->y_spm_addr,
+        inputs->golden_size);
 }
+
+
+static inline void print_system_info(void){
+    printf("***\n");
+    printf("*** BANK_DATA_WIDTH     = 0x%08x\n", BANK_DATA_WIDTH);
+    printf("*** NUM_BANKS           = 0x%08x\n", NUM_BANKS);
+    printf("*** WIDE_ADDR_ALIGNMENT = 0x%08x\n",
+           WIDE_ADDR_ALIGNMENT);
+    printf("***\n");
+
+    // printf("[OpenMP] interrupt_enable = 0x%08x\n",
+        //    isolde_get_intr_en());
+    printf("[OpenMP] TILES counter    = 0x%08x\n",
+           isolde_get_tile_cnt());
+    printf("[OpenMP] BASE_ADDRESS     = 0x%08x\n",
+           isolde_get_base_addr());
+    printf("[OpenMP] TILES_WINDOW     = 0x%08x\n",
+           isolde_get_addr_wnd());
+}
+
+
+
+// static inline void launch_test(
+//     const gemm_inputs_t *inputs,
+//     const gemm_spm_t *spm)
+// {
+//     printf("[OpenMP] Launching tile %d\n", spm->tile_id);
+//     // printf("[OpenMP] N = %d, M = %d, K = %d\n",
+//     //        inputs->N,
+//     //        inputs->M,
+//     //        inputs->K);
+
+//     redmule_gemm_async(
+//         spm->tile_id,
+//         spm->x_spm_addr,
+//         spm->w_spm_addr,
+//         spm->y_spm_addr,
+//         inputs->N,
+//         inputs->M,
+//         inputs->K);
+// }
 #endif
