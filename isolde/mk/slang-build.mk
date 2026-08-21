@@ -87,7 +87,7 @@ slang-deps: $(SLANG_TOP_MODULE)_all_deps.f
 # ---------------------------------------------------------------------------
 slang: ibex_sim.slang manifest.slang $(SLANG_TOP_MODULE)_all_deps.f
 	@echo "⚠️  Phase 2: slang lint: $(SLANG_TOP_MODULE)_all_deps.f"
-	@echo "🔔  slang warnings should be addressed"
+	@echo "🔥  slang warnings should be addressed"
 	@mkdir -p "$(SLANG_LOG_DIR)"
 	@: > "$(SLANG_WARNINGS)"
 	$(SLANG_BASE) \
