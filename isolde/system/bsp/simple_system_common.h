@@ -123,12 +123,7 @@ static inline void icache_enable(int enable) {
   }
 }
 
-inline uint32_t getTicks(){
-  
-  volatile uint32_t* cycle_counter = (uint32_t*) MMADDR_CYCLE_COUNTER;
 
-   return  (*cycle_counter);
-}
 
 static inline void isolde_set_tile(unsigned tile)
 {
@@ -225,13 +220,6 @@ static inline unsigned isolde_get_tile_status(void)
                   : "memory");
     return tile;
 }
-
-// Define START_TIMING and END_TIMING macros
-#define START_TIMING(value) \
-    uint32_t initval_##value = getTicks()
-
-#define END_TIMING(value) \
-    printf("Timing for %s: %u cycles\n", #value, getTicks() - initval_##value)
 
 #define START_PERFCNT(id) \
     (*(volatile int *) MMADDR_PERF_COUNTERS) =(int) id;

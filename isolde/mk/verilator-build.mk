@@ -3,6 +3,9 @@
 # Copyleft  2024 ISOLDE
 #
 
+# FUSESOC_IGNORE 
+TASK52_DIR            := $(ROOT_DIR)/.task5.2
+FUSESOC_IGNORE_FILE   := $(TASK52_DIR)/FUSESOC_IGNORE
 #############
 # Verilator #
 #############
@@ -41,9 +44,50 @@ CORE_FILES := $(filter %.core,$(wildcard $(mkfile_path)/*))
 CORE_FILES += $(filter %.core,$(wildcard $(ROOT_DIR)/*))
 CORE_FILE_NAMES := $(notdir $(CORE_FILES))
 
-ibex_sim.flist:  $(CORE_FILES)
+# FUSESOC_STRACE_LOG ?= $(mkfile_path)/fusesoc_openat.strace
+
+# Prevent FuseSoC from recursively scanning .task5.2.
+#
+# mkdir -p makes this safe even if .task5.2 has not been created yet.
+$(FUSESOC_IGNORE_FILE):
+	@mkdir -p $(dir $@)
+	@touch $@
+	@echo "Created FuseSoC ignore marker: $@"
+
+
+ibex_sim.flist:  $(CORE_FILES) $(FUSESOC_IGNORE_FILE)
+	@touch $(TASK52_DIR)/FUSESOC_IGNORE 
 	@echo $(CORE_FILE_NAMES)
 	fusesoc --cores-root=$(ROOT_DIR) run --target=sim --setup --no-export $(FUSESOC_PARAMS)  --build-root=$(FUSESOC_BUILD_ROOT) $(FUSESOC_PKG_NAME) $(FUSESOC_CONFIG_OPTS) 
+# 	@rm -f "$(FUSESOC_STRACE_LOG)"
+# 	@echo "Tracing FuseSoC file accesses to: $(FUSESOC_STRACE_LOG)"
+# 	@set +e; \
+# 	strace -f \
+# 		-e trace=openat \
+# 		-o "$(FUSESOC_STRACE_LOG)" \
+# 		fusesoc \
+# 			--cores-root=$(ROOT_DIR) \
+# 			run \
+# 			--target=sim \
+# 			--setup \
+# 			--no-export \
+# 			$(FUSESOC_PARAMS) \
+# 			--build-root=$(FUSESOC_BUILD_ROOT) \
+# 			$(FUSESOC_PKG_NAME) \
+# 			$(FUSESOC_CONFIG_OPTS); \
+# 	status=$$?; \
+# 	if [ $$status -ne 0 ]; then \
+# 		echo ""; \
+# 		echo "============================================================"; \
+# 		echo "FuseSoC failed with exit status $$status"; \
+# 		echo "Last .core files opened by FuseSoC:"; \
+# 		echo "============================================================"; \
+# 		grep '\.core' "$(FUSESOC_STRACE_LOG)" | tail -30 || true; \
+# 		echo "============================================================"; \
+# 		echo "Full strace log: $(FUSESOC_STRACE_LOG)"; \
+# 		echo "============================================================"; \
+# 		exit $$status; \
+# 	fi
 	python $(ROOT_DIR)/util/transform_paths.py  \
 										       $(FUSESOC_BUILD_ROOT)/sim-verilator  \
 	                                           $(FUSESOC_BUILD_ROOT)/sim-verilator/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc \
@@ -136,6 +180,7 @@ veri-run: $(BIN_DIR)/verilator_executable
 
 	@if [  -f "perfcnt.csv" ]; then \
 		mv perfcnt.csv $(VERI_LOG_DIR)/$(TEST).csv; \
+		echo "🔔               performance counters: $(VERI_LOG_DIR)/$(TEST).csv";\
 	fi
 
 	

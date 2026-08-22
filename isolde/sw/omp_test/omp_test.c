@@ -37,6 +37,9 @@
 #include "y_input.h"
 #include "golden.h"
 
+
+// #define SEQUENTIAL 
+
 static const int NUM_TESTS =2;
 // static const int TILE_ID = 0x0;
 
@@ -111,9 +114,24 @@ int main(int argc, char *argv[]) {
    isolde_clear_tile_ip(-1);
    //**PREAMBLE */
 
-   
+#ifdef SEQUENTIAL    
+    printf("[OpenMP - Seq.] Godspeed!\n");
+#else
+    printf("[OpenMP - Parallel] Godspeed!\n");
+#endif        
+
+
+
+//
+   START_PERFCNT(0x1)
+//   
+
    for (uint32_t i = 0; i < NUM_TESTS; ++i) {
+#ifdef SEQUENTIAL    
+        spm_cfg[i].tile_id =0x0;
+#else
         spm_cfg[i].tile_id =i;
+#endif        
   
         redmule_upload(
             spm_addr
@@ -126,8 +144,17 @@ int main(int argc, char *argv[]) {
                             ,spm_cfg[i].y_spm_addr
                             ,K_SIZE,M_SIZE,N_SIZE);
         tile_mask |= REDMULE_BIT(spm_cfg[i].tile_id);
+#ifdef SEQUENTIAL
+       redmule_wait_all(tile_mask);        
     }  
+#else
+    }    
    redmule_wait_all(tile_mask);
+#endif
+//
+   STOP_PERFCNT(0x1)
+   printPerfCnt();
+//
    printf("[OpenMP ] hod op ste odon!\n");
    for (uint32_t i = 0; i < NUM_TESTS; ++i) {
         redmule_download_result(&y_flat[i]

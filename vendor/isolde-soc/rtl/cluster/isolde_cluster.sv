@@ -77,6 +77,7 @@ module isolde_cluster
     DATA_IDX,
     STACK_IDX,
     MMIO_IDX,
+    PERFCNT_IDX,
     SPM_IDX,
 `ifdef TARGET_RV_DEBUG
     DEBUG_IDX,
@@ -93,6 +94,7 @@ module isolde_cluster
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},           
       '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
+      '{start_addr: PERFCNT_ADDR, end_addr: PERFCNT_ADDR_END},
       '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + N_REDMULE_TILES*SPM_NARROW_SIZE}
 `ifdef TARGET_RV_DEBUG
       , '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
@@ -286,6 +288,28 @@ aida_io #(
 `endif    
 );
 
+  /********************************************************/
+  /**           performance counters                    **/
+  /*******************************************************/
+      
+aida_perfcnt #(
+    .PERFCNT_ADDR(aida_package::PERFCNT_ADDR)
+) i_aida_perfcnt(
+    .clk_i,
+    .rst_ni, 
+    .data_req(noc_data_reqs[PERFCNT_IDX]),
+    .data_rsp(noc_data_rsps[PERFCNT_IDX]),
+    // Observation-only memory interfaces
+    .imem_req_i(noc_instr_reqs[INSTR_MEM_IDX]),
+    .imem_rsp_i(noc_instr_rsps[INSTR_MEM_IDX]),
+//
+    .dmem_req_i(noc_data_reqs[DATA_IDX]),
+    .dmem_rsp_i(noc_data_rsps[DATA_IDX]),
+//
+    .stack_req_i(noc_data_reqs[STACK_IDX]),
+    .stack_rsp_i(noc_data_rsps[STACK_IDX])
+
+);
 
 `ifdef TARGET_RV_DEBUG  
   /********************************************************/

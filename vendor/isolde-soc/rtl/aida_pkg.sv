@@ -33,7 +33,9 @@ MEMORY
   localparam rule_addr_t PERIPH_ADDR = 32'h0000_1000;
   //see bsp/simple_system_regs.h
   localparam rule_addr_t MMIO_ADDR = 32'h8000_0000;
-  localparam rule_addr_t MMIO_ADDR_END = 32'h8000_0080;
+  localparam rule_addr_t MMIO_ADDR_END = 32'h8000_000C;
+  localparam rule_addr_t PERFCNT_ADDR = MMIO_ADDR_END;
+  localparam rule_addr_t PERFCNT_ADDR_END = PERFCNT_ADDR + 32'h0000_001D;
 
   // === debugger module parameters ===
   localparam rule_addr_t DEBUG_ADDR = 32'h1A11_0000;

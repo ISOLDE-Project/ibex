@@ -20,6 +20,7 @@ sources:
     - rtl/common/isolde_tcdm_pkg.sv
     - rtl/aida_pkg.sv
     - rtl/io/aida_io_pkg.sv
+    - rtl/io/aida_perfcnt.sv
     - rtl/isolde_tcdm_if.sv
     # - rtl/isolde_tcdm_to_axi.sv
     - rtl/isolde_addr_shim.sv

@@ -165,7 +165,7 @@ void simple_exc_handler(void) {
 void printPerfCnt(){
    int perfcnt_id =  *(volatile int *) MMADDR_PERF_COUNTERS;
    int perfcnt_cycles =  *(volatile int *) (MMADDR_PERF_COUNTERS+4);
-   printf("Terminated test  %d in %d cycles\n",perfcnt_id,perfcnt_cycles);
+   printf("***\n    Terminated test  %d in %d cycles\n",perfcnt_id,perfcnt_cycles);
    //
    //int perfcnt_imem_wr =  *(volatile int *) (MMADDR_PERF_COUNTERS+0x8);
    int perfcnt_imem_rd =  *(volatile int *) (MMADDR_PERF_COUNTERS+0xC);
@@ -173,11 +173,12 @@ void printPerfCnt(){
    int perfcnt_dmem_rd =  *(volatile int *) (MMADDR_PERF_COUNTERS+0x14);
    int perfcnt_stack_mem_wr =  *(volatile int *) (MMADDR_PERF_COUNTERS+0x18);
    int perfcnt_stack_mem_rd =  *(volatile int *) (MMADDR_PERF_COUNTERS+0x1C);
-   printf("  \
-    reads  [imemory] = %d \n  \
+   printf("\
+      reads  [imemory] = %d \n  \
     writes [dmemory] = %d \n  \
     reads  [dmemory] = %d \n  \
     writes [stack] = %d \n  \
-    reads  [stack] = %d \n\n  \
+    reads  [stack] = %d \n \
     ", perfcnt_imem_rd, perfcnt_dmem_wr,perfcnt_dmem_rd,perfcnt_stack_mem_wr, perfcnt_stack_mem_rd);
+  printf("***\n");
 }
