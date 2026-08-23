@@ -48,6 +48,10 @@ module isolde_cluster
 );
 
   localparam int unsigned N_REDMULE_TILES  = isolde_hwe_cluster_pkg::N_HWE_TILES;
+  // === spm narrow port start ====
+  localparam rule_addr_t SPM_NARROW_ADDR_BASE = isolde_hwe_cluster_pkg::SPM_NARROW_ADDR_BASE;
+  localparam int unsigned SPM_NARROW_SIZE = isolde_hwe_cluster_pkg::SPM_NARROW_SIZE;
+  localparam rule_addr_t SPM_NARROW_ADDR = SPM_NARROW_ADDR_BASE;
 
   logic [rv_dm_pkg::NrHarts-1:0]      debug_req;
   logic                               core_sleep;

@@ -16,7 +16,7 @@ package isolde_hwe_cluster_pkg;
 
   // === spm narrow port start ====
   localparam int unsigned SPM_NARROW_ADDR_BASE = 32'h8000_1000;
-  localparam int unsigned SPM_NARROW_SIZE = 32'h0000_1000;  //4kB
+  localparam int unsigned SPM_NARROW_SIZE = 32'h0000_8000;  //32kB
 
   // Common typedefs
   typedef logic [RegDataWidth-1:0] isolde_reg_data_t;

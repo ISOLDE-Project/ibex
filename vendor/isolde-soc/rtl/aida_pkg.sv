@@ -12,7 +12,7 @@ MEMORY
 }
 */
   // instructon memory size in 32-bit words
-  localparam int unsigned IMEM_SIZE_I32 = 32'h0000_0800;
+  localparam int unsigned IMEM_SIZE_I32 = 32'h0000_1000;
   // data memory size in 32-bit words
   localparam int unsigned DMEM_SIZE_I32 = 32'h0000_1000;
   // stack memory size in 32-bit words
@@ -40,10 +40,6 @@ MEMORY
   // === debugger module parameters ===
   localparam rule_addr_t DEBUG_ADDR = 32'h1A11_0000;
   localparam int unsigned DEBUG_SIZE = 32'h0000_1000;
-  // === spm narrow port start ====
-  localparam rule_addr_t SPM_NARROW_ADDR_BASE = 32'h8000_1000;
-  localparam int unsigned SPM_NARROW_SIZE = 32'h0000_1000;  //4kB
-  localparam rule_addr_t SPM_NARROW_ADDR = SPM_NARROW_ADDR_BASE;
   // === hardware accelerator parameters ===
   localparam int unsigned NC = 1;
 `ifdef TARGET_COHEN_CVXIF
