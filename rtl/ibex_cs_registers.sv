@@ -1762,12 +1762,21 @@ logic tile_ip_wr_en;
 // === CSR_ISOLDE_TILE_IP
 assign tile_ip_wr_en = tile_ip_hw_wr | tile_ip_sw_wr;
 always_comb begin
-  tile_ip_d =tile_ip_q ;
-  if(tile_ip_hw_wr) begin
-    tile_ip_d =tile_ip_q | tile_ip;
-  end
+  tile_ip_d = tile_ip_q;
+
+  /*
+   * Software is W1C, hardware sets pending bits.
+   * Apply the SW clear first, then OR in the current hardware events so
+   * a completion arriving in the same cycle as a clear cannot be lost.
+   */
   if (tile_ip_sw_wr) begin
-    tile_ip_d =tile_ip_q & ~csr_wdata_int[isolde_hwe_cluster_pkg::CSR_WIDTH-1:0];   // W1C
+    tile_ip_d =
+        tile_ip_q &
+        ~csr_wdata_int[isolde_hwe_cluster_pkg::CSR_WIDTH-1:0];
+  end
+
+  if (tile_ip_hw_wr) begin
+    tile_ip_d = tile_ip_d | tile_ip;
   end
 end
 
@@ -1785,6 +1794,30 @@ end
   );
   assign tile_ip = isolde_csr_if_o.cluster_status.ip;
   assign tile_ip_hw_wr = isolde_csr_if_o.cluster_status.ip_wr_en;
+
+
+`ifdef TARGET_VERILATOR
+  /*
+   * Sticky-IP debug.  This shows exactly what reaches the CSR from the
+   * cluster and what the W1C/set merge writes into tile_ip_q.
+   */
+  always_ff @(posedge clk_i) begin
+    if (rst_ni) begin
+      if (tile_ip_hw_wr && (|tile_ip)) begin
+        $display(
+          "@%0t IPDBG-HW ip_in=%b ip_q=%b ip_d=%b sw_wr=%b csr_wdata=%08x",
+          $time, tile_ip, tile_ip_q, tile_ip_d, tile_ip_sw_wr, csr_wdata_int
+        );
+      end
+      if (tile_ip_sw_wr) begin
+        $display(
+          "@%0t IPDBG-SW ip_in=%b ip_q=%b ip_d=%b csr_wdata=%08x",
+          $time, tile_ip, tile_ip_q, tile_ip_d, csr_wdata_int
+        );
+      end
+    end
+  end
+`endif
 
 
 // === CSR_ISOLDE_TILE_STATUS

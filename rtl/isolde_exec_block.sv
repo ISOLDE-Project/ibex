@@ -41,6 +41,17 @@ module isolde_exec_block
   isolde_hwe_cluster_pkg::isolde_tile_csr_t tile_intr_mask;
   assign tile_intr_mask = isolde_csr_if_i.tile_intrerrupt_en;
 
+  /*
+   * Snapshot routing metadata when the exec request is accepted.
+   *
+   * Keep the externally visible behavior identical while no XIF issue is
+   * active: hwe_id/mask still track the live CSRs.  Only during issue_valid
+   * do we use the captured values, preventing a following set_tile() from
+   * retargeting the in-flight request.
+   */
+  isolde_hwe_cluster_pkg::isolde_reg_data_t issue_tile_selection_q;
+  isolde_hwe_cluster_pkg::isolde_tile_csr_t issue_tile_intr_mask_q;
+
   //assign xif_issue_if.issue_req.hwe_id = tile_selection;
   /********************************************************/
   /**   tie-off unused interfaces                        **/
@@ -59,8 +70,10 @@ module isolde_exec_block
   assign xif_mem_result_if.mem_result = '0;
 
 
-      assign xif_issue_if.hwe_id = tile_selection;
-      assign xif_issue_if.interrupt_enable_mask = tile_intr_mask;
+      assign xif_issue_if.hwe_id =
+          xif_issue_if.issue_valid ? issue_tile_selection_q : tile_selection;
+      assign xif_issue_if.interrupt_enable_mask =
+          xif_issue_if.issue_valid ? issue_tile_intr_mask_q : tile_intr_mask;
 //
      assign isolde_csr_if_i.cluster_status = xif_issue_if.cluster_status;
 
@@ -113,8 +126,20 @@ module isolde_exec_block
       exec_action = EXEC_NOP;
       xif_issue_if.issue_valid <= 0;
       xif_issue_if.issue_req <= '0;
+      issue_tile_selection_q <= '0;
+      issue_tile_intr_mask_q <= '0;
 
     end else begin
+      /*
+       * IDLE + exec_req is the acceptance point: combinational logic asserts
+       * exec_gnt and selects START in this cycle. Capture before software can
+       * update the tile CSR for the next instruction.
+       */
+      if ((ievli_state == IDLE) && exec_req) begin
+        issue_tile_selection_q <= tile_selection;
+        issue_tile_intr_mask_q <= tile_intr_mask;
+      end
+
       ievli_state <= ievli_next;
       case (ievli_next)
         START: begin

@@ -614,6 +614,26 @@ isolde_xif_relay #(
    assign itf_core_xif.cluster_status.status_wr_en =1'b1;
 
 
+`ifdef TARGET_VERILATOR
+  /*
+   * Completion-path debug:
+   *   tile_evt[]  = raw event(s) produced by each RedMulE tile
+   *   core_evt    = event vector after isolde_xif_relay
+   *   tile_busy   = locally latched per-tile busy state
+   */
+  always_ff @(posedge clk_i) begin
+    if (rst_ni) begin
+      if ((|tile_evt[0]) || (|tile_evt[1]) || (|core_evt)) begin
+        $display(
+          "@%0t EVTDBG tile_evt0=%b tile_evt1=%b core_evt=%b busy=%b",
+          $time, tile_evt[0], tile_evt[1], core_evt, tile_busy
+        );
+      end
+    end
+  end
+`endif
+
+
 //
 
 

@@ -372,30 +372,57 @@ static uint32_t check_component_tile(uint32_t hw_tile,
 #endif
 
 /*
- * Wait for exactly one RedMulE completion using the sticky IP bit.
- * No WFI is used, so this diagnostic cannot lose a wakeup.
+ * Concurrent RedMulE completion diagnostic.
+ *
+ * Launch all requested RedMulEs back-to-back, then poll the sticky IP bits.
+ * There is deliberately no WFI.  This separates:
+ *
+ *   - concurrent RedMulE/HCI execution
+ * from
+ *   - the redmule_wait_all()/interrupt/WFI wakeup path.
+ *
+ * Pending bits do not need to arrive simultaneously: each observed completion
+ * is acknowledged and accumulated in 'done'.
  */
-static int wait_one_redmule(uint32_t hw_tile, const char *tag)
+static int wait_redmules_poll_ip(uint32_t mask,
+                                 const char *phase,
+                                 uint32_t n_tile)
 {
-    const uint32_t bit = REDMULE_BIT(hw_tile);
+    uint32_t done = 0u;
     uint32_t spin;
 
     for (spin = 0u; spin < COMPLEX_GEMM_WAIT_SPINS; ++spin) {
-        const uint32_t pending = isolde_get_tile_ip() & bit;
+        const uint32_t pending = isolde_get_tile_ip() & mask;
 
         if (pending != 0u) {
             isolde_clear_tile_ip(pending);
-            printf("[CGEMM] %s RM%d done spin=%d status=0x%08x\n",
-                   tag, hw_tile, spin, isolde_get_tile_status());
-            return 0;
+            done |= pending;
+
+            printf(
+                "[CGEMM] %s n_tile=%d spin=%d "
+                "pending=0x%08x done=0x%08x status=0x%08x\n",
+                phase,
+                n_tile,
+                spin,
+                pending,
+                done,
+                isolde_get_tile_status());
+
+            if ((done & mask) == mask) {
+                return 0;
+            }
         }
     }
 
-    printf("[CGEMM] TIMEOUT %s RM%d status=0x%08x ip=0x%08x\n",
-           tag,
-           hw_tile,
-           isolde_get_tile_status(),
-           isolde_get_tile_ip());
+    printf(
+        "[CGEMM] TIMEOUT %s n_tile=%d "
+        "mask=0x%08x done=0x%08x status=0x%08x ip=0x%08x\n",
+        phase,
+        n_tile,
+        mask,
+        done,
+        isolde_get_tile_status(),
+        isolde_get_tile_ip());
 
     return -1;
 }
@@ -462,23 +489,12 @@ static int run_complex_gemm(uint32_t *errors, uint32_t *worst_ulp)
                                    A_REAL, B_IMAG, 0u);
                 }
 
-                /*
-                 * SERIALIZED diagnostic:
-                 * do not overlap the two RedMulEs.
-                 */
-                printf("[CGEMM] phase1 launch RM%d slot0\n", rm_real);
                 launch_real_gemm(rm_real, 0u);
-                if (wait_one_redmule(rm_real, "phase1") != 0) {
-                    return -1;
-                }
-
-                printf("[CGEMM] phase1 launch RM%d slot0\n", rm_imag);
                 launch_real_gemm(rm_imag, 0u);
-                if (wait_one_redmule(rm_imag, "phase1") != 0) {
-                    return -1;
-                }
-
                 mask |= REDMULE_BIT(rm_real) | REDMULE_BIT(rm_imag);
+            }
+            if (wait_redmules_poll_ip(mask, "phase1", n_tile) != 0) {
+                return -1;
             }
 
             /* Phase 2: Cr += Ai*(-Bi), Ci += Ai*Br. */
@@ -492,19 +508,12 @@ static int run_complex_gemm(uint32_t *errors, uint32_t *worst_ulp)
                 update_xw_slot(rm_imag, 1u, m0[worker], n0, k0[worker],
                                A_IMAG, B_REAL, 0u);
 
-                printf("[CGEMM] phase2 launch RM%d slot1\n", rm_real);
                 launch_real_gemm(rm_real, 1u);
-                if (wait_one_redmule(rm_real, "phase2") != 0) {
-                    return -1;
-                }
-
-                printf("[CGEMM] phase2 launch RM%d slot1\n", rm_imag);
                 launch_real_gemm(rm_imag, 1u);
-                if (wait_one_redmule(rm_imag, "phase2") != 0) {
-                    return -1;
-                }
-
                 mask |= REDMULE_BIT(rm_real) | REDMULE_BIT(rm_imag);
+            }
+            if (wait_redmules_poll_ip(mask, "phase2", n_tile) != 0) {
+                return -1;
             }
         }
 
@@ -533,7 +542,7 @@ int main(int argc, char **argv)
     print_system_info();
     printf("[CGEMM] software-tiled complex GEMM\n");
     printf("[CGEMM] TEST MODE: X/W address ping-pong, Y persistent\n");
-    printf("[CGEMM] TEST MODE: SERIAL RedMulEs + sticky-IP polling\n");
+    printf("[CGEMM] TEST MODE: CONCURRENT RedMulEs + sticky-IP polling\n");
 
     isolde_clear_tile_ip((uint32_t)-1);
 
