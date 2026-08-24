@@ -27,9 +27,10 @@
  */
 
 #include <stdint.h>
+
+#include <bsp/omp_redmule.h>
 #include <bsp/spm.h>
 #include <bsp/tinyprintf.h>
-#include <bsp/omp_redmule.h>
 
 #include "inc/tensor_dim.h"
 #include "inc/ar_input.h"
@@ -80,8 +81,8 @@ static _Float16 spm_row[SPM_FP16_PER_ROW + SPM_GUARD_FP16]
     __attribute__((aligned(4)));
 
 typedef struct {
-    uint32_t x;
-    uint32_t w;
+    uint32_t x[2];
+    uint32_t w[2];
     uint32_t y;
 } spm_layout_t;
 
@@ -212,16 +213,42 @@ static uint32_t write_b_tile(uint32_t addr, uint32_t n0, uint32_t k0,
     return addr;
 }
 
-static uint32_t write_zero_y_tile(uint32_t addr)
+static uint32_t write_zero_tile(uint32_t addr, uint32_t elems)
 {
     uint32_t local;
+
     fill_zero_row();
-    for (local = 0u; local < Y_TILE_ELEMS; local += SPM_FP16_PER_ROW) {
+
+    for (local = 0u; local < elems; local += SPM_FP16_PER_ROW) {
         addr = spm_write(addr, (uint32_t *)&spm_row[0], SPM_PAYLOAD_WORDS);
     }
+
     return addr;
 }
 
+static uint32_t write_zero_y_tile(uint32_t addr)
+{
+    return write_zero_tile(addr, Y_TILE_ELEMS);
+}
+
+/*
+ * Allocate two independent X/W address sets:
+ *
+ *   slot 0: X0, W0
+ *   slot 1: X1, W1
+ *   Y:      persistent accumulator
+ *
+ * With the default 12x16x16 tile this is:
+ *
+ *   X0 : rows  0..11
+ *   W0 : rows 12..27
+ *   X1 : rows 28..39
+ *   W1 : rows 40..55
+ *   Y  : rows 56..67
+ *
+ * Only X/W addresses ping-pong. Y intentionally remains fixed because
+ * RedMulE implements Y <- X*W + Y and must preserve the partial sum.
+ */
 static void initialize_spm(uint32_t hw_tile,
                            uint32_t m0, uint32_t n0, uint32_t k0,
                            a_component_t acomp, b_component_t bcomp,
@@ -232,32 +259,61 @@ static void initialize_spm(uint32_t hw_tile,
     isolde_set_tile(hw_tile);
     addr = get_addr_start(0);
 
-    spm_layout[hw_tile].x = addr;
+    /* Slot 0 contains the operands for the first launch. */
+    spm_layout[hw_tile].x[0] = addr;
     addr = write_a_tile(addr, m0, n0, acomp);
 
-    spm_layout[hw_tile].w = addr;
+    spm_layout[hw_tile].w[0] = addr;
     addr = write_b_tile(addr, n0, k0, bcomp, negate_b);
 
+    /*
+     * Reserve slot 1 with real SPM writes. Phase 2 overwrites these rows
+     * before launching, so no operand contents are reused from slot 0.
+     */
+    spm_layout[hw_tile].x[1] = addr;
+    addr = write_zero_tile(addr, X_TILE_ELEMS);
+
+    spm_layout[hw_tile].w[1] = addr;
+    addr = write_zero_tile(addr, W_TILE_ELEMS);
+
+    /* Y is the only intentionally persistent/reused buffer. */
     spm_layout[hw_tile].y = addr;
     (void)write_zero_y_tile(addr);
+
+    printf(
+        "[CGEMM] RM%d pingpong "
+        "X0=0x%08x W0=0x%08x X1=0x%08x W1=0x%08x Y=0x%08x\n",
+        hw_tile,
+        spm_layout[hw_tile].x[0],
+        spm_layout[hw_tile].w[0],
+        spm_layout[hw_tile].x[1],
+        spm_layout[hw_tile].w[1],
+        spm_layout[hw_tile].y);
 }
 
-static void update_xw(uint32_t hw_tile,
-                      uint32_t m0, uint32_t n0, uint32_t k0,
-                      a_component_t acomp, b_component_t bcomp,
-                      uint32_t negate_b)
+static void update_xw_slot(uint32_t hw_tile,
+                           uint32_t slot,
+                           uint32_t m0, uint32_t n0, uint32_t k0,
+                           a_component_t acomp, b_component_t bcomp,
+                           uint32_t negate_b)
 {
     isolde_set_tile(hw_tile);
-    (void)write_a_tile(spm_layout[hw_tile].x, m0, n0, acomp);
-    (void)write_b_tile(spm_layout[hw_tile].w, n0, k0, bcomp, negate_b);
+
+    (void)write_a_tile(
+        spm_layout[hw_tile].x[slot],
+        m0, n0, acomp);
+
+    (void)write_b_tile(
+        spm_layout[hw_tile].w[slot],
+        n0, k0, bcomp, negate_b);
 }
 
-static inline void launch_real_gemm(uint32_t hw_tile)
+static inline void launch_real_gemm(uint32_t hw_tile, uint32_t slot)
 {
     redmule_gemm_async(
         hw_tile,
-        spm_layout[hw_tile].x,
-        spm_layout[hw_tile].w,
+        spm_layout[hw_tile].x[slot],
+        spm_layout[hw_tile].w[slot],
         spm_layout[hw_tile].y,
         TILE_K_SIZE,
         TILE_M_SIZE,
@@ -308,6 +364,40 @@ static uint32_t check_component_tile(uint32_t hw_tile,
         }
     }
     return errors;
+}
+
+
+#ifndef COMPLEX_GEMM_WAIT_SPINS
+#define COMPLEX_GEMM_WAIT_SPINS 4096u
+#endif
+
+/*
+ * Wait for exactly one RedMulE completion using the sticky IP bit.
+ * No WFI is used, so this diagnostic cannot lose a wakeup.
+ */
+static int wait_one_redmule(uint32_t hw_tile, const char *tag)
+{
+    const uint32_t bit = REDMULE_BIT(hw_tile);
+    uint32_t spin;
+
+    for (spin = 0u; spin < COMPLEX_GEMM_WAIT_SPINS; ++spin) {
+        const uint32_t pending = isolde_get_tile_ip() & bit;
+
+        if (pending != 0u) {
+            isolde_clear_tile_ip(pending);
+            printf("[CGEMM] %s RM%d done spin=%d status=0x%08x\n",
+                   tag, hw_tile, spin, isolde_get_tile_status());
+            return 0;
+        }
+    }
+
+    printf("[CGEMM] TIMEOUT %s RM%d status=0x%08x ip=0x%08x\n",
+           tag,
+           hw_tile,
+           isolde_get_tile_status(),
+           isolde_get_tile_ip());
+
+    return -1;
 }
 
 static int run_complex_gemm(uint32_t *errors, uint32_t *worst_ulp)
@@ -366,17 +456,30 @@ static int run_complex_gemm(uint32_t *errors, uint32_t *worst_ulp)
                     initialize_spm(rm_imag, m0[worker], n0, k0[worker],
                                    A_REAL, B_IMAG, 0u);
                 } else {
-                    update_xw(rm_real, m0[worker], n0, k0[worker],
-                              A_REAL, B_REAL, 0u);
-                    update_xw(rm_imag, m0[worker], n0, k0[worker],
-                              A_REAL, B_IMAG, 0u);
+                    update_xw_slot(rm_real, 0u, m0[worker], n0, k0[worker],
+                                   A_REAL, B_REAL, 0u);
+                    update_xw_slot(rm_imag, 0u, m0[worker], n0, k0[worker],
+                                   A_REAL, B_IMAG, 0u);
                 }
 
-                launch_real_gemm(rm_real);
-                launch_real_gemm(rm_imag);
+                /*
+                 * SERIALIZED diagnostic:
+                 * do not overlap the two RedMulEs.
+                 */
+                printf("[CGEMM] phase1 launch RM%d slot0\n", rm_real);
+                launch_real_gemm(rm_real, 0u);
+                if (wait_one_redmule(rm_real, "phase1") != 0) {
+                    return -1;
+                }
+
+                printf("[CGEMM] phase1 launch RM%d slot0\n", rm_imag);
+                launch_real_gemm(rm_imag, 0u);
+                if (wait_one_redmule(rm_imag, "phase1") != 0) {
+                    return -1;
+                }
+
                 mask |= REDMULE_BIT(rm_real) | REDMULE_BIT(rm_imag);
             }
-            redmule_wait_all(mask);
 
             /* Phase 2: Cr += Ai*(-Bi), Ci += Ai*Br. */
             mask = 0u;
@@ -384,16 +487,25 @@ static int run_complex_gemm(uint32_t *errors, uint32_t *worst_ulp)
                 const uint32_t rm_real = 2u * worker;
                 const uint32_t rm_imag = rm_real + 1u;
 
-                update_xw(rm_real, m0[worker], n0, k0[worker],
-                          A_IMAG, B_IMAG, 1u);
-                update_xw(rm_imag, m0[worker], n0, k0[worker],
-                          A_IMAG, B_REAL, 0u);
+                update_xw_slot(rm_real, 1u, m0[worker], n0, k0[worker],
+                               A_IMAG, B_IMAG, 1u);
+                update_xw_slot(rm_imag, 1u, m0[worker], n0, k0[worker],
+                               A_IMAG, B_REAL, 0u);
 
-                launch_real_gemm(rm_real);
-                launch_real_gemm(rm_imag);
+                printf("[CGEMM] phase2 launch RM%d slot1\n", rm_real);
+                launch_real_gemm(rm_real, 1u);
+                if (wait_one_redmule(rm_real, "phase2") != 0) {
+                    return -1;
+                }
+
+                printf("[CGEMM] phase2 launch RM%d slot1\n", rm_imag);
+                launch_real_gemm(rm_imag, 1u);
+                if (wait_one_redmule(rm_imag, "phase2") != 0) {
+                    return -1;
+                }
+
                 mask |= REDMULE_BIT(rm_real) | REDMULE_BIT(rm_imag);
             }
-            redmule_wait_all(mask);
         }
 
         for (worker = 0u; worker < active; ++worker) {
@@ -420,6 +532,8 @@ int main(int argc, char **argv)
 
     print_system_info();
     printf("[CGEMM] software-tiled complex GEMM\n");
+    printf("[CGEMM] TEST MODE: X/W address ping-pong, Y persistent\n");
+    printf("[CGEMM] TEST MODE: SERIAL RedMulEs + sticky-IP polling\n");
 
     isolde_clear_tile_ip((uint32_t)-1);
 

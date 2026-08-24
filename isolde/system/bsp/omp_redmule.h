@@ -4,6 +4,7 @@
 #define __OMP_REDMULE_H__
 #include <bsp/simple_system_common.h>
 #include <bsp/spm.h>
+#include <bsp/tinyprintf.h>
 
 #define REDMULE_BIT(t)  (1u << (t))
 #define REDMULE_STRINGIFY_(x) #x
