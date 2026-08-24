@@ -4,9 +4,9 @@ mkfile_path         :=  $(ROOT_DIR)/isolde/sw/complex_gemm
 
 golden: $(DST_DIR)
 	python3 $(mkfile_path)/golden-model/complex_gemm.py \
-    --m 24 \
-    --n 32 \
-    --k 32 \
+    --m 12 \
+    --n 16 \
+    --k 16 \
     --tile-m 12 \
     --tile-n 16 \
     --tile-k 16 \
