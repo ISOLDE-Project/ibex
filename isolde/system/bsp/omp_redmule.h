@@ -52,17 +52,14 @@ static inline int redmule_alloc_tile(uint32_t pool) {
     return free ? __builtin_ctz(free) : -1;
 }
 
-// ---- Q2: which device woke me? (join) — race-free, W1C ----
-static inline void redmule_wait_all(uint32_t mask) {
+static inline void redmule_wait_all(uint32_t mask)
+{
     isolde_set_intr_en(mask);
-    uint32_t done = 0;
-    while ((done & mask) != mask) {
-        uint32_t ip = isolde_get_tile_ip() & mask;
-        if (ip) { isolde_clear_tile_ip(ip); done |= ip; }
-        else    asm volatile("wfi" ::: "memory");   // sticky IP -> no missed wake
+    while ((isolde_get_tile_ip() & mask) != mask) {
+        asm volatile("wfi" ::: "memory");
     }
+    isolde_clear_tile_ip(mask);
 }
-
 // ---- upload/download helpers (TILESEL steers the HW router) ----
 static inline uint32_t redmule_upload(uint32_t at,
                                     const gemm_inputs_t *inputs,

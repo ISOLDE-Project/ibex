@@ -1796,7 +1796,7 @@ end
   assign tile_ip_hw_wr = isolde_csr_if_o.cluster_status.ip_wr_en;
 
 
-`ifdef TARGET_VERILATOR
+`ifdef TARGET_DEBUG_RTL
   /*
    * Sticky-IP debug.  This shows exactly what reaches the CSR from the
    * cluster and what the W1C/set merge writes into tile_ip_q.

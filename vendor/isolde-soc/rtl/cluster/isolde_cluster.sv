@@ -614,7 +614,7 @@ isolde_xif_relay #(
    assign itf_core_xif.cluster_status.status_wr_en =1'b1;
 
 
-`ifdef TARGET_VERILATOR
+`ifdef TARGET_DEBUG_RTL
   /*
    * Completion-path debug:
    *   tile_evt[]  = raw event(s) produced by each RedMulE tile
