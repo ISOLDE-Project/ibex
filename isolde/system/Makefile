@@ -20,7 +20,7 @@ FUSESOC_PROJECT     := isolde
 FUSESOC_CORE        := ibex
 FUSESOC_SYSTEM      := lca_dm_system
 FUSESOC_PKG_NAME    := $(FUSESOC_PROJECT):$(FUSESOC_CORE):$(FUSESOC_SYSTEM)
-
+ONNX_MLIR           := $(ROOT_DIR)/install/onnx-mlir/bin/onnx-mlir
 ##
 
 ifeq ($(COMPILER), gcc)

@@ -81,7 +81,9 @@ RISCV_CC_SUFFIX  =  $(CV_SW_CC_SUFFIX)
 RISCV_CFLAGS     += $(RV_DM_C_FLAGS)
 
 
-TEST_FILES        ?= $(filter %.c %.S,$(wildcard  $(TEST_SRC_DIR)/*))
+# Test-local LLVM IR is compiled and linked like the C/assembly sources. This
+# allows generated graphs to participate in the normal `test-build` flow.
+TEST_FILES        ?= $(filter %.c %.S %.ll,$(wildcard  $(TEST_SRC_DIR)/*))
 # Optionally use linker script provided in test directory
 # this must be evaluated at access time, so ifeq/ifneq does
 # not get parsed correctly

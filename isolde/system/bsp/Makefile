@@ -10,14 +10,17 @@ LD_FILE ?=
 # Source files
 APP_FILES ?=
 SRCS   += crt0.S simple_system_common.c startup.c tinyprintf.c spm.c
+SRCS   += onnx_redmule_runtime.c
 SRCS   += $(APP_FILES)
 
 SRC_C = $(filter %.c, $(SRCS))
 SRC_S = $(filter %.S, $(SRCS))
+SRC_LL = $(filter %.ll, $(SRCS))
 
 # Generate object files automatically from source files
 OBJS += $(SRC_S:.S=.o)
 OBJS += $(SRC_C:.c=.o)
+OBJS += $(SRC_LL:.ll=.o)
 
 DEPS = $(OBJS:.o=.d)
 
@@ -36,6 +39,9 @@ CFLAGS ?= -march=$(RISCV_MARCH) -mabi=ilp32 -static -mcmodel=medany -Wall -g -O3
 	$(RISCV_CC) $(CFLAGS) -c $< -o $@
 
 %.o : %.S
+	$(RISCV_CC) $(CFLAGS) -c $< -o $@
+
+%.o : %.ll
 	$(RISCV_CC) $(CFLAGS) -c $< -o $@
 
 # Clean up the generated files
