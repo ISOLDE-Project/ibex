@@ -29,6 +29,7 @@ sources:
     - rtl/isolde_hci_interconnect.sv
     - rtl/isolde_tcdm_interconnect.sv
     - rtl/isolde_log_interconnect.sv
+    - rtl/isolde_spm_loader.sv
     - rtl/isolde_boot_rom.sv
     - rtl/rv_domain.sv
     - rtl/uart/udma_uart_tx.sv

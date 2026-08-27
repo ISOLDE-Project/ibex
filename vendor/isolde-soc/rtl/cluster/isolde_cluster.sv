@@ -62,7 +62,7 @@ module isolde_cluster
   isolde_hwe_cluster_pkg::isolde_tile_csr_t  core_evt_mask;
   isolde_hwe_cluster_pkg::isolde_tile_csr_t  core_evt_cpu;
 
-  assign core_evt_cpu = {1'b0,core_evt} & core_evt_mask;
+
 
    logic [31:0] BOOT_ADDR;
 
@@ -82,6 +82,7 @@ module isolde_cluster
     STACK_IDX,
     MMIO_IDX,
     PERFCNT_IDX,
+    SPMLD_IDX,
     SPM_IDX,
 `ifdef TARGET_RV_DEBUG
     DEBUG_IDX,
@@ -99,6 +100,7 @@ module isolde_cluster
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},           
       '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
       '{start_addr: PERFCNT_ADDR, end_addr: PERFCNT_ADDR_END},
+      '{start_addr: SPMLD_ADDR, end_addr: SPMLD_ADDR_END},
       '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + N_REDMULE_TILES*SPM_NARROW_SIZE}
 `ifdef TARGET_RV_DEBUG
       , '{start_addr: DEBUG_ADDR, end_addr: DEBUG_ADDR + DEBUG_SIZE}
@@ -174,6 +176,13 @@ module isolde_cluster
   isolde_tcdm_if tcdm_spm_hwe[N_REDMULE_TILES] ();
   isolde_tcdm_if tcdm_spm_dma_muxed ();
 
+  // === SPM loader ===
+  isolde_tcdm_if spmld_cfg ();        // descriptor register block
+  isolde_tcdm_if spmld_dmem ();       // loader master -> data memory
+  isolde_tcdm_if spmld_spm ();        // loader master -> narrow SPM window
+  logic          spmld_done;
+  logic          spmld_busy;
+
 // === Data sub-network on Chip NoC interfaces ===
   isolde_tcdm_pkg::req_t noc_spm_reqs[N_REDMULE_TILES];
   isolde_tcdm_pkg::rsp_t noc_spm_rsps[N_REDMULE_TILES];
@@ -206,6 +215,8 @@ module isolde_cluster
       .X_RFR_WIDTH(isolde_cv_x_if_pkg::X_RFR_WIDTH),
       .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH)
   ) itf_hwe_xif[N_REDMULE_TILES] ();
+
+  assign core_evt_cpu = {spmld_done,core_evt} & core_evt_mask;
 
   /********************************************************/
   /**           Router(s)                                **/
@@ -386,14 +397,28 @@ aida_perfcnt #(
       .debug_req_o(debug_req)
   );
 `else
-// === tcdm_spm_dma_muxed assignment ===
-    
-    assign tcdm_spm_dma_muxed.req = noc_data_reqs[SPM_IDX];
-    assign noc_data_rsps[SPM_IDX] = tcdm_spm_dma_muxed.rsp;
+// === tcdm_spm_dma_muxed: CPU stores and the loader share the narrow port ===
+// The loader sits on port 2, which isolde_mux_tcdm gives priority.
+  isolde_mux_tcdm i_mux_spmld_spm (
+      .clk_i,
+      .rst_ni,
+      .req_1_i(noc_data_reqs[SPM_IDX]),
+      .rsp_1_o(noc_data_rsps[SPM_IDX]),
+      .req_2_i(spmld_spm.req),
+      .rsp_2_o(spmld_spm.rsp),
+      .tcdm_master_o(tcdm_spm_dma_muxed)
+  );
 
-// === tcdm_dmem_muxed assignment ===
-    assign tcdm_dmem_muxed.req = noc_data_reqs[DATA_IDX];
-    assign noc_data_rsps[DATA_IDX] = tcdm_dmem_muxed.rsp;
+// === tcdm_dmem_muxed: CPU loads/stores and the loader share data memory ===
+  isolde_mux_tcdm i_mux_spmld_dmem (
+      .clk_i,
+      .rst_ni,
+      .req_1_i(noc_data_reqs[DATA_IDX]),
+      .rsp_1_o(noc_data_rsps[DATA_IDX]),
+      .req_2_i(spmld_dmem.req),
+      .rsp_2_o(spmld_dmem.rsp),
+      .tcdm_master_o(tcdm_dmem_muxed)
+  );
 // === tcdm_imem_muxed assignment ===
     assign tcdm_imem_muxed.req = noc_instr_reqs[INSTR_MEM_IDX];
     assign noc_instr_rsps[INSTR_MEM_IDX] = tcdm_imem_muxed.rsp;    
@@ -401,6 +426,27 @@ aida_perfcnt #(
     assign tcdm_stack_muxed.req = noc_data_reqs[STACK_IDX];
     assign noc_data_rsps[STACK_IDX] = tcdm_stack_muxed.rsp;    
 `endif
+
+  /********************************************************/
+  /**     SPM loader                                     **/
+  /*******************************************************/
+
+  assign spmld_cfg.req          = noc_data_reqs[SPMLD_IDX];
+  assign noc_data_rsps[SPMLD_IDX] = spmld_cfg.rsp;
+
+  isolde_spm_loader #(
+      .REG_ADDR(SPMLD_ADDR),
+      .SPM_BASE(SPM_NARROW_ADDR_BASE),
+      .DUTY    (0)                  // set to 8 to guarantee HCI forward progress
+  ) i_spm_loader (
+      .clk_i,
+      .rst_ni,
+      .cfg_i (spmld_cfg),
+      .dmem_o(spmld_dmem),
+      .spm_o (spmld_spm),
+      .done_o(spmld_done),
+      .busy_o(spmld_busy)
+  );
 
   /********************************************************/
   /**     ADDRESS SHIM FOR TILES                        **/
@@ -608,8 +654,8 @@ isolde_xif_relay #(
     .core_evt_o(core_evt)
 );
    assign core_evt_mask = itf_core_xif.interrupt_enable_mask;
-   assign itf_core_xif.cluster_status.status ={1'b0, tile_busy};
-   assign itf_core_xif.cluster_status.ip ={1'b0,core_evt};
+   assign itf_core_xif.cluster_status.status ={spmld_busy, tile_busy};
+   assign itf_core_xif.cluster_status.ip ={spmld_done,core_evt};
    assign itf_core_xif.cluster_status.ip_wr_en =1'b1;
    assign itf_core_xif.cluster_status.status_wr_en =1'b1;
 

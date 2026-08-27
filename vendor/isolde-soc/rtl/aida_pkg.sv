@@ -36,6 +36,9 @@ MEMORY
   localparam rule_addr_t MMIO_ADDR_END = 32'h8000_000C;
   localparam rule_addr_t PERFCNT_ADDR = MMIO_ADDR_END;
   localparam rule_addr_t PERFCNT_ADDR_END = PERFCNT_ADDR + 32'h0000_001D;
+  // === SPM loader descriptor block, see bsp/spm_load.h ===
+  localparam rule_addr_t SPMLD_ADDR = 32'h8000_0100;
+  localparam rule_addr_t SPMLD_ADDR_END = SPMLD_ADDR + 32'h0000_0020;
 
   // === debugger module parameters ===
   localparam rule_addr_t DEBUG_ADDR = 32'h1A11_0000;
