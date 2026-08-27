@@ -1,3 +1,4 @@
 /build/
-/graph.ll
-
+graph.ll
+inc/
+model/
