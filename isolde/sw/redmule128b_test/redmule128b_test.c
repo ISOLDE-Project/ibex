@@ -7,6 +7,7 @@
 //
 
 #include <stdint.h>
+#include <bsp/fp16_utils.h>
 #include <bsp/spm.h>
 #include <bsp/tinyprintf.h>
 #include <bsp/simple_system_common.h>
@@ -18,15 +19,17 @@
 #include "y_input.h"
 #include "golden.h"
 
-
+#define GOLDEN_SIZE (M_SIZE*K_SIZE)
 static const int TILE_ID = 0x1;
 
-static const int y_flat_size=sizeof(golden) / sizeof(golden[0]) +1 ;
-uint32_t y_flat[y_flat_size];
+// static const int y_flat_size=sizeof(golden) / sizeof(golden[0]) +1 ;
+// uint32_t y_flat[y_flat_size];
+static fp16_storage_t y_result[GOLDEN_SIZE+1]
+    __attribute__((aligned(16)));
 
 
 uint32_t x_spm_addr, y_spm_addr, w_spm_addr, golden_spm_addr;
-uint32_t x_size =
+uint32_t x_size = 
     (sizeof(x_inp) / sizeof(x_inp[0])) / 2;  // size in 32 bits elements
 uint32_t y_size =
     (sizeof(y_inp) / sizeof(y_inp[0])) / 2;  // size in 32 bits elements
@@ -36,12 +39,8 @@ uint32_t w_size =
 int main(int argc, char *argv[]) {
   
   uint32_t errors;
+  uint32_t worst_ulp = 0u;
 
-  printf("***  \n");
-  printf("***  BANK_DATA_WIDTH=0x%08x\n", BANK_DATA_WIDTH);
-  printf("***  NUM_BANKS=0x%08x\n", NUM_BANKS);
-  printf("***  WIDE_ADDR_ALIGNMENT=0x%08x\n", WIDE_ADDR_ALIGNMENT);
-  printf("***  \n");
   uint32_t wide_data_row =
       0;  // just a test position, aligned with WIDE_ADDR_ALIGNMENT
   uint32_t spm_addr, spm_next_addr = get_addr_start(wide_data_row);
@@ -49,6 +48,11 @@ int main(int argc, char *argv[]) {
   uint32_t elems;
   uint32_t tile_status;
  
+  printf("***  \n");
+  printf("***  BANK_DATA_WIDTH=0x%08x\n", BANK_DATA_WIDTH);
+  printf("***  NUM_BANKS=0x%08x\n", NUM_BANKS);
+  printf("***  WIDE_ADDR_ALIGNMENT=0x%08x\n", WIDE_ADDR_ALIGNMENT);
+  printf("***  \n");
 
   printf("[SPM TCA ]interrupt_enable= 0x%08x\n\n",isolde_get_intr_en());
 
@@ -106,7 +110,7 @@ int main(int argc, char *argv[]) {
    asm volatile ("addi x0, x0, 0" ::: "memory");
    tile_status = isolde_get_tile_status();
  // printf("[SPM TCA ]  GEMM instruction issued, TILE_STATUS= 0x%08x\n\n",isolde_get_tile_status());
-  #if 0
+  #if 1
     // Wait for end of computation
   asm volatile("wfi" ::: "memory");
   #else
@@ -127,12 +131,13 @@ int main(int argc, char *argv[]) {
   printf("[SPM TCA ] Cleared interrupt pending flags, TILE_IP= 0x%08x\n\n",isolde_get_tile_ip());
 
   
-  elems = sizeof(y_flat) / sizeof(y_flat[0]);
-  spm_read(y_flat, y_spm_addr, elems);
-  errors = redmule16_compare_int(y_flat, golden, M_SIZE * K_SIZE / 2);
+  elems = sizeof(y_result) / sizeof(y_result[0]) / 2;
+  spm_read((uint32_t *)y_result, y_spm_addr, elems);
 
-  printf("[SPM TCA 128b ] Terminated test with %d errors. See you!\n", errors);
+  errors = validate_result(y_result, golden, elems, K_SIZE, "y", &worst_ulp);
 
+  printf("[SPM TCA 128b ] errors=%d worst_ulp=%d allowed_ulp=%d\n",
+         (unsigned)errors, (unsigned)worst_ulp, (unsigned)MAX_ULP_ERROR);
   return errors ?  0xBADC0FFE :0x0;
 
 }

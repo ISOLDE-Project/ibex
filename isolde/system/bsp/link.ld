@@ -85,6 +85,8 @@ SECTIONS
         . = ALIGN(4);
         *(.rodata);
         *(.rodata.*)
+        *(.srodata)
+        *(.srodata.*)
     } > dataram
 
     .shbss :
@@ -99,6 +101,8 @@ SECTIONS
         _sdata  =  .;
         *(.data);
         *(.data.*)
+        *(.sdata)
+        *(.sdata.*)
         edata  =  .;
         _edata  =  .;
     } > dataram
@@ -125,4 +129,3 @@ SECTIONS
     } > stack
 
 }
-

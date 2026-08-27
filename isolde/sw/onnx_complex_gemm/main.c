@@ -1,13 +1,13 @@
 /*
  * SPDX-License-Identifier: Apache-2.0
  *
- * Bare-metal functional test for graph.ll generated from
- * redmule_complex_gemm_12x16x16.onnx.
+ * Bare-metal functional test for graph.ll 
  */
 
-#include <stdint.h>
+
 
 #include <bsp/omp_redmule.h>
+#include <bsp/fp16_utils.h>
 
 #include "ai_input.h"
 #include "ar_input.h"
@@ -18,9 +18,9 @@
 #include "tensor_dim.h"
 
 #define GRAPH_OUTPUT_ELEMENTS (M_SIZE * K_SIZE)
-#define MAX_ULP_ERROR 2u
 
-typedef uint16_t fp16_storage_t __attribute__((may_alias));
+
+
 
 typedef struct {
   fp16_storage_t *cr;
@@ -48,57 +48,8 @@ void *_reserveMemory(int32_t id)
   _Exit(0x0bad1000);
 }
 
-static uint16_t load_fp16_bits(const _Float16 *source, uint32_t index)
-{
-  const fp16_storage_t *bits =
-      (const fp16_storage_t *)(const void *)source;
-  return bits[index];
-}
 
-static uint16_t ordered_fp16_bits(uint16_t bits)
-{
-  if ((bits & 0x8000u) != 0u)
-    return (uint16_t)(~bits);
-  return (uint16_t)(bits | 0x8000u);
-}
 
-static uint32_t fp16_ulp_distance(uint16_t lhs, uint16_t rhs)
-{
-  uint16_t ordered_lhs = ordered_fp16_bits(lhs);
-  uint16_t ordered_rhs = ordered_fp16_bits(rhs);
-  return ordered_lhs >= ordered_rhs
-             ? (uint32_t)(ordered_lhs - ordered_rhs)
-             : (uint32_t)(ordered_rhs - ordered_lhs);
-}
-
-static uint32_t check_component(const fp16_storage_t *actual,
-                                const _Float16 *golden,
-                                const char *name,
-                                uint32_t *worst_ulp)
-{
-  uint32_t errors = 0u;
-  uint32_t index;
-
-  for (index = 0u; index < GRAPH_OUTPUT_ELEMENTS; ++index) {
-    uint16_t expected = load_fp16_bits(golden, index);
-    uint32_t ulp = fp16_ulp_distance(actual[index], expected);
-
-    if (ulp > *worst_ulp)
-      *worst_ulp = ulp;
-
-    if (ulp > MAX_ULP_ERROR) {
-      if (errors < 8u) {
-        printf("[ONNX-CGEMM] %s[%d][%d] got=0x%04x expected=0x%04x "
-               "ulp=%d\n",
-               name, (int)(index / K_SIZE), (int)(index % K_SIZE),
-               (unsigned)actual[index], (unsigned)expected, (unsigned)ulp);
-      }
-      ++errors;
-    }
-  }
-
-  return errors;
-}
 
 int main(int argc, char **argv)
 {
@@ -126,8 +77,8 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  errors += check_component(outputs.cr, cr_golden, "Cr", &worst_ulp);
-  errors += check_component(outputs.ci, ci_golden, "Ci", &worst_ulp);
+  errors += validate_result(outputs.cr, cr_golden, GRAPH_OUTPUT_ELEMENTS, K_SIZE,"Cr", &worst_ulp);
+  errors += validate_result(outputs.ci, ci_golden, GRAPH_OUTPUT_ELEMENTS, K_SIZE, "Ci", &worst_ulp);
 
   printf("[ONNX-CGEMM] errors=%d worst_ulp=%d allowed_ulp=%d\n",
          (unsigned)errors, (unsigned)worst_ulp, (unsigned)MAX_ULP_ERROR);
