@@ -306,9 +306,9 @@ int main(int argc, char *argv[]) {
   /* ... and then the two must agree, which is the real contract */
   printf("\n");
   testOK = test_image_differential() && testOK;
-  // testOK = test_cross() && testOK;
-  // testOK = test_async() && testOK;
-  // testOK = test_event() && testOK;
+  testOK = test_cross() && testOK;
+  testOK = test_async() && testOK;
+  testOK = test_event() && testOK;
 #ifndef SPM_HOST_SIM
   testOK = test_event_contract() && testOK;
 #endif

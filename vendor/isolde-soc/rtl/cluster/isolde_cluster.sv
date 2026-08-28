@@ -437,7 +437,7 @@ aida_perfcnt #(
   isolde_spm_loader #(
       .REG_ADDR(SPMLD_ADDR),
       .SPM_BASE(SPM_NARROW_ADDR_BASE),
-      .DUTY    (0)                  // set to 8 to guarantee HCI forward progress
+      .DUTY    (8)                  // set to 8 to guarantee HCI forward progress
   ) i_spm_loader (
       .clk_i,
       .rst_ni,

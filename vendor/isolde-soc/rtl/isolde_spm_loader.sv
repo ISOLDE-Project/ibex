@@ -116,7 +116,12 @@ module isolde_spm_loader #(
       cfg_rsp_q.valid <= cfg_sel;
       cfg_rsp_q.data  <= '0;
 
-      if (cfg_wr) begin
+      // Descriptor registers are FROZEN while a transfer is in flight.
+      // Overwriting them mid-transfer corrupts it, and flipping dir re-routes
+      // an in-flight write to the other port, where the address shim rejects
+      // the now out-of-range address, never grants, and the FSM deadlocks.
+      // STATUS (0x4) stays writable so done can be cleared at any time.
+      if (cfg_wr && (!busy_o || cfg_off == 4'h4)) begin
         case (cfg_off)
           4'h0: reg_src_q    <= cfg_i.req.data;
           4'h1: reg_dstrow_q <= cfg_i.req.data;
@@ -346,6 +351,25 @@ module isolde_spm_loader #(
   assert property (@(posedge clk_i) disable iff (!rst_ni)
       start_pulse |-> (reg_len_q[2:0] == 3'b000))
     else $error("isolde_spm_loader: LEN=%0d is not a multiple of 8", reg_len_q);
+
+  // software must not touch the descriptor while a transfer is running - the
+  // writes are ignored, but silently ignoring them hides a driver bug
+  assert property (@(posedge clk_i) disable iff (!rst_ni)
+      (cfg_wr && busy_o && cfg_off != 4'h4) |-> 1'b0)
+    else $error("isolde_spm_loader: descriptor written while busy (reg 0x%0h)",
+                cfg_off);
+
+  // a request outstanding for a very long time means the far side never
+  // granted - almost always an address outside the target address range
+  int unsigned stall_ctr;
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) stall_ctr <= 0;
+    else if ((rd_req.req && !rd_rsp.gnt) || (wr_req.req && !wr_rsp.gnt))
+      stall_ctr <= stall_ctr + 1;
+    else stall_ctr <= 0;
+  end
+  assert property (@(posedge clk_i) disable iff (!rst_ni) stall_ctr < 1000)
+    else $error("isolde_spm_loader: no grant for 1000 cycles - address out of range?");
 
   // the elastic buffer must never overflow - credits guarantee it
   assert property (@(posedge clk_i) disable iff (!rst_ni)

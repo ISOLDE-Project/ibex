@@ -38,8 +38,19 @@ static void spmld_start(uint32_t dmem_ptr, uint32_t spm_addr, uint32_t elems,
    * it locally for the duration of the wfi. */
   isolde_set_intr_en(isolde_get_intr_en() & ~spmld_event_bit());
 
-  /* clear a stale completion before arming a new transfer */
+  /* Single channel: never touch the descriptor while a transfer is running.
+   * The RTL freezes those registers when busy, but waiting here keeps the
+   * caller honest and avoids losing the transfer silently. */
+  while (spm_dma_busy()) {
+  }
+
+  /* Clear a stale completion before arming. Source (STATUS) first, then the
+   * latched pending bit: tile_ip is sticky and the hardware ORs the live
+   * event in AFTER the software clear, so the reverse order does nothing.
+   * Without this, a later spm_dma_wait_irq() sees a pending bit left over
+   * from an earlier polled transfer and returns immediately. */
   SPMLD_STATUS = SPMLD_STATUS_DONE;
+  isolde_clear_tile_ip(spmld_event_bit());
 
   SPMLD_SRC = dmem_ptr;
   SPMLD_DST_ROW = spm_addr / SPMLD_ROW_BYTES;
