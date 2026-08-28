@@ -355,7 +355,7 @@ module isolde_spm_loader #(
   // software must not touch the descriptor while a transfer is running - the
   // writes are ignored, but silently ignoring them hides a driver bug
   assert property (@(posedge clk_i) disable iff (!rst_ni)
-      (cfg_wr && busy_o && cfg_off != 4'h4) |-> 1'b0)
+      !(cfg_wr && busy_o && cfg_off != 4'h4))
     else $error("isolde_spm_loader: descriptor written while busy (reg 0x%0h)",
                 cfg_off);
 

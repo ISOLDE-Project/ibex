@@ -315,10 +315,7 @@ isolde_hwe_cluster_pkg::isolde_tile_csr_t tile_status_q;
 
 // === CSR_ISOLDE_TILE_IP
 isolde_hwe_cluster_pkg::isolde_tile_csr_t tile_ip;
-isolde_hwe_cluster_pkg::isolde_tile_csr_t tile_ip_d,tile_ip_q;
-logic tile_ip_hw_wr;
 logic tile_ip_sw_wr;
-logic tile_ip_wr_en;
 
   assign unused_boot_addr = boot_addr_i[7:0];
 
@@ -574,7 +571,7 @@ logic tile_ip_wr_en;
       CSR_ISOLDE_TILE_BASE_ADDR: csr_rdata_int = isolde_hwe_cluster_pkg::SPM_NARROW_ADDR_BASE;
       CSR_ISOLDE_TILE_ADDR_WND: csr_rdata_int = isolde_hwe_cluster_pkg::SPM_NARROW_SIZE;
       CSR_ISOLDE_TILE_STATUS: csr_rdata_int = tile_status_q;
-      CSR_ISOLDE_TILE_IP: csr_rdata_int = tile_ip_q;
+      CSR_ISOLDE_TILE_IP: csr_rdata_int = tile_ip;  // barrier pending, cluster side
       default: begin
         illegal_csr = 1'b1;
       end
@@ -1748,7 +1745,7 @@ logic tile_ip_wr_en;
   ibex_csr #(
       .Width     (isolde_hwe_cluster_pkg::CSR_WIDTH),
       .ShadowCopy(1'b0),
-      .ResetValue(isolde_hwe_cluster_pkg::isolde_tile_csr_t'('1))
+      .ResetValue(isolde_hwe_cluster_pkg::isolde_tile_csr_t'('0))
   ) u_isolde_intr_en_csr (
       .clk_i     (clk_i),
       .rst_ni    (rst_ni),
@@ -1760,60 +1757,27 @@ logic tile_ip_wr_en;
   assign isolde_csr_if_o.tile_intrerrupt_en = isolde_tile_intr_q;
 
 // === CSR_ISOLDE_TILE_IP
-assign tile_ip_wr_en = tile_ip_hw_wr | tile_ip_sw_wr;
-always_comb begin
-  tile_ip_d = tile_ip_q;
+// The pending state is NOT held here. ibex_top gates the core clock during
+// WFI, so a flop in this module cannot re-enable it; the latch lives in
+// isolde_event_barrier on the ungated cluster clock. This CSR is a read
+// window onto that vector plus an outbound W1C strobe.
+assign isolde_csr_if_o.ip_clear    =
+    csr_wdata_int[isolde_hwe_cluster_pkg::CSR_WIDTH-1:0];
+assign isolde_csr_if_o.ip_clear_en = tile_ip_sw_wr;
 
-  /*
-   * Software is W1C, hardware sets pending bits.
-   * Apply the SW clear first, then OR in the current hardware events so
-   * a completion arriving in the same cycle as a clear cannot be lost.
-   */
-  if (tile_ip_sw_wr) begin
-    tile_ip_d =
-        tile_ip_q &
-        ~csr_wdata_int[isolde_hwe_cluster_pkg::CSR_WIDTH-1:0];
-  end
-
-  if (tile_ip_hw_wr) begin
-    tile_ip_d = tile_ip_d | tile_ip;
-  end
-end
-
-  ibex_csr #(
-      .Width     (isolde_hwe_cluster_pkg::CSR_WIDTH),
-      .ShadowCopy(1'b0),
-      .ResetValue('0)
-  ) u_isolde_tile_ip_csr (
-      .clk_i     (clk_i),
-      .rst_ni    (rst_ni),
-      .wr_data_i (tile_ip_d),
-      .wr_en_i   (tile_ip_wr_en),
-      .rd_data_o (tile_ip_q),
-      .rd_error_o()
-  );
   assign tile_ip = isolde_csr_if_o.cluster_status.ip;
-  assign tile_ip_hw_wr = isolde_csr_if_o.cluster_status.ip_wr_en;
 
 
 `ifdef TARGET_DEBUG_RTL
   /*
-   * Sticky-IP debug.  This shows exactly what reaches the CSR from the
-   * cluster and what the W1C/set merge writes into tile_ip_q.
+   * Sticky-IP debug. The pending state now lives in isolde_event_barrier,
+   * so this shows the vector arriving from the cluster and the outbound W1C.
    */
   always_ff @(posedge clk_i) begin
     if (rst_ni) begin
-      if (tile_ip_hw_wr && (|tile_ip)) begin
-        $display(
-          "@%0t IPDBG-HW ip_in=%b ip_q=%b ip_d=%b sw_wr=%b csr_wdata=%08x",
-          $time, tile_ip, tile_ip_q, tile_ip_d, tile_ip_sw_wr, csr_wdata_int
-        );
-      end
       if (tile_ip_sw_wr) begin
-        $display(
-          "@%0t IPDBG-SW ip_in=%b ip_q=%b ip_d=%b csr_wdata=%08x",
-          $time, tile_ip, tile_ip_q, tile_ip_d, csr_wdata_int
-        );
+        $display("@%0t IPDBG-SW ip_in=%b clear=%b", $time, tile_ip,
+                 csr_wdata_int[isolde_hwe_cluster_pkg::CSR_WIDTH-1:0]);
       end
     end
   end

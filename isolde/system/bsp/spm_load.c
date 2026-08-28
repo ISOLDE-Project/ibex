@@ -50,7 +50,7 @@ static void spmld_start(uint32_t dmem_ptr, uint32_t spm_addr, uint32_t elems,
    * Without this, a later spm_dma_wait_irq() sees a pending bit left over
    * from an earlier polled transfer and returns immediately. */
   SPMLD_STATUS = SPMLD_STATUS_DONE;
-  isolde_clear_tile_ip(spmld_event_bit());
+  isolde_evt_clear(spmld_event_bit());
 
   SPMLD_SRC = dmem_ptr;
   SPMLD_DST_ROW = spm_addr / SPMLD_ROW_BYTES;
@@ -81,33 +81,13 @@ void spm_dma_wait(void) {
 
 void spm_dma_wait_irq(void) {
   uint32_t evt = spmld_event_bit();
-  uint32_t saved_mask = isolde_get_intr_en();
-  uint32_t saved_mstatus;
 
-  /* Wake on the loader's event without taking a trap. wfi resumes on any
-   * enabled pending interrupt regardless of mstatus.MIE, so clearing MIE
-   * gives wake-without-trap - which is what this system needs, since there
-   * is no machine-software-interrupt handler. MIE is mstatus bit 3, so the
-   * 5-bit CSR immediate forms encode it directly. */
-  asm volatile("csrrci %0, mstatus, 8" : "=r"(saved_mstatus)::"memory");
+  isolde_evt_wait(evt);
 
-  /* add to the mask rather than replacing it: a tile GEMM may be in flight
-   * and must keep its own enable bit. Spurious wakeups are harmless, the
-   * loop re-tests. */
-  isolde_set_intr_en(saved_mask | evt);
-
-  while ((isolde_get_tile_ip() & evt) == 0) {
-    asm volatile("wfi" ::: "memory");
-  }
-
-  /* Source before pending bit. done_o is a level, and tile_ip ORs the live
-   * hardware event in AFTER the software clear (see ibex_cs_registers.sv),
-   * so clearing ip while done_o is still high is undone in the same cycle. */
+  /* done_o is a level, and the barrier merges set after clear, so the source
+   * has to be quiesced before the pending bit will stay cleared. */
   SPMLD_STATUS = SPMLD_STATUS_DONE;
-  isolde_clear_tile_ip(evt);
-
-  isolde_set_intr_en(saved_mask);
-  if (saved_mstatus & 0x8u) asm volatile("csrsi mstatus, 8" ::: "memory");
+  isolde_evt_clear(evt);
 }
 
 uint32_t spm_load(uint32_t spm_addr, const uint32_t *src, uint32_t elems) {

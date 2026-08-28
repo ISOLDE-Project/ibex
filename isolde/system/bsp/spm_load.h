@@ -18,10 +18,12 @@
 #ifndef __SPM_LOAD_H__
 #define __SPM_LOAD_H__
 
-#include <stdint.h>
+// #include <stdint.h>
 
-#include "simple_system_common.h"
-#include "simple_system_regs.h"
+// #include "simple_system_common.h"
+// #include "simple_system_regs.h"
+
+#include <bsp/isolde_evt.h>
 
 /* Register block. Must match REG_ADDR on isolde_spm_loader and the SPMLD_IDX
  * rule in isolde_cluster.sv addr_map. */
@@ -39,13 +41,8 @@
 #define SPMLD_STATUS_BUSY (1u << 0)
 #define SPMLD_STATUS_DONE (1u << 1)
 
-/* The loader raises the spare event bit above the per-tile bits, so it plugs
- * into isolde_set_intr_en() / isolde_get_tile_ip() unchanged. The index is
- * N_HWE_TILES, read from CSR_ISOLDE_TILE_CNT rather than hard-coded, so this
- * tracks the RTL when the tile count changes. */
-static inline uint32_t spmld_event_bit(void) {
-  return 1u << isolde_get_tile_cnt();
-}
+/* The loader owns the spare event bit above the per-tile bits. */
+static inline uint32_t spmld_event_bit(void) { return isolde_evt_loader(); }
 
 /**
  * Copies elems words from data memory into the SPM of the currently selected

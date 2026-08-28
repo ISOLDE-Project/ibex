@@ -77,6 +77,12 @@ module isolde_exec_block
 //
      assign isolde_csr_if_i.cluster_status = xif_issue_if.cluster_status;
 
+      // W1C strobe for the cluster-side event barrier. Unlike hwe_id and the
+      // enable mask this is NOT qualified by issue_valid: it is a CSR write,
+      // not part of an instruction issue.
+      assign xif_issue_if.ip_clear    = isolde_csr_if_i.ip_clear;
+      assign xif_issue_if.ip_clear_en = isolde_csr_if_i.ip_clear_en;
+
 
 `ifndef SYNTHESIS
   integer log_fh;

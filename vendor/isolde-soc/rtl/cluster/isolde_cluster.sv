@@ -216,7 +216,28 @@ module isolde_cluster
       .X_RFW_WIDTH(isolde_cv_x_if_pkg::X_RFW_WIDTH)
   ) itf_hwe_xif[N_REDMULE_TILES] ();
 
-  assign core_evt_cpu = {spmld_done,core_evt} & core_evt_mask;
+  // === event barrier ===
+  // Latches completion events on the UNGATED cluster clock. The core gates
+  // its own clock during WFI, so nothing inside it can hold the wakeup; and
+  // core_evt from the tiles is a single-cycle pulse, which is lost if it
+  // lands between the pending test and the WFI in redmule_wait_all().
+  isolde_hwe_cluster_pkg::isolde_tile_csr_t evt_pending;
+  isolde_hwe_cluster_pkg::isolde_tile_csr_t evt_clear;
+
+  assign evt_clear = itf_core_xif.ip_clear_en ? itf_core_xif.ip_clear
+                                              : '0;
+
+  isolde_event_barrier #(
+      .W(isolde_hwe_cluster_pkg::CSR_WIDTH)
+  ) i_evt_barrier (
+      .clk_i,
+      .rst_ni,
+      .evt_i    ({spmld_done, core_evt}),
+      .clear_i  (evt_clear),
+      .pending_o(evt_pending)
+  );
+
+  assign core_evt_cpu = evt_pending & core_evt_mask;
 
   /********************************************************/
   /**           Router(s)                                **/
@@ -655,7 +676,7 @@ isolde_xif_relay #(
 );
    assign core_evt_mask = itf_core_xif.interrupt_enable_mask;
    assign itf_core_xif.cluster_status.status ={spmld_busy, tile_busy};
-   assign itf_core_xif.cluster_status.ip ={spmld_done,core_evt};
+   assign itf_core_xif.cluster_status.ip = evt_pending;
    assign itf_core_xif.cluster_status.ip_wr_en =1'b1;
    assign itf_core_xif.cluster_status.status_wr_en =1'b1;
 
