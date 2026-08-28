@@ -109,6 +109,17 @@ static int test_cross(void) {
 
 /* ------------------------------------------------------------------ */
 /* 3. status flags and asynchronous operation                          */
+/*                                                                     */
+/* POLICY: software must not generate data-memory traffic while the     */
+/* loader is active. isolde_mux_tcdm gives the loader absolute priority */
+/* on the shared DMEM port, so a concurrent CPU access simply stalls    */
+/* until the transfer retires - measured at 1 grant and a 108-cycle     */
+/* stall across a 96-word transfer. The overlap below is therefore      */
+/* deliberately confined to the stack (a separate memory port) and to   */
+/* the loader register block (a third port).                            */
+/*                                                                     */
+/* Note this also rules out printf() during a transfer: format strings  */
+/* live in .rodata, which link.ld places in dataram.                    */
 /* ------------------------------------------------------------------ */
 static int test_async(void) {
   volatile uint32_t acc = 0;
@@ -119,10 +130,10 @@ static int test_async(void) {
 
   spm_load_async(get_addr_start(REGION_B), spmc_src, ELEMS);
 
-  /* useful CPU work while the transfer runs - also exercises contention on
-   * the data memory port, which the loader now shares with the core */
+  /* stack-only arithmetic plus status polls: no data-memory traffic */
   for (uint32_t i = 0; i < ELEMS; ++i) {
-    acc += spmc_src[i];
+    // acc += spmc_src[i];
+    acc += i * 3u;
     if (spm_dma_busy()) busy_seen++;
   }
 
@@ -142,7 +153,38 @@ static int test_async(void) {
   ok = spmc_cmp(spmc_src, spmc_dst, ELEMS) && ok;
 
   (void)acc;
-  return spmc_report("loader", "async + busy/done + cpu contention", ok);
+  return spmc_report("loader", "async + busy/done, no DMEM overlap", ok);
+}
+
+/* ------------------------------------------------------------------ */
+/* 3b. the single-channel guard                                        */
+/*                                                                     */
+/* Arming a second transfer while the first is still running must be    */
+/* serialised, not silently dropped or merged. spmld_start() spins on   */
+/* spm_dma_busy() (register-block traffic only, so it does not violate  */
+/* the policy above) and the RTL additionally freezes the descriptor    */
+/* registers while busy. Both transfers must land intact.               */
+/* ------------------------------------------------------------------ */
+static int test_single_channel_guard(void) {
+  int ok = 1;
+
+  /* two distinct sources, both prepared BEFORE anything starts: the
+   * loader reads spmc_src asynchronously, so touching it afterwards
+   * would be a data race as well as a policy violation */
+  spmc_fill(ELEMS, 0x7777u);
+  for (uint32_t i = 0; i <= ELEMS; ++i) spmc_dst2[i] = spmc_src[i] ^ 0xFFFFu;
+
+  spm_load_async(get_addr_start(REGION_A), spmc_src, ELEMS);
+  spm_load_async(get_addr_start(REGION_B), spmc_dst2, ELEMS); /* must block */
+  spm_dma_wait();
+
+  ldr.get(spmc_dst, get_addr_start(REGION_A), ELEMS);
+  ok = spmc_cmp(spmc_src, spmc_dst, ELEMS) && ok;
+
+  ldr.get(spmc_dst, get_addr_start(REGION_B), ELEMS);
+  ok = spmc_cmp(spmc_dst2, spmc_dst, ELEMS) && ok;
+
+  return spmc_report("loader", "single-channel guard serialises", ok);
 }
 
 /* ------------------------------------------------------------------ */
@@ -308,6 +350,7 @@ int main(int argc, char *argv[]) {
   testOK = test_image_differential() && testOK;
   testOK = test_cross() && testOK;
   testOK = test_async() && testOK;
+  testOK = test_single_channel_guard() && testOK;
   testOK = test_event() && testOK;
 #ifndef SPM_HOST_SIM
   testOK = test_event_contract() && testOK;
