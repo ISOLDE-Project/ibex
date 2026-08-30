@@ -4,6 +4,7 @@
 #define __OMP_REDMULE_H__
 #include <bsp/isolde_evt.h>
 #include <bsp/spm.h>
+#include <bsp/spm_load.h>
 #include <bsp/tinyprintf.h>
 
 #define REDMULE_BIT(t)  (1u << (t))
@@ -62,19 +63,19 @@ static inline uint32_t redmule_upload(uint32_t at,
                                     gemm_spm_t *spm) {
     isolde_set_tile( spm->tile_id);
     spm->x_spm_addr = at;
-    at = spm_write(
+    at = spm_load(
         spm->x_spm_addr,
         (uint32_t *)inputs->x,
         inputs->x_size);
 
     spm->w_spm_addr = at;
-    at = spm_write(
+    at = spm_load(
         spm->w_spm_addr,
         (uint32_t *)inputs->w,
         inputs->w_size);
 
     spm->y_spm_addr = at;
-    at = spm_write(
+    at = spm_load(
         spm->y_spm_addr,
         (uint32_t *)inputs->y,
         inputs->y_size);
@@ -86,7 +87,7 @@ static inline void redmule_download_result( uint32_t *dst,
     gemm_spm_t *spm){
                                     // uint32_t at, uint32_t elems) {
     isolde_set_tile( spm->tile_id);
-    spm_read(
+    spm_store(
         dst,
         spm->y_spm_addr,
         inputs->golden_size);
