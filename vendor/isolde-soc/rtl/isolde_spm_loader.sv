@@ -74,11 +74,13 @@ module isolde_spm_loader #(
   //   0x08 LEN      payload words; MUST be a multiple of 8
   //   0x0C CTRL     [0] start (self-clearing), [1] dir 0=load 1=store,
   //                 [2] negate_fp16 on LOAD: XOR 0x8000 into each FP16 lane
+  //                 [3] zero_fill: ignore SRC/DMEM and write zero into SPM
   //   0x10 STATUS   [0] busy, [1] done (write 1 to clear)
   // ------------------------------------------------------------------------
   logic [31:0] reg_src_q, reg_dstrow_q, reg_len_q;
   logic reg_dir_q;
   logic reg_negate_q;
+  logic reg_zero_q;
   logic start_pulse;
   logic done_q;
   logic cfg_sel, cfg_wr, cfg_rd;
@@ -106,6 +108,7 @@ module isolde_spm_loader #(
       reg_len_q    <= '0;
       reg_dir_q    <= 1'b0;
       reg_negate_q <= 1'b0;
+      reg_zero_q   <= 1'b0;
       start_pulse  <= 1'b0;
       cfg_rsp_q    <= '0;
     end else begin
@@ -125,6 +128,7 @@ module isolde_spm_loader #(
           4'h3: begin
             reg_dir_q    <= cfg_i.req.data[1];
             reg_negate_q <= cfg_i.req.data[2];
+            reg_zero_q   <= cfg_i.req.data[3];
             start_pulse  <= cfg_i.req.data[0] & ~busy_o;
           end
           default: ;  // STATUS is read-only apart from done-clear below
@@ -135,7 +139,7 @@ module isolde_spm_loader #(
           4'h0: cfg_rsp_q.data <= reg_src_q;
           4'h1: cfg_rsp_q.data <= reg_dstrow_q;
           4'h2: cfg_rsp_q.data <= reg_len_q;
-          4'h3: cfg_rsp_q.data <= {29'b0, reg_negate_q, reg_dir_q, 1'b0};
+          4'h3: cfg_rsp_q.data <= {28'b0, reg_zero_q, reg_negate_q, reg_dir_q, 1'b0};
           4'h4: cfg_rsp_q.data <= {30'b0, done_q, busy_o};
           default: cfg_rsp_q.data <= 32'hDEAD_BEEF;
         endcase
@@ -170,6 +174,14 @@ module isolde_spm_loader #(
   logic [2:0] fifo_cnt_q;
   logic [2:0] credits_q;  // free slots, counting words already in flight
   logic fifo_push, fifo_pop;
+  logic zero_mode;
+  logic zero_issue;
+  logic issue_fire;
+
+  // ZERO_FILL is meaningful only for DMEM->SPM direction.  In synthesis an
+  // accidental ZERO_FILL|STORE descriptor safely behaves as a normal STORE;
+  // the assertion below still flags it in simulation.
+  assign zero_mode = reg_zero_q && !reg_dir_q;
 
   logic [31:0] n_rows;
   logic [31:0] n_access;
@@ -229,8 +241,11 @@ module isolde_spm_loader #(
   end
   // read request
   always_comb begin
-    rd_req      = '{req: 1'b0, we: 1'b0, be: 4'b1111, addr: 32'b0, data: 32'b0};
-    rd_req.req  = (state_q == RUN) && (rd_left_q != 0) && (credits_q != 0) && may_issue;
+    rd_req = '{req: 1'b0, we: 1'b0, be: 4'b1111, addr: 32'b0, data: 32'b0};
+    // zero-fill is an internally generated producer: it must not consume
+    // DMEM bandwidth or wait for a read response.
+    rd_req.req  = (state_q == RUN) && (rd_left_q != 0) && (credits_q != 0)
+                  && may_issue && !zero_mode;
     rd_req.addr = reg_dir_q ? spm_addr : src_addr;
   end
   // write request - drains the head of the FIFO
@@ -241,8 +256,13 @@ module isolde_spm_loader #(
     wr_req.data = fifo_data_q[fifo_rp_q];
   end
 
-  assign fifo_push = rd_rsp.valid;
-  assign fifo_pop  = wr_req.req && wr_rsp.gnt;
+  // In zero-fill mode a FIFO entry is synthesized directly from the current
+  // SPM sequencer position. Normal load/store modes still push on read response.
+  assign zero_issue = zero_mode && (state_q == RUN) && (rd_left_q != 0)
+                      && (credits_q != 0) && may_issue;
+  assign issue_fire = zero_mode ? zero_issue : (rd_req.req && rd_rsp.gnt);
+  assign fifo_push = zero_mode ? zero_issue : rd_rsp.valid;
+  assign fifo_pop = wr_req.req && wr_rsp.gnt;
   // ------------------------------------------------------------------------
   // Main FSM
   // ------------------------------------------------------------------------
@@ -265,14 +285,20 @@ module isolde_spm_loader #(
 
       // --- FIFO bookkeeping, shared by all states ---
       if (fifo_push) begin
-        fifo_addr_q[fifo_wp_q] <= addr_pipe_q;
-        // Optional FP16 negate is a raw sign-bit toggle on each packed
-        // 16-bit lane.  Apply it only while loading DMEM -> SPM; STORE
-        // must preserve SPM data exactly.  Descriptor registers are frozen
-        // while busy, so reg_negate_q/reg_dir_q are stable for the response.
-        fifo_data_q[fifo_wp_q] <= (!reg_dir_q && reg_negate_q)
-                                      ? (rd_rsp.data ^ 32'h8000_8000)
-                                      : rd_rsp.data;
+        if (zero_mode) begin
+          // No DMEM read in zero-fill mode.  Generate the destination and
+          // data locally, then reuse the ordinary FIFO -> SPM write path.
+          fifo_addr_q[fifo_wp_q] <= spm_addr;
+          fifo_data_q[fifo_wp_q] <= 32'b0;
+        end else begin
+          fifo_addr_q[fifo_wp_q] <= addr_pipe_q;
+          // Optional FP16 negate is a raw sign-bit toggle on each packed
+          // 16-bit lane. Apply it only while loading DMEM -> SPM; STORE
+          // must preserve SPM data exactly.
+          fifo_data_q[fifo_wp_q] <= (!reg_dir_q && reg_negate_q)
+                                        ? (rd_rsp.data ^ 32'h8000_8000)
+                                        : rd_rsp.data;
+        end
         fifo_wp_q <= fifo_wp_q + 1'b1;
       end
       if (fifo_pop) fifo_rp_q <= fifo_rp_q + 1'b1;
@@ -287,7 +313,7 @@ module isolde_spm_loader #(
       // a credit is spent when a read is granted and returned when the
       // corresponding write retires
       unique case ({
-        rd_req.req && rd_rsp.gnt, fifo_pop
+        issue_fire, fifo_pop
       })
         2'b10:   credits_q <= credits_q - 1'b1;
         2'b01:   credits_q <= credits_q + 1'b1;
@@ -306,9 +332,11 @@ module isolde_spm_loader #(
           end
         end
         RUN: begin
-          if (rd_req.req && rd_rsp.gnt) begin
-            rd_left_q   <= rd_left_q - 1'b1;
-            addr_pipe_q <= reg_dir_q ? src_addr : spm_addr;
+          if (issue_fire) begin
+            rd_left_q <= rd_left_q - 1'b1;
+            // Normal transfers need a one-cycle address pipe to match the
+            // read response. Zero-fill pushes its SPM address immediately.
+            if (!zero_mode) addr_pipe_q <= reg_dir_q ? src_addr : spm_addr;
             // the (row, bank) walk. rd_widx_q deliberately does NOT advance
             // across the bank 8 -> bank 0 wrap, because bank 8 of row r and
             // bank 0 of row r+1 hold the same payload word. On the final row,
@@ -341,6 +369,10 @@ module isolde_spm_loader #(
   assert property (@(posedge clk_i) disable iff (!rst_ni)
       start_pulse |-> (reg_len_q[2:0] == 3'b000))
   else $error("isolde_spm_loader: LEN=%0d is not a multiple of 8", reg_len_q);
+  // zero-fill is an SPM write operation and is only valid in load direction.
+  assert property (@(posedge clk_i) disable iff (!rst_ni)
+      start_pulse |-> !(reg_zero_q && reg_dir_q))
+  else $error("isolde_spm_loader: zero_fill cannot be combined with STORE");
   // software must not touch the descriptor while a transfer is running - the
   // writes are ignored, but silently ignoring them hides a driver bug
   assert property (@(posedge clk_i) disable iff (!rst_ni) !(cfg_wr && busy_o && cfg_off != 4'h4))

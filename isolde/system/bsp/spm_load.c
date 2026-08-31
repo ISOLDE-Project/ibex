@@ -103,11 +103,31 @@ uint32_t spm_load_negate_f16(uint32_t spm_addr,
   return spmld_next_addr(spm_addr, elems);
 }
 
+void spm_fill_zero_async(uint32_t spm_addr, uint32_t elems)
+{
+  spmld_start(0u, spm_addr, elems, SPMLD_CTRL_ZERO_FILL);
+}
+
+uint32_t spm_fill_zero(uint32_t spm_addr, uint32_t elems)
+{
+  if (elems == 0u) {
+    return spm_addr;
+  }
+
+  spm_fill_zero_async(spm_addr, elems);
+  spm_dma_wait();
+
+  return spmld_next_addr(spm_addr, elems);
+}
+
 uint32_t spm_store(uint32_t *dst, uint32_t spm_addr, uint32_t elems) {
   spm_store_async(dst, spm_addr, elems);
   spm_dma_wait();
   return spmld_next_addr(spm_addr, elems);
 }
+
+
+
 
 ///
 uint32_t get_addr_start(uint32_t row) {

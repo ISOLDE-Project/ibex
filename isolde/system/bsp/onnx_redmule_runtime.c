@@ -139,21 +139,7 @@ void omrm_zero_f16(uint32_t tile, uint32_t spm_addr, uint32_t elements)
   omrm_require_complete_rows(elements);
   rows = elements / OMRM_FP16_PER_ROW;
   isolde_set_tile(tile);
-
-  for (row = 0u; row < rows; ++row) {
-    uint32_t bank;
-    volatile uint32_t *dst =
-        (volatile uint32_t *)(uintptr_t)(SPM_NARROW_ADDR + spm_addr +
-                                         row * OMRM_ROW_BYTES);
-
-    for (bank = 0u; bank < OMRM_PAYLOAD_WORDS; ++bank) {
-      dst[bank] = 0u;
-    }
-
-    if (row + 1u < rows) {
-      dst[OMRM_PAYLOAD_WORDS] = 0u;
-    }
-  }
+  (void)spm_fill_zero(spm_addr, elements / 2u);
 }
 
 void omrm_gemm_f16_16_12_16(uint32_t tile, uint32_t x_spm_addr,
