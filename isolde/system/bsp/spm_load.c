@@ -95,6 +95,14 @@ uint32_t spm_load(uint32_t spm_addr, const uint32_t *src, uint32_t elems) {
   return spmld_next_addr(spm_addr, elems);
 }
 
+uint32_t spm_load_negate_f16(uint32_t spm_addr,
+                             const uint32_t *src,
+                             uint32_t elems){
+  spmld_start((uint32_t)src, spm_addr, elems, SPMLD_CTRL_NEGATE_FP16);
+  spm_dma_wait();
+  return spmld_next_addr(spm_addr, elems);
+}
+
 uint32_t spm_store(uint32_t *dst, uint32_t spm_addr, uint32_t elems) {
   spm_store_async(dst, spm_addr, elems);
   spm_dma_wait();

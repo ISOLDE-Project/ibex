@@ -37,6 +37,7 @@
 
 #define SPMLD_CTRL_START (1u << 0)
 #define SPMLD_CTRL_DIR_STORE (1u << 1) /* 0 = DMEM->SPM, 1 = SPM->DMEM */
+#define SPMLD_CTRL_NEGATE_FP16 (1u << 2)
 
 #define SPMLD_STATUS_BUSY (1u << 0)
 #define SPMLD_STATUS_DONE (1u << 1)
@@ -62,6 +63,7 @@ static inline uint32_t spmld_event_bit(void) { return isolde_evt_loader(); }
  * it is a drop-in for spm_write().
  */
 uint32_t spm_load(uint32_t spm_addr, const uint32_t *src, uint32_t elems);
+uint32_t spm_load_negate_f16(uint32_t spm_addr, const uint32_t *src, uint32_t elems);
 
 /**
  * The reverse: SPM of the selected tile back into data memory. Drop-in for

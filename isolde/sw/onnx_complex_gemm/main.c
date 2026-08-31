@@ -68,6 +68,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
+  START_PERFCNT(0x1)
   isolde_clear_tile_ip((uint32_t)-1);
   outputs = main_graph((const void *)ar_inp, (const void *)ai_inp,
                        (const void *)br_inp, (const void *)bi_inp);
@@ -76,7 +77,9 @@ int main(int argc, char **argv)
     printf("[ONNX-CGEMM] ERROR: graph returned a null output\n");
     return 1;
   }
-
+  STOP_PERFCNT(0x1)
+  printPerfCnt();
+  
   errors += validate_result(outputs.cr, cr_golden, GRAPH_OUTPUT_ELEMENTS, K_SIZE,"Cr", &worst_ulp);
   errors += validate_result(outputs.ci, ci_golden, GRAPH_OUTPUT_ELEMENTS, K_SIZE, "Ci", &worst_ulp);
 

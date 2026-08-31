@@ -89,7 +89,12 @@ uint32_t omrm_upload_f16(uint32_t tile, uint32_t spm_addr,
       elements <= ((OMRM_DMEM_END - OMRM_DMEM_BASE) / sizeof(uint16_t)) &&
       source_addr >= OMRM_DMEM_BASE &&
       source_addr <= OMRM_DMEM_END - elements * sizeof(uint16_t)) {
-    return spm_load(spm_addr, (const uint32_t *)source, elements / 2u);
+      
+      if (negate != 0u) {
+        return spm_load_negate_f16(spm_addr, (const uint32_t *)source, elements / 2u);
+      }
+
+      return spm_load(spm_addr, (const uint32_t *)source, elements / 2u);
   }
 
   /*

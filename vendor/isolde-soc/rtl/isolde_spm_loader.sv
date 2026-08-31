@@ -72,11 +72,13 @@ module isolde_spm_loader #(
   //   0x00 SRC      DMEM byte address of the first payload word
   //   0x04 DST_ROW  first SPM row index
   //   0x08 LEN      payload words; MUST be a multiple of 8
-  //   0x0C CTRL     [0] start (self-clearing), [1] dir 0=load 1=store
+  //   0x0C CTRL     [0] start (self-clearing), [1] dir 0=load 1=store,
+  //                 [2] negate_fp16 on LOAD: XOR 0x8000 into each FP16 lane
   //   0x10 STATUS   [0] busy, [1] done (write 1 to clear)
   // ------------------------------------------------------------------------
   logic [31:0] reg_src_q, reg_dstrow_q, reg_len_q;
   logic reg_dir_q;
+  logic reg_negate_q;
   logic start_pulse;
   logic done_q;
   logic cfg_sel, cfg_wr, cfg_rd;
@@ -103,6 +105,7 @@ module isolde_spm_loader #(
       reg_dstrow_q <= '0;
       reg_len_q    <= '0;
       reg_dir_q    <= 1'b0;
+      reg_negate_q <= 1'b0;
       start_pulse  <= 1'b0;
       cfg_rsp_q    <= '0;
     end else begin
@@ -120,8 +123,9 @@ module isolde_spm_loader #(
           4'h1: reg_dstrow_q <= cfg_i.req.data;
           4'h2: reg_len_q    <= cfg_i.req.data;
           4'h3: begin
-            reg_dir_q   <= cfg_i.req.data[1];
-            start_pulse <= cfg_i.req.data[0] & ~busy_o;
+            reg_dir_q    <= cfg_i.req.data[1];
+            reg_negate_q <= cfg_i.req.data[2];
+            start_pulse  <= cfg_i.req.data[0] & ~busy_o;
           end
           default: ;  // STATUS is read-only apart from done-clear below
         endcase
@@ -131,7 +135,7 @@ module isolde_spm_loader #(
           4'h0: cfg_rsp_q.data <= reg_src_q;
           4'h1: cfg_rsp_q.data <= reg_dstrow_q;
           4'h2: cfg_rsp_q.data <= reg_len_q;
-          4'h3: cfg_rsp_q.data <= {30'b0, reg_dir_q, 1'b0};
+          4'h3: cfg_rsp_q.data <= {29'b0, reg_negate_q, reg_dir_q, 1'b0};
           4'h4: cfg_rsp_q.data <= {30'b0, done_q, busy_o};
           default: cfg_rsp_q.data <= 32'hDEAD_BEEF;
         endcase
@@ -262,8 +266,14 @@ module isolde_spm_loader #(
       // --- FIFO bookkeeping, shared by all states ---
       if (fifo_push) begin
         fifo_addr_q[fifo_wp_q] <= addr_pipe_q;
-        fifo_data_q[fifo_wp_q] <= rd_rsp.data;
-        fifo_wp_q              <= fifo_wp_q + 1'b1;
+        // Optional FP16 negate is a raw sign-bit toggle on each packed
+        // 16-bit lane.  Apply it only while loading DMEM -> SPM; STORE
+        // must preserve SPM data exactly.  Descriptor registers are frozen
+        // while busy, so reg_negate_q/reg_dir_q are stable for the response.
+        fifo_data_q[fifo_wp_q] <= (!reg_dir_q && reg_negate_q)
+                                      ? (rd_rsp.data ^ 32'h8000_8000)
+                                      : rd_rsp.data;
+        fifo_wp_q <= fifo_wp_q + 1'b1;
       end
       if (fifo_pop) fifo_rp_q <= fifo_rp_q + 1'b1;
       unique case ({
