@@ -1,5 +1,5 @@
 /*
- * complex_gemm_12x16x16_rawbits.c
+ * complex_gemm.c
  *
  * Specialized complex FP16 GEMM for:
  *
@@ -12,16 +12,41 @@
  *   RM1: Ci = Ar*Bi + Ai*Br
  *
  * IMPORTANT FOR RV32IM:
- * CPU-side FP16 data is moved and compared as raw uint16_t storage bits.
- * There is deliberately no scalar _Float16 arithmetic in this file, so
- * Clang cannot introduce compiler-rt half<->float helpers such as
- * __extendhfsf2 / __truncsfhf2.
+ * CPU-side FP16 data is moved and compared as raw storage bits. There is
+ * deliberately no scalar _Float16 arithmetic in this file, so Clang cannot
+ * introduce compiler-rt half<->float helpers such as __extendhfsf2 /
+ * __truncsfhf2. The sign flip needed for -Bi is a word-wise XOR of bit 15 in
+ * both halves, which is an integer operation.
+ *
+ * TRANSFER STRATEGY
+ * -----------------
+ * Operands move through isolde_spm_loader (bsp/spm_load.h) rather than the
+ * CPU store loop. Three properties of the loader shape the code:
+ *
+ *   - it moves whole contiguous tensors, so no per-row marshalling buffer is
+ *     needed and the bank-8 duplication between consecutive rows comes out
+ *     right by construction. Only the FINAL row's guard word is a don't-care;
+ *     zeroing the guard on every row, as the previous version did, corrupts
+ *     the layout that RedMulE reads.
+ *
+ *   - it reads one word past the payload to fill that final guard slot. The
+ *     generated tensors are exactly M*N elements with no padding, so the last
+ *     row is sent through a small scratch instead: bulk via the loader, tail
+ *     row via spm_load(). No access ever leaves a generated array.
+ *
+ *   - sources and destinations must live in data memory. The generated
+ *     tensors are .rodata and the buffers here are .bss, both of which
+ *     link.ld places in dataram. Stack buffers would NOT work: the stack is
+ *     on a separate memory port the loader cannot reach.
  */
 
 #include <stdint.h>
-#include <bsp/spm.h>
-#include <bsp/tinyprintf.h>
+
+#include <bsp/fp16_utils.h>
 #include <bsp/omp_redmule.h>
+#include <bsp/spm.h>
+#include <bsp/spm_load.h>
+#include <bsp/tinyprintf.h>
 
 #include "inc/tensor_dim.h"
 #include "inc/ar_input.h"
@@ -31,21 +56,20 @@
 #include "inc/cr_golden.h"
 #include "inc/ci_golden.h"
 
-#ifndef COMPLEX_GEMM_MAX_ULP_ERROR
-#define COMPLEX_GEMM_MAX_ULP_ERROR 2u
-#endif
-
 #define RM_REAL 0u
 #define RM_IMAG 1u
 #define RM_MASK (REDMULE_BIT(RM_REAL) | REDMULE_BIT(RM_IMAG))
 
-#define SPM_PAYLOAD_WORDS 8u
-#define SPM_FP16_PER_ROW  16u
-#define SPM_GUARD_FP16    2u
+#define SPM_PAYLOAD_WORDS 8u  /* NUM_BANKS - 1 */
+#define SPM_F16_PER_ROW   16u
 
 #define X_ELEMS (M_SIZE * N_SIZE)
 #define W_ELEMS (N_SIZE * K_SIZE)
 #define Y_ELEMS (M_SIZE * K_SIZE)
+
+#define X_WORDS (X_ELEMS / 2u)
+#define W_WORDS (W_ELEMS / 2u)
+#define Y_WORDS (Y_ELEMS / 2u)
 
 #if (M_SIZE != 12) || (N_SIZE != 16) || (K_SIZE != 16)
 #error "This program requires --m 12 --n 16 --k 16"
@@ -59,273 +83,219 @@
 #error "This program requires exactly one M/N/K tile"
 #endif
 
-#if ((X_ELEMS % SPM_FP16_PER_ROW) != 0)
-#error "X must contain complete 16-FP16 SPM rows"
+#if ((X_ELEMS % SPM_F16_PER_ROW) != 0) || ((W_ELEMS % SPM_F16_PER_ROW) != 0) \
+    || ((Y_ELEMS % SPM_F16_PER_ROW) != 0)
+#error "Every operand must contain complete 16-FP16 SPM rows"
 #endif
 
-#if ((W_ELEMS % SPM_FP16_PER_ROW) != 0)
-#error "W must contain complete 16-FP16 SPM rows"
-#endif
+/* ------------------------------------------------------------------ */
+/* DMEM buffers. All .bss, hence dataram, hence loader-reachable.      */
+/* ------------------------------------------------------------------ */
 
-#if ((Y_ELEMS % SPM_FP16_PER_ROW) != 0)
-#error "Y must contain complete 16-FP16 SPM rows"
-#endif
+/* Tail row staging: spm_load() reads src[0..8] for one row. */
+static uint32_t tail_row[SPM_PAYLOAD_WORDS + 1u];
 
-/*
- * may_alias lets us access the storage representation of the generated
- * _Float16 arrays as uint16_t without asking Clang to perform a FP conversion.
- */
-typedef uint16_t fp16_storage_t __attribute__((may_alias));
+/* -Bi, produced once per phase by a word-wise sign flip. */
+static uint32_t w_negated[W_WORDS];
 
-/* 16 FP16 payload entries + two BSP guard entries = 36 bytes. */
-static fp16_storage_t spm_row[SPM_FP16_PER_ROW + SPM_GUARD_FP16]
-    __attribute__((aligned(4)));
+/* Y starts at zero. .bss is cleared at startup, so this needs no fill loop
+ * and no runtime cost beyond the transfer itself. Never written. */
+static const uint32_t y_zero[Y_WORDS];
+
+/* Result readback. spm_store() writes dst[0..elems], one word past the
+ * payload, so the buffer carries a spare word. */
+static uint32_t result[2][Y_WORDS + 1u];
 
 typedef struct {
-    uint32_t x;
-    uint32_t w;
-    uint32_t y;
+  uint32_t x;
+  uint32_t w;
+  uint32_t y;
 } spm_layout_t;
 
 static spm_layout_t spm_layout[2];
 
-static inline uint16_t load_fp16_bits(const _Float16 *src, uint32_t index)
-{
-    const fp16_storage_t *bits =
-        (const fp16_storage_t *)(const void *)src;
-    return bits[index];
+/* ------------------------------------------------------------------ */
+/* Transfer helpers                                                    */
+/* ------------------------------------------------------------------ */
+
+/*
+ * The loader is a word engine, so every tensor it touches must be
+ * word-aligned. The generator emits plain `static const _Float16 x[N]`, whose
+ * alignment is not guaranteed to be 4; Ibex traps on a misaligned access
+ * rather than fixing it up, so check rather than discover it in a waveform.
+ */
+static void require_word_aligned(const void *p, const char *what) {
+  uintptr_t a = (uintptr_t)p;
+
+  if ((a & 3u) != 0u) {
+    printf("[CGEMM] %s is not word aligned (0x%08x)\n", what, (uint32_t)a);
+    _Exit(0x0bad0004);
+  }
 }
 
-static inline uint16_t fp16_negate_bits(uint16_t bits)
-{
-    return (uint16_t)(bits ^ 0x8000u);
+/*
+ * DMEM -> SPM of the currently selected tile, one contiguous tensor.
+ *
+ * All rows but the last are one loader descriptor. The last row is copied
+ * through tail_row so the guard slot is written as zero instead of reading
+ * past the end of `src`. Rows 0..n-2 still receive the following row's first
+ * word in bank 8, which is what RedMulE expects.
+ */
+static uint32_t upload_words(uint32_t addr, const uint32_t *src,
+                             uint32_t words) {
+  uint32_t bulk = words - SPM_PAYLOAD_WORDS;
+  uint32_t i;
+
+  if (bulk != 0u) {
+    addr = spm_load(addr, src, bulk);
+  }
+
+  for (i = 0u; i < SPM_PAYLOAD_WORDS; ++i) {
+    tail_row[i] = src[bulk + i];
+  }
+  tail_row[SPM_PAYLOAD_WORDS] = 0u;
+
+  return spm_load(addr, tail_row, SPM_PAYLOAD_WORDS);
 }
 
-static inline uint16_t fp16_ordered_bits(uint16_t bits)
-{
-    if ((bits & 0x8000u) != 0u) {
-        return (uint16_t)(~bits);
-    }
-    return (uint16_t)(bits | 0x8000u);
+static uint32_t upload_f16(uint32_t addr, const _Float16 *src,
+                           uint32_t words, const char *what) {
+  require_word_aligned((const void *)src, what);
+  return upload_words(addr, (const uint32_t *)(const void *)src, words);
 }
 
-static inline uint32_t fp16_ulp_distance_bits(uint16_t a, uint16_t b)
-{
-    const uint16_t oa = fp16_ordered_bits(a);
-    const uint16_t ob = fp16_ordered_bits(b);
+/* Flip the FP16 sign bit of both halves of every word. */
+static void negate_f16(uint32_t *dst, const _Float16 *src, uint32_t words) {
+  const uint32_t *s = (const uint32_t *)(const void *)src;
+  uint32_t i;
 
-    return (oa >= ob)
-        ? (uint32_t)(oa - ob)
-        : (uint32_t)(ob - oa);
+  require_word_aligned((const void *)src, "negate source");
+  for (i = 0u; i < words; ++i) {
+    dst[i] = s[i] ^ 0x80008000u;
+  }
 }
 
-static inline void clear_guard(void)
-{
-    spm_row[SPM_FP16_PER_ROW + 0u] = 0u;
-    spm_row[SPM_FP16_PER_ROW + 1u] = 0u;
+/* ------------------------------------------------------------------ */
+/* Operand placement and launch                                        */
+/* ------------------------------------------------------------------ */
+
+static void initialize_rm(uint32_t rm, const _Float16 *x, const _Float16 *w,
+                          uint32_t negate_w) {
+  uint32_t addr;
+
+  isolde_set_tile(rm);
+  addr = get_addr_start(0);
+
+  spm_layout[rm].x = addr;
+  addr = upload_f16(addr, x, X_WORDS, "X");
+
+  spm_layout[rm].w = addr;
+  if (negate_w != 0u) {
+    negate_f16(w_negated, w, W_WORDS);
+    addr = upload_words(addr, w_negated, W_WORDS);
+  } else {
+    addr = upload_f16(addr, w, W_WORDS, "W");
+  }
+
+  spm_layout[rm].y = addr;
+  (void)upload_words(addr, y_zero, Y_WORDS);
 }
 
-static uint32_t write_fp16_matrix_bits(uint32_t addr,
-                                       const _Float16 *src,
-                                       uint32_t elems,
-                                       uint32_t negate)
-{
-    uint32_t base;
+static void update_xw(uint32_t rm, const _Float16 *x, const _Float16 *w,
+                      uint32_t negate_w) {
+  isolde_set_tile(rm);
 
-    for (base = 0u; base < elems; base += SPM_FP16_PER_ROW) {
-        uint32_t lane;
+  (void)upload_f16(spm_layout[rm].x, x, X_WORDS, "X");
 
-        for (lane = 0u; lane < SPM_FP16_PER_ROW; ++lane) {
-            uint16_t bits = load_fp16_bits(src, base + lane);
-
-            if (negate != 0u) {
-                bits = fp16_negate_bits(bits);
-            }
-
-            spm_row[lane] = bits;
-        }
-
-        clear_guard();
-        addr = spm_write(addr, (uint32_t *)(void *)&spm_row[0],
-                         SPM_PAYLOAD_WORDS);
-    }
-
-    return addr;
+  if (negate_w != 0u) {
+    negate_f16(w_negated, w, W_WORDS);
+    (void)upload_words(spm_layout[rm].w, w_negated, W_WORDS);
+  } else {
+    (void)upload_f16(spm_layout[rm].w, w, W_WORDS, "W");
+  }
 }
 
-static uint32_t write_zero_matrix_bits(uint32_t addr, uint32_t elems)
-{
-    uint32_t base;
-    uint32_t lane;
-
-    for (lane = 0u; lane < SPM_FP16_PER_ROW; ++lane) {
-        spm_row[lane] = 0u;
-    }
-    clear_guard();
-
-    for (base = 0u; base < elems; base += SPM_FP16_PER_ROW) {
-        addr = spm_write(addr, (uint32_t *)(void *)&spm_row[0],
-                         SPM_PAYLOAD_WORDS);
-    }
-
-    return addr;
+static inline void launch_gemm(uint32_t rm) {
+  redmule_gemm_async(rm, spm_layout[rm].x, spm_layout[rm].w, spm_layout[rm].y,
+                     TILE_K_SIZE, TILE_M_SIZE, TILE_N_SIZE);
 }
 
-static void initialize_rm(uint32_t rm,
-                          const _Float16 *x,
-                          const _Float16 *w,
-                          uint32_t negate_w)
-{
-    uint32_t addr;
+static uint32_t check_result(uint32_t rm, const _Float16 *golden,
+                             const char *name, uint32_t *worst_ulp) {
+  isolde_set_tile(rm);
 
-    isolde_set_tile(rm);
-    addr = get_addr_start(0);
+  /* One transfer, then a plain comparison over a DMEM buffer. */
+  (void)spm_store(result[rm], spm_layout[rm].y, Y_WORDS);
 
-    spm_layout[rm].x = addr;
-    addr = write_fp16_matrix_bits(addr, x, X_ELEMS, 0u);
-
-    spm_layout[rm].w = addr;
-    addr = write_fp16_matrix_bits(addr, w, W_ELEMS, negate_w);
-
-    spm_layout[rm].y = addr;
-    (void)write_zero_matrix_bits(addr, Y_ELEMS);
+  return validate_result((const fp16_storage_t *)(const void *)result[rm],
+                         golden, Y_ELEMS, K_SIZE, name, worst_ulp);
 }
 
-static void update_xw(uint32_t rm,
-                      const _Float16 *x,
-                      const _Float16 *w,
-                      uint32_t negate_w)
-{
-    isolde_set_tile(rm);
+/* ------------------------------------------------------------------ */
 
-    (void)write_fp16_matrix_bits(spm_layout[rm].x, x, X_ELEMS, 0u);
-    (void)write_fp16_matrix_bits(spm_layout[rm].w, w, W_ELEMS, negate_w);
+static int run_complex_gemm(uint32_t *errors, uint32_t *worst_ulp) {
+  *errors = 0u;
+  *worst_ulp = 0u;
+
+  if (isolde_get_tile_cnt() < 2u) {
+    printf("[CGEMM] ERROR: at least two RedMulEs are required\n");
+    return -1;
+  }
+
+  printf("[CGEMM] A=12x16, B=16x16, C=12x16 complex\n");
+  printf("[CGEMM] real tile: 12x16 @ 16x16\n");
+  printf("[CGEMM] one output tile, one reduction chunk, RM0=Cr RM1=Ci\n");
+
+  /* Phase 1: Cr += Ar*Br, Ci += Ar*Bi, starting from Y=0. */
+  initialize_rm(RM_REAL, ar_inp, br_inp, 0u);
+  initialize_rm(RM_IMAG, ar_inp, bi_inp, 0u);
+
+  launch_gemm(RM_REAL);
+  launch_gemm(RM_IMAG);
+  redmule_wait_all(RM_MASK);
+
+  /* Phase 2: Cr += Ai*(-Bi), Ci += Ai*Br. Y is left in place and
+   * accumulated into, so only X and W are refreshed. */
+  update_xw(RM_REAL, ai_inp, bi_inp, 1u);
+  update_xw(RM_IMAG, ai_inp, br_inp, 0u);
+
+  launch_gemm(RM_REAL);
+  launch_gemm(RM_IMAG);
+  redmule_wait_all(RM_MASK);
+
+  *errors += check_result(RM_REAL, cr_golden, "Cr", worst_ulp);
+  *errors += check_result(RM_IMAG, ci_golden, "Ci", worst_ulp);
+
+  return 0;
 }
 
-static inline void launch_gemm(uint32_t rm)
-{
-    redmule_gemm_async(
-        rm,
-        spm_layout[rm].x,
-        spm_layout[rm].w,
-        spm_layout[rm].y,
-        TILE_K_SIZE,
-        TILE_M_SIZE,
-        TILE_N_SIZE);
-}
+int main(int argc, char **argv) {
+  uint32_t errors;
+  uint32_t worst_ulp;
 
-static uint32_t check_result(uint32_t rm,
-                             const _Float16 *golden,
-                             const char *name,
-                             uint32_t *worst_ulp)
-{
-    uint32_t addr;
-    uint32_t base;
-    uint32_t errors = 0u;
+  (void)argc;
+  (void)argv;
 
-    isolde_set_tile(rm);
-    addr = spm_layout[rm].y;
+  print_system_info();
+  printf("[CGEMM] specialized 12x16x16 complex GEMM (raw FP16 storage)\n");
 
-    for (base = 0u; base < Y_ELEMS; base += SPM_FP16_PER_ROW) {
-        uint32_t lane;
+  isolde_clear_tile_ip((uint32_t)-1);
 
-        addr = spm_read((uint32_t *)(void *)&spm_row[0], addr,
-                        SPM_PAYLOAD_WORDS);
+  START_PERFCNT(0x1)
+  if (run_complex_gemm(&errors, &worst_ulp) != 0) {
+    return 1;
+  }
+  STOP_PERFCNT(0x1)
+  printPerfCnt();
 
-        for (lane = 0u; lane < SPM_FP16_PER_ROW; ++lane) {
-            const uint32_t idx = base + lane;
-            const uint32_t row = idx / K_SIZE;
-            const uint32_t col = idx % K_SIZE;
-            const uint16_t got_bits = spm_row[lane];
-            const uint16_t golden_bits = load_fp16_bits(golden, idx);
-            const uint32_t ulp =
-                fp16_ulp_distance_bits(got_bits, golden_bits);
+  printf("[CGEMM] validation: errors=%d worst_ulp=%d allowed_ulp=%d\n", errors,
+         worst_ulp, (uint32_t)MAX_ULP_ERROR);
 
-            if (ulp > *worst_ulp) {
-                *worst_ulp = ulp;
-            }
+  if (errors != 0u) {
+    printf("[CGEMM] FAILED\n");
+    return 1;
+  }
 
-            if (ulp > COMPLEX_GEMM_MAX_ULP_ERROR) {
-                if (errors < 8u) {
-                    printf("[CGEMM] %s[%d][%d] got=0x%04x golden=0x%04x ulp=%d\n",
-                           name,
-                           row,
-                           col,
-                           (uint32_t)got_bits,
-                           (uint32_t)golden_bits,
-                           ulp);
-                }
-                ++errors;
-            }
-        }
-    }
-
-    return errors;
-}
-
-static int run_complex_gemm(uint32_t *errors, uint32_t *worst_ulp)
-{
-    *errors = 0u;
-    *worst_ulp = 0u;
-
-    if (isolde_get_tile_cnt() < 2u) {
-        printf("[CGEMM] ERROR: at least two RedMulEs are required\n");
-        return -1;
-    }
-
-    printf("[CGEMM] A=12x16, B=16x16, C=12x16 complex\n");
-    printf("[CGEMM] real tile: 12x16 @ 16x16\n");
-    printf("[CGEMM] one output tile, one reduction chunk, RM0=Cr RM1=Ci\n");
-
-    /* Phase 1: Cr += Ar*Br, Ci += Ar*Bi, starting from Y=0. */
-    initialize_rm(RM_REAL, ar_inp, br_inp, 0u);
-    initialize_rm(RM_IMAG, ar_inp, bi_inp, 0u);
-
-    launch_gemm(RM_REAL);
-    launch_gemm(RM_IMAG);
-    redmule_wait_all(RM_MASK);
-
-    /* Phase 2: Cr += Ai*(-Bi), Ci += Ai*Br. */
-    update_xw(RM_REAL, ai_inp, bi_inp, 1u);
-    update_xw(RM_IMAG, ai_inp, br_inp, 0u);
-
-    launch_gemm(RM_REAL);
-    launch_gemm(RM_IMAG);
-    redmule_wait_all(RM_MASK);
-
-    *errors += check_result(RM_REAL, cr_golden, "Cr", worst_ulp);
-    *errors += check_result(RM_IMAG, ci_golden, "Ci", worst_ulp);
-
-    return 0;
-}
-
-int main(int argc, char **argv)
-{
-    uint32_t errors;
-    uint32_t worst_ulp;
-
-    (void)argc;
-    (void)argv;
-
-    print_system_info();
-    printf("[CGEMM] specialized 12x16x16 complex GEMM (raw FP16 storage)\n");
-
-    isolde_clear_tile_ip((uint32_t)-1);
-
-    if (run_complex_gemm(&errors, &worst_ulp) != 0) {
-        return 1;
-    }
-
-    printf("[CGEMM] validation: errors=%d worst_ulp=%d allowed_ulp=%d\n",
-           errors,
-           worst_ulp,
-           (uint32_t)COMPLEX_GEMM_MAX_ULP_ERROR);
-
-    if (errors != 0u) {
-        printf("[CGEMM] FAILED\n");
-        return 1;
-    }
-
-    printf("[CGEMM] PASSED\n");
-    return 0;
+  printf("[CGEMM] PASSED\n");
+  return 0;
 }

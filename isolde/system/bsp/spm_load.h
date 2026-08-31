@@ -18,7 +18,7 @@
 #ifndef __SPM_LOAD_H__
 #define __SPM_LOAD_H__
 
-// #include <stdint.h>
+#include <bsp/spm.h>
 
 // #include "simple_system_common.h"
 // #include "simple_system_regs.h"
@@ -85,5 +85,10 @@ void spm_dma_wait_irq(void);
 static inline int spm_dma_busy(void) {
   return (SPMLD_STATUS & SPMLD_STATUS_BUSY) != 0;
 }
+
+
+uint32_t get_addr_start(uint32_t row);
+uint32_t get_addr_end(uint32_t row);
+inline uint32_t get_row(uint32_t addr) { return (addr >> BANK_OFFSET_SHIFT); }
 
 #endif /* __SPM_LOAD_H__ */

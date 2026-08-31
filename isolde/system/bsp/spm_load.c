@@ -6,7 +6,6 @@
 
 #include <bsp/spm_load.h>
 
-// #include "bsp/spm.h"
 // #include "simple_system_common.h"
 #include "tinyprintf.h"
 
@@ -100,4 +99,21 @@ uint32_t spm_store(uint32_t *dst, uint32_t spm_addr, uint32_t elems) {
   spm_store_async(dst, spm_addr, elems);
   spm_dma_wait();
   return spmld_next_addr(spm_addr, elems);
+}
+
+///
+uint32_t get_addr_start(uint32_t row) {
+  uint32_t bank_index = 0;
+  uint32_t res = 0;
+  res |= (row << BANK_OFFSET_SHIFT);  // bits [31:6]
+  res |= (bank_index << BANK_SHIFT);  // bits [5:2]
+  return res;
+}
+
+uint32_t get_addr_end(uint32_t row) {
+  uint32_t bank_index = (NUM_BANKS - 1);
+  uint32_t res = 0;
+  res |= (row << BANK_OFFSET_SHIFT);  // bits [31:6]
+  res |= (bank_index << BANK_SHIFT);  // bits [5:2]
+  return res;
 }
