@@ -6,21 +6,37 @@
  * half-precision arithmetic in this file.
  */
 
+// #include <stdint.h>
+
+// #include <bsp/omp_redmule.h>
+// #include <bsp/onnx_redmule_runtime.h>
+// #include <bsp/spm.h>
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Bare-metal RedMulE runtime used by generated ONNX-MLIR objects.
+ * FP16 values are moved as raw storage bits; RV32 performs no scalar
+ * half-precision arithmetic in this file.
+ */
+
 #include <stdint.h>
 
 #include <bsp/omp_redmule.h>
 #include <bsp/onnx_redmule_runtime.h>
-#include <bsp/spm.h>
+#include <bsp/simple_system_regs.h>
+#include <bsp/spm_load.h>
 
-#define OMRM_FP16_PER_ROW 16u
-#define OMRM_PAYLOAD_WORDS 8u
-#define OMRM_GUARD_FP16 2u
+#define OMRM_FP16_PER_ROW    16u
+#define OMRM_PAYLOAD_WORDS    8u
+#define OMRM_ROW_BYTES       64u
+#define OMRM_FP16_SIGN_PAIR  0x80008000u
 
+/* link.ld: loader-visible data RAM. */
+#define OMRM_DMEM_BASE 0x00110000u
+#define OMRM_DMEM_END  0x00114000u
+
+/* Clang/GCC: permit raw access to the object representation of _Float16. */
 typedef uint16_t omrm_fp16_storage_t __attribute__((may_alias));
-
-/* spm_write/spm_read touch one guard word beyond the eight payload words. */
-static omrm_fp16_storage_t omrm_spm_row[OMRM_FP16_PER_ROW + OMRM_GUARD_FP16]
-    __attribute__((aligned(4)));
 
 static void omrm_require_complete_rows(uint32_t elements)
 {
@@ -29,20 +45,12 @@ static void omrm_require_complete_rows(uint32_t elements)
   }
 }
 
-static void omrm_clear_guard(void)
-{
-  omrm_spm_row[OMRM_FP16_PER_ROW] = 0u;
-  omrm_spm_row[OMRM_FP16_PER_ROW + 1u] = 0u;
-}
-
 uint32_t omrm_addr_start(uint32_t tile, uint32_t bank)
 {
   if (tile >= isolde_get_tile_cnt()) {
     _Exit(0x0bad0002);
   }
 
-  /* Remove stale completion state before this tile receives new work. */
-  isolde_clear_tile_ip(REDMULE_BIT(tile));
   isolde_set_tile(tile);
   return get_addr_start(bank);
 }
@@ -53,50 +61,100 @@ uint32_t omrm_upload_f16(uint32_t tile, uint32_t spm_addr,
 {
   const omrm_fp16_storage_t *src =
       (const omrm_fp16_storage_t *)source;
-  uint32_t base;
+  uintptr_t source_addr = (uintptr_t)source;
+  uint32_t rows;
+  uint32_t row;
 
   omrm_require_complete_rows(elements);
-  isolde_set_tile(tile);
-
-  for (base = 0u; base < elements; base += OMRM_FP16_PER_ROW) {
-    uint32_t lane;
-    for (lane = 0u; lane < OMRM_FP16_PER_ROW; ++lane) {
-      uint16_t bits = src[base + lane];
-      if (negate != 0u) {
-        bits = (uint16_t)(bits ^ 0x8000u);
-      }
-      omrm_spm_row[lane] = bits;
-    }
-    omrm_clear_guard();
-    spm_addr = spm_write(spm_addr, (uint32_t *)(void *)omrm_spm_row,
-                         OMRM_PAYLOAD_WORDS);
+  if (elements == 0u) {
+    return spm_addr;
   }
 
-  return spm_addr;
+  if ((source_addr & 1u) != 0u) {
+    _Exit(0x0bad0004);
+  }
+
+  rows = elements / OMRM_FP16_PER_ROW;
+  isolde_set_tile(tile);
+
+  /*
+   * Fast path for generated ONNX constants/results in dataram.
+   *
+   * With the updated isolde_spm_loader RTL the final row's bank 8 is not
+   * accessed, so an exact-sized source object is sufficient: no staging row,
+   * no guard word, and no CPU tail are required.
+   */
+  if (negate == 0u &&
+      (source_addr & 3u) == 0u &&
+      elements <= ((OMRM_DMEM_END - OMRM_DMEM_BASE) / sizeof(uint16_t)) &&
+      source_addr >= OMRM_DMEM_BASE &&
+      source_addr <= OMRM_DMEM_END - elements * sizeof(uint16_t)) {
+    return spm_load(spm_addr, (const uint32_t *)source, elements / 2u);
+  }
+
+  /*
+   * CPU fallback for stack/non-DMEM sources and for negate != 0.
+   * Build the narrow 9-bank row layout directly. Bank 8 is populated only
+   * when a following row exists, matching the updated loader RTL.
+   */
+  for (row = 0u; row < rows; ++row) {
+    uint32_t word;
+    uint32_t fp16_base = row * OMRM_FP16_PER_ROW;
+    volatile uint32_t *dst =
+        (volatile uint32_t *)(uintptr_t)(SPM_NARROW_ADDR + spm_addr +
+                                         row * OMRM_ROW_BYTES);
+
+    for (word = 0u; word < OMRM_PAYLOAD_WORDS; ++word) {
+      uint32_t i = fp16_base + 2u * word;
+      uint32_t bits = (uint32_t)src[i] | ((uint32_t)src[i + 1u] << 16);
+      if (negate != 0u) {
+        bits ^= OMRM_FP16_SIGN_PAIR;
+      }
+      dst[word] = bits;
+    }
+
+    if (row + 1u < rows) {
+      uint32_t i = fp16_base + OMRM_FP16_PER_ROW;
+      uint32_t bits = (uint32_t)src[i] | ((uint32_t)src[i + 1u] << 16);
+      if (negate != 0u) {
+        bits ^= OMRM_FP16_SIGN_PAIR;
+      }
+      dst[OMRM_PAYLOAD_WORDS] = bits;
+    }
+  }
+
+  return spm_addr + rows * OMRM_ROW_BYTES;
 }
 
 void omrm_zero_f16(uint32_t tile, uint32_t spm_addr, uint32_t elements)
 {
-  uint32_t base;
-  uint32_t lane;
+  uint32_t rows;
+  uint32_t row;
 
   omrm_require_complete_rows(elements);
+  rows = elements / OMRM_FP16_PER_ROW;
   isolde_set_tile(tile);
 
-  for (lane = 0u; lane < OMRM_FP16_PER_ROW; ++lane) {
-    omrm_spm_row[lane] = 0u;
-  }
-  omrm_clear_guard();
+  for (row = 0u; row < rows; ++row) {
+    uint32_t bank;
+    volatile uint32_t *dst =
+        (volatile uint32_t *)(uintptr_t)(SPM_NARROW_ADDR + spm_addr +
+                                         row * OMRM_ROW_BYTES);
 
-  for (base = 0u; base < elements; base += OMRM_FP16_PER_ROW) {
-    spm_addr = spm_write(spm_addr, (uint32_t *)(void *)omrm_spm_row,
-                         OMRM_PAYLOAD_WORDS);
+    for (bank = 0u; bank < OMRM_PAYLOAD_WORDS; ++bank) {
+      dst[bank] = 0u;
+    }
+
+    if (row + 1u < rows) {
+      dst[OMRM_PAYLOAD_WORDS] = 0u;
+    }
   }
 }
 
 void omrm_gemm_f16_16_12_16(uint32_t tile, uint32_t x_spm_addr,
                             uint32_t w_spm_addr, uint32_t y_spm_addr)
 {
+  isolde_clear_tile_ip(REDMULE_BIT(tile));
   redmule_gemm_async(tile, x_spm_addr, w_spm_addr, y_spm_addr, 16, 12, 16);
 }
 
@@ -109,17 +167,44 @@ void omrm_download_f16(uint32_t tile, uint32_t spm_addr, void *destination,
                        uint32_t elements)
 {
   omrm_fp16_storage_t *dst = (omrm_fp16_storage_t *)destination;
-  uint32_t base;
+  uintptr_t destination_addr = (uintptr_t)destination;
+  uint32_t rows;
+  uint32_t row;
 
   omrm_require_complete_rows(elements);
+  if (elements == 0u) {
+    return;
+  }
+
+  if ((destination_addr & 1u) != 0u) {
+    _Exit(0x0bad0004);
+  }
+
+  rows = elements / OMRM_FP16_PER_ROW;
   isolde_set_tile(tile);
 
-  for (base = 0u; base < elements; base += OMRM_FP16_PER_ROW) {
-    uint32_t lane;
-    spm_addr = spm_read((uint32_t *)(void *)omrm_spm_row, spm_addr,
-                        OMRM_PAYLOAD_WORDS);
-    for (lane = 0u; lane < OMRM_FP16_PER_ROW; ++lane) {
-      dst[base + lane] = omrm_spm_row[lane];
+  /* Exact-sized, word-aligned dataram destinations can use the whole loader. */
+  if ((destination_addr & 3u) == 0u &&
+      elements <= ((OMRM_DMEM_END - OMRM_DMEM_BASE) / sizeof(uint16_t)) &&
+      destination_addr >= OMRM_DMEM_BASE &&
+      destination_addr <= OMRM_DMEM_END - elements * sizeof(uint16_t)) {
+    (void)spm_store((uint32_t *)destination, spm_addr, elements / 2u);
+    return;
+  }
+
+  /* Stack/non-DMEM fallback: copy only the eight payload banks per row. */
+  for (row = 0u; row < rows; ++row) {
+    uint32_t word;
+    uint32_t fp16_base = row * OMRM_FP16_PER_ROW;
+    volatile const uint32_t *src =
+        (volatile const uint32_t *)(uintptr_t)(SPM_NARROW_ADDR + spm_addr +
+                                               row * OMRM_ROW_BYTES);
+
+    for (word = 0u; word < OMRM_PAYLOAD_WORDS; ++word) {
+      uint32_t bits = src[word];
+      uint32_t i = fp16_base + 2u * word;
+      dst[i] = (uint16_t)bits;
+      dst[i + 1u] = (uint16_t)(bits >> 16);
     }
   }
 }

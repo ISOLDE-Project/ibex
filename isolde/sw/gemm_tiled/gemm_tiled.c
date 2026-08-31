@@ -3,14 +3,6 @@
  *
  * Low-RAM software-tiled FP16 GEMM for the ISOLDE RedMulE cluster.
  *
- * Generated inputs:
- *
- *   tensor_dim.h
- *   x_input.h
- *   w_input.h
- *   y_input.h
- *   golden.h
- *
  * RedMulE notation:
  *
  *   Z[M x K] = Y[M x K] + X[M x N] * W[N x K]
@@ -22,25 +14,17 @@
  *   W_tile : TILE_N_SIZE x TILE_K_SIZE
  *   Y_tile : TILE_M_SIZE x TILE_K_SIZE
  *
- * TILE_N_SIZE is the reduction dimension.
+ * The SPM loader RTL used with this program does not access bank 8 of the
+ * final transferred row. Therefore an exact 8-word/16-FP16 row is sufficient:
+ * no source or destination guard word is required.
  *
- * IMPORTANT MEMORY DESIGN
- * -----------------------
- *
- * This version intentionally does NOT allocate one full CPU staging buffer
- * per RedMulE tile. spm_write() is synchronous from the CPU's perspective, so
- * a single small SPM-row scratch buffer can be filled, copied, and reused for
- * every hardware tile.
- *
- * The same scratch buffer is also reused for result downloads. Therefore the
- * application does not allocate a full z_result[] array either; each completed
- * output tile is checked directly against golden[] as it is read from SPM.
- *
- * This keeps .bss very small.
+ * A single 32-byte row workspace is retained because software must gather
+ * strided/padded pieces of the full X/W/Y tensors into the packed RedMulE tile
+ * layout. The workspace is static (.bss), so it is visible to the SPM loader.
  */
 
 #include <stdint.h>
-#include <bsp/spm.h>
+#include <bsp/spm_load.h>
 #include <bsp/tinyprintf.h>
 #include <bsp/omp_redmule.h>
 
@@ -58,32 +42,22 @@
 #define MAX_HW_TILES 8u
 #endif
 
-/*
- * Set to 0 for bit-exact FP16 comparison.
- *
- * A small tolerance can be useful if the Python tiled golden and the exact
- * RTL FMA/reduction ordering differ slightly.
- */
 #ifndef GEMM_MAX_ULP_ERROR
 #define GEMM_MAX_ULP_ERROR 2u
 #endif
 
 /*
- * Current BSP SPM transfer convention:
+ * SPM geometry:
  *
- *   NUM_BANKS       = 9
- *   payload per row = NUM_BANKS - 1 = 8 uint32_t words
+ *   physical banks   = 9
+ *   payload per row  = 8 uint32_t words
+ *   FP16 per row     = 16
  *
- * Two FP16 values fit in one uint32_t word.
+ * Bank 8 duplicates bank 0 of the following row for all non-final rows.
+ * With the revised loader, the final row stops at bank 7.
  */
-#define SPM_PAYLOAD_WORDS   8u
-#define SPM_FP16_PER_ROW   (2u * SPM_PAYLOAD_WORDS)
-
-/*
- * The low-level BSP row transfer touches the ninth bank as well, therefore
- * source/destination storage must contain one additional uint32_t guard word.
- */
-#define SPM_GUARD_FP16      2u
+#define SPM_PAYLOAD_WORDS  8u
+#define SPM_FP16_PER_ROW  (2u * SPM_PAYLOAD_WORDS)
 
 #define X_TILE_ELEMS (TILE_M_SIZE * TILE_N_SIZE)
 #define W_TILE_ELEMS (TILE_N_SIZE * TILE_K_SIZE)
@@ -128,14 +102,19 @@
 /* -------------------------------------------------------------------------- */
 
 /*
- * One payload row (16 FP16 values) plus one uint32_t guard word.
+ * Exactly one SPM payload row.
  *
- * Size with the current BSP:
+ * No guard word is needed with the revised isolde_spm_loader RTL.
+ * Keep this in static storage because the loader can access dataram/.bss but
+ * cannot access the separate stack memory.
  *
- *   18 FP16 values = 36 bytes.
+ * may_alias is useful with Clang because the loader API exposes the same
+ * storage as uint32_t words while the CPU fills/checks it as FP16.
  */
-static _Float16 spm_row[SPM_FP16_PER_ROW + SPM_GUARD_FP16]
-    __attribute__((aligned(4)));
+typedef _Float16 spm_fp16_t __attribute__((may_alias));
+
+static spm_fp16_t spm_row[SPM_FP16_PER_ROW]
+    __attribute__((aligned(32)));
 
 typedef struct {
     uint32_t x;
@@ -143,9 +122,6 @@ typedef struct {
     uint32_t y;
 } tile_spm_layout_t;
 
-/*
- * Only addresses are per hardware tile. The tensor data itself is not.
- */
 static tile_spm_layout_t spm_layout[MAX_HW_TILES];
 
 /* -------------------------------------------------------------------------- */
@@ -155,12 +131,6 @@ static tile_spm_layout_t spm_layout[MAX_HW_TILES];
 static inline uint32_t min_u32(uint32_t a, uint32_t b)
 {
     return (a < b) ? a : b;
-}
-
-static inline void clear_spm_guard(void)
-{
-    spm_row[SPM_FP16_PER_ROW + 0u] = (_Float16)0.0f;
-    spm_row[SPM_FP16_PER_ROW + 1u] = (_Float16)0.0f;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -178,10 +148,6 @@ static uint16_t fp16_bits(_Float16 value)
     return conv.u;
 }
 
-/*
- * Map binary16 bit patterns to a monotonic integer ordering so adjacent
- * finite FP16 values have adjacent integer values.
- */
 static uint16_t fp16_ordered(uint16_t bits)
 {
     if ((bits & 0x8000u) != 0u) {
@@ -202,16 +168,9 @@ static uint32_t fp16_ulp_distance(_Float16 a, _Float16 b)
 }
 
 /* -------------------------------------------------------------------------- */
-/* Fill one BSP SPM payload row from X                                        */
+/* Fill one SPM payload row from X                                            */
 /* -------------------------------------------------------------------------- */
 
-/*
- * local_offset is a flat offset in the fixed-size X tile.
- *
- * X tile layout:
- *
- *   [TILE_M_SIZE][TILE_N_SIZE]
- */
 static void fill_x_row(
     uint32_t m0,
     uint32_t n0,
@@ -233,19 +192,12 @@ static void fill_x_row(
             spm_row[lane] = (_Float16)0.0f;
         }
     }
-
-    clear_spm_guard();
 }
 
 /* -------------------------------------------------------------------------- */
-/* Fill one BSP SPM payload row from W                                        */
+/* Fill one SPM payload row from W                                            */
 /* -------------------------------------------------------------------------- */
 
-/*
- * W tile layout:
- *
- *   [TILE_N_SIZE][TILE_K_SIZE]
- */
 static void fill_w_row(
     uint32_t n0,
     uint32_t k0,
@@ -267,19 +219,12 @@ static void fill_w_row(
             spm_row[lane] = (_Float16)0.0f;
         }
     }
-
-    clear_spm_guard();
 }
 
 /* -------------------------------------------------------------------------- */
-/* Fill one BSP SPM payload row from initial Y                                */
+/* Fill one SPM payload row from initial Y                                    */
 /* -------------------------------------------------------------------------- */
 
-/*
- * Y tile layout:
- *
- *   [TILE_M_SIZE][TILE_K_SIZE]
- */
 static void fill_y_row(
     uint32_t m0,
     uint32_t k0,
@@ -301,8 +246,6 @@ static void fill_y_row(
             spm_row[lane] = (_Float16)0.0f;
         }
     }
-
-    clear_spm_guard();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -322,9 +265,9 @@ static uint32_t write_x_tile(
 
         fill_x_row(m0, n0, local);
 
-        spm_addr = spm_write(
+        spm_addr = spm_load(
             spm_addr,
-            (uint32_t *)&spm_row[0],
+            (const uint32_t *)(const void *)&spm_row[0],
             SPM_PAYLOAD_WORDS);
     }
 
@@ -344,9 +287,9 @@ static uint32_t write_w_tile(
 
         fill_w_row(n0, k0, local);
 
-        spm_addr = spm_write(
+        spm_addr = spm_load(
             spm_addr,
-            (uint32_t *)&spm_row[0],
+            (const uint32_t *)(const void *)&spm_row[0],
             SPM_PAYLOAD_WORDS);
     }
 
@@ -366,9 +309,9 @@ static uint32_t write_y_tile(
 
         fill_y_row(m0, k0, local);
 
-        spm_addr = spm_write(
+        spm_addr = spm_load(
             spm_addr,
-            (uint32_t *)&spm_row[0],
+            (const uint32_t *)(const void *)&spm_row[0],
             SPM_PAYLOAD_WORDS);
     }
 
@@ -404,7 +347,6 @@ static void upload_first_reduction_tile(
 
 /*
  * Later reduction chunks overwrite only X and W.
- *
  * Y remains untouched because it contains the accumulated partial result.
  */
 static void upload_next_reduction_tile(
@@ -443,7 +385,6 @@ static uint32_t check_output_tile(
     uint32_t errors = 0u;
 
     isolde_set_tile(hw_tile);
-
     spm_addr = spm_layout[slot].y;
 
     for (local = 0u;
@@ -452,8 +393,8 @@ static uint32_t check_output_tile(
 
         uint32_t lane;
 
-        spm_addr = spm_read(
-            (uint32_t *)&spm_row[0],
+        spm_addr = spm_store(
+            (uint32_t *)(void *)&spm_row[0],
             spm_addr,
             SPM_PAYLOAD_WORDS);
 
@@ -461,7 +402,6 @@ static uint32_t check_output_tile(
             const uint32_t elem = local + lane;
             const uint32_t mi = elem / TILE_K_SIZE;
             const uint32_t ki = elem % TILE_K_SIZE;
-
             const uint32_t gm = m0 + mi;
             const uint32_t gk = k0 + ki;
 
@@ -541,7 +481,6 @@ static int run_tiled_gemm(uint32_t *error_count, uint32_t *worst_ulp)
 
     /*
      * Independent jobs are output tiles (M tile, K tile).
-     *
      * Up to hw_tiles independent output tiles are assigned to RedMulEs.
      */
     for (batch = 0u;
@@ -552,9 +491,8 @@ static int run_tiled_gemm(uint32_t *error_count, uint32_t *worst_ulp)
             min_u32(hw_tiles, OUTPUT_TILE_COUNT - batch);
 
         /*
-         * These are automatic variables, not .bss.
-         *
-         * They are tiny: at most 2 * MAX_HW_TILES uint32_t values.
+         * These are tiny automatic arrays. They are CPU-only and therefore
+         * may live on the separate stack.
          */
         uint32_t m0[MAX_HW_TILES];
         uint32_t k0[MAX_HW_TILES];
@@ -562,9 +500,6 @@ static int run_tiled_gemm(uint32_t *error_count, uint32_t *worst_ulp)
         uint32_t slot;
         uint32_t n_tile;
 
-        /*
-         * Assign output coordinates to active hardware workers.
-         */
         for (slot = 0u; slot < active; ++slot) {
             const uint32_t output_id = batch + slot;
             const uint32_t mt = output_id / K_TILE_COUNT;
@@ -580,16 +515,18 @@ static int run_tiled_gemm(uint32_t *error_count, uint32_t *worst_ulp)
         for (n_tile = 0u;
              n_tile < N_TILE_COUNT;
              ++n_tile) {
+
             START_PERFCNT(n_tile)
+
             const uint32_t n0 =
                 n_tile * TILE_N_SIZE;
 
             uint32_t tile_mask = 0u;
 
             /*
-             * CPU uploads are sequential, but accelerator execution is
-             * asynchronous. The one-row CPU scratch buffer is therefore safe
-             * to reuse across all hardware tiles.
+             * Tile packing is sequential because all workers share the single
+             * loader channel and the single .bss row workspace. Accelerator
+             * execution remains asynchronous across RedMulE tiles.
              */
             for (slot = 0u; slot < active; ++slot) {
                 const uint32_t hw_tile = slot;
@@ -618,9 +555,6 @@ static int run_tiled_gemm(uint32_t *error_count, uint32_t *worst_ulp)
                  * BSP macro argument order:
                  *
                  *   K, M, N
-                 *
-                 * TILE_* must be compile-time constants because the BSP macro
-                 * encodes them into the custom instruction.
                  */
                 redmule_gemm_async(
                     hw_tile,
@@ -638,12 +572,13 @@ static int run_tiled_gemm(uint32_t *error_count, uint32_t *worst_ulp)
              * The next reduction chunk depends on the Y result of this one.
              */
             redmule_wait_all(tile_mask);
+
             STOP_PERFCNT(n_tile)
         }
 
         /*
-         * Completed output tiles are read one at a time and checked directly
-         * against golden[]. No full z_result[] buffer is required.
+         * Completed output tiles are read one row at a time and checked
+         * directly against golden[]. No full z_result[] buffer is required.
          */
         for (slot = 0u; slot < active; ++slot) {
             const uint32_t hw_tile = slot;

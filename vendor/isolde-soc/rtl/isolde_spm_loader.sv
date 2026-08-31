@@ -14,13 +14,13 @@
 // -----------------------------------------------
 //   * a row is 9 words: banks 0..8, at narrow offsets (row<<6) + (bank<<2)
 //   * a row carries 8 *payload* words; bank 8 duplicates bank 0 of the next row
-//   * so row r receives src[8r+0 .. 8r+8]  (9 words, last one shared)
+//   * rows before the last receive src[8r+0 .. 8r+8]
+//   * the final row receives only src[8r+0 .. 8r+7]; bank 8 is untouched
 //
 // The sequencer walks (row, bank) and derives the source word index by simply
 // NOT incrementing it on the bank 8 -> bank 0 wrap. No divides, no modulo-9.
-//
-// Because the duplicated word is re-fetched, both ports run 9 accesses per 8
-// payload words: 8/9 word/cycle = 3.56 B/cycle steady state.
+// The final bank-8 access is omitted because there is no following payload row.
+// A transfer of LEN payload words therefore performs LEN + N_ROWS - 1 accesses.
 //
 // Tile selection is NOT handled here. Writes leave on the ordinary narrow SPM
 // port and are steered by isolde_tile_router from CSR_ISOLDE_TILESEL, exactly
@@ -46,9 +46,8 @@ module isolde_spm_loader #(
 ) (
     input logic clk_i,
     input logic rst_ni,
-
     // === register block (CPU writes descriptors here) ===
-    isolde_tcdm_if.slave  cfg_i,
+    isolde_tcdm_if.slave cfg_i,
 
     // === master port to data memory ===
     isolde_tcdm_if.master dmem_o,
@@ -62,13 +61,11 @@ module isolde_spm_loader #(
 );
 
   import isolde_tcdm_pkg::*;
-
-  localparam int unsigned PAYLOAD_PER_ROW = 8;   // NUM_BANKS-1
-  localparam int unsigned BANKS_PER_ROW   = 9;   // NUM_BANKS
-  localparam int unsigned ROW_SHIFT       = 6;   // BANK_OFFSET_SHIFT
-  localparam int unsigned BANK_SHIFT      = 2;
-  localparam logic [3:0]  BANK_LAST       = 4'd8;  // BANKS_PER_ROW-1
-
+  localparam int unsigned PAYLOAD_PER_ROW = 8;  // NUM_BANKS-1
+  localparam int unsigned BANKS_PER_ROW = 9;  // NUM_BANKS
+  localparam int unsigned ROW_SHIFT = 6;  // BANK_OFFSET_SHIFT
+  localparam int unsigned BANK_SHIFT = 2;
+  localparam logic [3:0] BANK_LAST = 4'd8;  // BANKS_PER_ROW-1
   // ------------------------------------------------------------------------
   // Register block
   // ------------------------------------------------------------------------
@@ -79,12 +76,11 @@ module isolde_spm_loader #(
   //   0x10 STATUS   [0] busy, [1] done (write 1 to clear)
   // ------------------------------------------------------------------------
   logic [31:0] reg_src_q, reg_dstrow_q, reg_len_q;
-  logic        reg_dir_q;
-  logic        start_pulse;
-  logic        done_q;
-
-  logic        cfg_sel, cfg_wr, cfg_rd;
-  logic [ 3:0] cfg_off;
+  logic reg_dir_q;
+  logic start_pulse;
+  logic done_q;
+  logic cfg_sel, cfg_wr, cfg_rd;
+  logic [3:0] cfg_off;
 
   assign cfg_sel = cfg_i.req.req;
   assign cfg_wr  = cfg_sel & cfg_i.req.we;
@@ -96,26 +92,23 @@ module isolde_spm_loader #(
   // The whole rsp struct must have exactly ONE driver, so the registered
   // fields live in cfg_rsp_q and the combinational fields are merged in here.
   rsp_t cfg_rsp_q;
-
   always_comb begin
     cfg_i.rsp     = cfg_rsp_q;
-    cfg_i.rsp.gnt = cfg_sel;   // single-cycle grant, as tcdm_mem does
+    cfg_i.rsp.gnt = cfg_sel;  // single-cycle grant, as tcdm_mem does
     cfg_i.rsp.err = 1'b0;
   end
-
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      reg_src_q      <= '0;
-      reg_dstrow_q   <= '0;
-      reg_len_q      <= '0;
-      reg_dir_q      <= 1'b0;
-      start_pulse    <= 1'b0;
-      cfg_rsp_q      <= '0;
+      reg_src_q    <= '0;
+      reg_dstrow_q <= '0;
+      reg_len_q    <= '0;
+      reg_dir_q    <= 1'b0;
+      start_pulse  <= 1'b0;
+      cfg_rsp_q    <= '0;
     end else begin
       start_pulse     <= 1'b0;
       cfg_rsp_q.valid <= cfg_sel;
       cfg_rsp_q.data  <= '0;
-
       // Descriptor registers are FROZEN while a transfer is in flight.
       // Overwriting them mid-transfer corrupts it, and flipping dir re-routes
       // an in-flight write to the other port, where the address shim rejects
@@ -133,7 +126,6 @@ module isolde_spm_loader #(
           default: ;  // STATUS is read-only apart from done-clear below
         endcase
       end
-
       if (cfg_rd) begin
         case (cfg_off)
           4'h0: cfg_rsp_q.data <= reg_src_q;
@@ -146,7 +138,6 @@ module isolde_spm_loader #(
       end
     end
   end
-
   // ------------------------------------------------------------------------
   // Sequencer state
   // ------------------------------------------------------------------------
@@ -156,54 +147,51 @@ module isolde_spm_loader #(
     DRAIN
   } state_e;
 
-  state_e      state_q;
+  state_e        state_q;
 
   // read-side (issue) counters
-  logic [15:0] rd_row_q;
-  logic [ 3:0] rd_bank_q;
-  logic [15:0] rd_widx_q;   // payload word index of the word being fetched
-  logic [31:0] rd_left_q;   // accesses still to issue
-
+  logic   [15:0] rd_row_q;
+  logic   [ 3:0] rd_bank_q;
+  logic   [15:0] rd_widx_q;  // payload word index of the word being fetched
+  logic   [31:0] rd_left_q;  // accesses still to issue
   // capture pipe: address is registered on read-gnt, joined with data on
   // rsp.valid (which is always exactly one cycle after gnt), then queued
-  logic [31:0] addr_pipe_q;
-
+  logic   [31:0] addr_pipe_q;
   // small elastic buffer between the read and write ports; DEPTH 4 is enough
   // to sustain one word per cycle across the 1-cycle read latency
   localparam int unsigned FIFO_DEPTH = 4;
   logic [31:0] fifo_addr_q[FIFO_DEPTH];
   logic [31:0] fifo_data_q[FIFO_DEPTH];
-  logic [ 1:0] fifo_wp_q, fifo_rp_q;
-  logic [ 2:0] fifo_cnt_q;
-  logic [ 2:0] credits_q;     // free slots, counting words already in flight
-  logic        fifo_push, fifo_pop;
+  logic [1:0] fifo_wp_q, fifo_rp_q;
+  logic [2:0] fifo_cnt_q;
+  logic [2:0] credits_q;  // free slots, counting words already in flight
+  logic fifo_push, fifo_pop;
 
   logic [31:0] n_rows;
   logic [31:0] n_access;
-
-  assign n_rows   = reg_len_q / PAYLOAD_PER_ROW;     // 8 payload words per row
-  assign n_access = n_rows * BANKS_PER_ROW;          // but 9 accesses per row
+  assign n_rows   = reg_len_q / PAYLOAD_PER_ROW;  // 8 payload words per row
+  // Each intermediate row has one additional bank-8 access which duplicates
+  // bank 0 of the following row. The final row has no successor, so its bank 8
+  // is neither read nor written. This also removes the old one-word guard
+  // requirement on the DMEM source/destination buffer.
+  assign n_access = (n_rows == 0) ? 32'd0 : n_rows * BANKS_PER_ROW - 32'd1;
 
   assign busy_o   = (state_q != IDLE);
   assign done_o   = done_q;
-
   // ------------------------------------------------------------------------
   // Address generation - pure shifts, no divide, no modulo
   // ------------------------------------------------------------------------
-  logic [31:0] src_addr;   // linear in DMEM
-  logic [31:0] spm_addr;   // scattered into the 9-bank row layout
-
+  logic [31:0] src_addr;  // linear in DMEM
+  logic [31:0] spm_addr;  // scattered into the 9-bank row layout
   assign src_addr = reg_src_q + {14'b0, rd_widx_q, 2'b00};
   assign spm_addr = SPM_BASE
                   + (((reg_dstrow_q + {16'b0, rd_row_q}) << ROW_SHIFT)
                      | ({28'b0, rd_bank_q} << BANK_SHIFT));
-
   // ------------------------------------------------------------------------
   // Throttle: optionally give the HCI port a cycle back
   // ------------------------------------------------------------------------
   logic [$clog2(DUTY > 0 ? DUTY : 2)-1:0] duty_q;
   logic                                   may_issue;
-
   generate
     if (DUTY > 0) begin : gen_throttle
       always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -217,35 +205,30 @@ module isolde_spm_loader #(
       assign may_issue = 1'b1;
     end
   endgenerate
-
   // ------------------------------------------------------------------------
   // Port muxing: dir 0 = load (DMEM -> SPM), dir 1 = store (SPM -> DMEM)
   // ------------------------------------------------------------------------
   req_t rd_req, wr_req;
   rsp_t rd_rsp, wr_rsp;
-
   always_comb begin
-    if (!reg_dir_q) begin       // LOAD: read DMEM, write SPM
+    if (!reg_dir_q) begin  // LOAD: read DMEM, write SPM
       dmem_o.req = rd_req;
       spm_o.req  = wr_req;
       rd_rsp     = dmem_o.rsp;
       wr_rsp     = spm_o.rsp;
-    end else begin              // STORE: read SPM, write DMEM
+    end else begin  // STORE: read SPM, write DMEM
       spm_o.req  = rd_req;
       dmem_o.req = wr_req;
       rd_rsp     = spm_o.rsp;
       wr_rsp     = dmem_o.rsp;
     end
   end
-
   // read request
   always_comb begin
     rd_req      = '{req: 1'b0, we: 1'b0, be: 4'b1111, addr: 32'b0, data: 32'b0};
-    rd_req.req  = (state_q == RUN) && (rd_left_q != 0) && (credits_q != 0)
-                  && may_issue;
+    rd_req.req  = (state_q == RUN) && (rd_left_q != 0) && (credits_q != 0) && may_issue;
     rd_req.addr = reg_dir_q ? spm_addr : src_addr;
   end
-
   // write request - drains the head of the FIFO
   always_comb begin
     wr_req      = '{req: 1'b0, we: 1'b1, be: 4'b1111, addr: 32'b0, data: 32'b0};
@@ -256,7 +239,6 @@ module isolde_spm_loader #(
 
   assign fifo_push = rd_rsp.valid;
   assign fifo_pop  = wr_req.req && wr_rsp.gnt;
-
   // ------------------------------------------------------------------------
   // Main FSM
   // ------------------------------------------------------------------------
@@ -274,7 +256,6 @@ module isolde_spm_loader #(
       credits_q   <= FIFO_DEPTH[2:0];
       done_q      <= 1'b0;
     end else begin
-
       // done is sticky until the CPU clears it, or a new transfer starts
       if (cfg_wr && (cfg_off == 4'h4) && cfg_i.req.data[1]) done_q <= 1'b0;
 
@@ -285,8 +266,9 @@ module isolde_spm_loader #(
         fifo_wp_q              <= fifo_wp_q + 1'b1;
       end
       if (fifo_pop) fifo_rp_q <= fifo_rp_q + 1'b1;
-
-      unique case ({fifo_push, fifo_pop})
+      unique case ({
+        fifo_push, fifo_pop
+      })
         2'b10:   fifo_cnt_q <= fifo_cnt_q + 1'b1;
         2'b01:   fifo_cnt_q <= fifo_cnt_q - 1'b1;
         default: ;
@@ -294,14 +276,15 @@ module isolde_spm_loader #(
 
       // a credit is spent when a read is granted and returned when the
       // corresponding write retires
-      unique case ({rd_req.req && rd_rsp.gnt, fifo_pop})
+      unique case ({
+        rd_req.req && rd_rsp.gnt, fifo_pop
+      })
         2'b10:   credits_q <= credits_q - 1'b1;
         2'b01:   credits_q <= credits_q + 1'b1;
         default: ;
       endcase
 
       unique case (state_q)
-
         IDLE: begin
           if (start_pulse && (reg_len_q != 0)) begin
             state_q   <= RUN;
@@ -312,14 +295,14 @@ module isolde_spm_loader #(
             done_q    <= 1'b0;
           end
         end
-
         RUN: begin
           if (rd_req.req && rd_rsp.gnt) begin
             rd_left_q   <= rd_left_q - 1'b1;
             addr_pipe_q <= reg_dir_q ? src_addr : spm_addr;
             // the (row, bank) walk. rd_widx_q deliberately does NOT advance
             // across the bank 8 -> bank 0 wrap, because bank 8 of row r and
-            // bank 0 of row r+1 hold the same payload word.
+            // bank 0 of row r+1 hold the same payload word. On the final row,
+            // rd_left_q reaches zero after bank 7, so bank 8 is never issued.
             if (rd_bank_q == BANK_LAST) begin
               rd_bank_q <= '0;
               rd_row_q  <= rd_row_q + 1'b1;
@@ -328,9 +311,7 @@ module isolde_spm_loader #(
               rd_widx_q <= rd_widx_q + 1'b1;
             end
           end
-
-          if ((rd_left_q == 0) && (fifo_cnt_q == 0) && !rd_rsp.valid)
-            state_q <= DRAIN;
+          if ((rd_left_q == 0) && (fifo_cnt_q == 0) && !rd_rsp.valid) state_q <= DRAIN;
         end
 
         DRAIN: begin
@@ -342,7 +323,6 @@ module isolde_spm_loader #(
       endcase
     end
   end
-
   // ------------------------------------------------------------------------
   // Assertions - cheap and they catch the two mistakes that actually happen
   // ------------------------------------------------------------------------
@@ -350,31 +330,25 @@ module isolde_spm_loader #(
   // LEN must be a whole number of rows; spm_write() has the same requirement
   assert property (@(posedge clk_i) disable iff (!rst_ni)
       start_pulse |-> (reg_len_q[2:0] == 3'b000))
-    else $error("isolde_spm_loader: LEN=%0d is not a multiple of 8", reg_len_q);
-
+  else $error("isolde_spm_loader: LEN=%0d is not a multiple of 8", reg_len_q);
   // software must not touch the descriptor while a transfer is running - the
   // writes are ignored, but silently ignoring them hides a driver bug
-  assert property (@(posedge clk_i) disable iff (!rst_ni)
-      !(cfg_wr && busy_o && cfg_off != 4'h4))
-    else $error("isolde_spm_loader: descriptor written while busy (reg 0x%0h)",
-                cfg_off);
-
+  assert property (@(posedge clk_i) disable iff (!rst_ni) !(cfg_wr && busy_o && cfg_off != 4'h4))
+  else $error("isolde_spm_loader: descriptor written while busy (reg 0x%0h)", cfg_off);
   // a request outstanding for a very long time means the far side never
   // granted - almost always an address outside the target address range
   int unsigned stall_ctr;
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) stall_ctr <= 0;
-    else if ((rd_req.req && !rd_rsp.gnt) || (wr_req.req && !wr_rsp.gnt))
-      stall_ctr <= stall_ctr + 1;
+    else if ((rd_req.req && !rd_rsp.gnt) || (wr_req.req && !wr_rsp.gnt)) stall_ctr <= stall_ctr + 1;
     else stall_ctr <= 0;
   end
   assert property (@(posedge clk_i) disable iff (!rst_ni) stall_ctr < 1000)
-    else $error("isolde_spm_loader: no grant for 1000 cycles - address out of range?");
-
+  else $error("isolde_spm_loader: no grant for 1000 cycles - address out of range?");
   // the elastic buffer must never overflow - credits guarantee it
   assert property (@(posedge clk_i) disable iff (!rst_ni)
       fifo_push |-> (fifo_cnt_q < FIFO_DEPTH[2:0]))
-    else $error("isolde_spm_loader: FIFO overflow");
+  else $error("isolde_spm_loader: FIFO overflow");
 `endif
 
 endmodule

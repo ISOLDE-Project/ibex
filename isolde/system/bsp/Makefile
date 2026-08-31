@@ -10,7 +10,7 @@ LD_FILE ?=
 # Source files
 APP_FILES ?=
 SRCS   += crt0.S simple_system_common.c startup.c tinyprintf.c 
-# SRCS   += onnx_redmule_runtime.c
+SRCS   += onnx_redmule_runtime.c
 SRCS   += fp16_utils.c spm_load.c
 SRCS   += $(APP_FILES)
 

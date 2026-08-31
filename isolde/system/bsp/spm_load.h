@@ -53,8 +53,10 @@ static inline uint32_t spmld_event_bit(void) { return isolde_evt_loader(); }
  *     linker already places them in dataram). Stack buffers will NOT work:
  *     the stack is a separate memory port the loader cannot reach.
  *   - elems must be a multiple of 8
- *   - src[elems] is read to fill the last bank-8 slot, exactly as spm_write()
- *     does, so the source buffer must be padded by one word
+ *
+ *     Bank 8 is populated only between adjacent payload rows.  The final
+ *     row's bank 8 is not accessed, so src/dst require exactly elems words
+ *     and no guard word.
  *
  * Blocks until the transfer completes. Returns the next free SPM address, so
  * it is a drop-in for spm_write().
