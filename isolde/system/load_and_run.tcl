@@ -1,4 +1,4 @@
-set APP_NAME redmule128b_test
+set APP_NAME omp_test
 #set APP_NAME xmas_test
 set APP_PATH ./sw/bin
 set INSTR_IMG ${APP_PATH}/${APP_NAME}-m.ihex

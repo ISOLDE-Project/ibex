@@ -59,6 +59,7 @@ verilator_target := vanilla
 # Select testbench target 
 ifeq ($(DBG_MODULE),1)
     tb_target += -t tb_dm -t rv_debug
+	verilator_target := tb_dm
 endif
 ifeq ($(ENABLE_SPM),1)
     tb_target += -t spm

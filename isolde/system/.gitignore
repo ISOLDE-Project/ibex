@@ -21,4 +21,4 @@ vivado_synth.tcl
 *.slang
 *_all_deps.f
 *.slang*
-
+regression-logs/

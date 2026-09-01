@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #ifndef SIMPLE_SYSTEM_COMMON_H__
+#define SIMPLE_SYSTEM_COMMON_H__
 
 #include <stdint.h>
 

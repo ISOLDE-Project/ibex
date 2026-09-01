@@ -158,6 +158,7 @@ module isolde_cluster
 
   // === Data port ===
   isolde_tcdm_if tcdm_core_data ();
+  isolde_tcdm_if tcdm_dmem_upstream ();
   isolde_tcdm_if tcdm_dmem_muxed ();
   isolde_tcdm_if redmule_ctrl ();  // HWE peripheral  interface
 
@@ -174,6 +175,7 @@ module isolde_cluster
 
   // === CPU -> SPM-s ports ===
   isolde_tcdm_if tcdm_spm_hwe[N_REDMULE_TILES] ();
+  isolde_tcdm_if tcdm_spm_upstream ();
   isolde_tcdm_if tcdm_spm_dma_muxed ();
 
   // === SPM loader ===
@@ -380,7 +382,7 @@ aida_perfcnt #(
       .req_2_i(noc_data_reqs[DATA_IDX]),
       .rsp_1_o(noc_dm_sba_rsps[DM_SBA_DMEM_IDX]),
       .rsp_2_o(noc_data_rsps[DATA_IDX]),
-      .tcdm_master_o(tcdm_dmem_muxed)
+      .tcdm_master_o(tcdm_dmem_upstream)
   );
 
   isolde_mux_tcdm i_mux_dm_sb_stack (
@@ -401,7 +403,7 @@ aida_perfcnt #(
       .req_2_i(noc_data_reqs[SPM_IDX]),
       .rsp_1_o(noc_dm_sba_rsps[DM_SBA_SPM_IDX]),
       .rsp_2_o(noc_data_rsps[SPM_IDX]),
-      .tcdm_master_o(tcdm_spm_dma_muxed)
+      .tcdm_master_o(tcdm_spm_upstream)
   );
 
   rv_dm #() i_rv_dm (
@@ -418,35 +420,42 @@ aida_perfcnt #(
       .debug_req_o(debug_req)
   );
 `else
-// === tcdm_spm_dma_muxed: CPU stores and the loader share the narrow port ===
-// The loader sits on port 2, which isolde_mux_tcdm gives priority.
+// Without the debug SBA, the CPU directly drives the upstream memory ports.
+    assign tcdm_spm_upstream.req = noc_data_reqs[SPM_IDX];
+    assign noc_data_rsps[SPM_IDX] = tcdm_spm_upstream.rsp;
+    assign tcdm_dmem_upstream.req = noc_data_reqs[DATA_IDX];
+    assign noc_data_rsps[DATA_IDX] = tcdm_dmem_upstream.rsp;
+// === tcdm_imem_muxed assignment ===
+    assign tcdm_imem_muxed.req = noc_instr_reqs[INSTR_MEM_IDX];
+    assign noc_instr_rsps[INSTR_MEM_IDX] = tcdm_imem_muxed.rsp;
+// === tcdm_stack_muxed assignment ===
+    assign tcdm_stack_muxed.req = noc_data_reqs[STACK_IDX];
+    assign noc_data_rsps[STACK_IDX] = tcdm_stack_muxed.rsp;
+`endif
+
+// The CPU/debug-SBA path and the loader share the narrow SPM port.  Keeping
+// this mux outside TARGET_RV_DEBUG ensures the loader remains connected in
+// both configurations.  Port 2 has priority, preserving loader progress.
   isolde_mux_tcdm i_mux_spmld_spm (
       .clk_i,
       .rst_ni,
-      .req_1_i(noc_data_reqs[SPM_IDX]),
-      .rsp_1_o(noc_data_rsps[SPM_IDX]),
+      .req_1_i(tcdm_spm_upstream.req),
+      .rsp_1_o(tcdm_spm_upstream.rsp),
       .req_2_i(spmld_spm.req),
       .rsp_2_o(spmld_spm.rsp),
       .tcdm_master_o(tcdm_spm_dma_muxed)
   );
 
-// === tcdm_dmem_muxed: CPU loads/stores and the loader share data memory ===
+// The CPU/debug-SBA path and the loader share data memory.
   isolde_mux_tcdm i_mux_spmld_dmem (
       .clk_i,
       .rst_ni,
-      .req_1_i(noc_data_reqs[DATA_IDX]),
-      .rsp_1_o(noc_data_rsps[DATA_IDX]),
+      .req_1_i(tcdm_dmem_upstream.req),
+      .rsp_1_o(tcdm_dmem_upstream.rsp),
       .req_2_i(spmld_dmem.req),
       .rsp_2_o(spmld_dmem.rsp),
       .tcdm_master_o(tcdm_dmem_muxed)
   );
-// === tcdm_imem_muxed assignment ===
-    assign tcdm_imem_muxed.req = noc_instr_reqs[INSTR_MEM_IDX];
-    assign noc_instr_rsps[INSTR_MEM_IDX] = tcdm_imem_muxed.rsp;    
-// === tcdm_stack_muxed assignment ===
-    assign tcdm_stack_muxed.req = noc_data_reqs[STACK_IDX];
-    assign noc_data_rsps[STACK_IDX] = tcdm_stack_muxed.rsp;    
-`endif
 
   /********************************************************/
   /**     SPM loader                                     **/

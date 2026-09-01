@@ -599,7 +599,7 @@ int main (int argc, char *argv[])
   printf ("Execution starts, %d runs through Dhrystone\n", Number_Of_Runs);
 
 
- Begin_Time = getTicks();
+  START_PERFCNT(1);
   for (Run_Index = 1; Run_Index <= Number_Of_Runs; ++Run_Index)
   {
 
@@ -695,7 +695,7 @@ int main (int argc, char *argv[])
 
   } /* loop "for Run_Index" */
 
-  End_Time= getTicks();
+  STOP_PERFCNT(1); 
 
   printf ("Execution ends%c", '\n');
   printf (" %c", '\n');
@@ -752,7 +752,7 @@ int main (int argc, char *argv[])
 
  
 
-  User_Time = End_Time - Begin_Time;
+  User_Time = *(volatile int *) (MMADDR_PERF_COUNTERS+4);
  /* microseconds */
 
 //  printf("Begin Time = %d\n",Begin_Time);

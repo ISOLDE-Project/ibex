@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 #include <bsp/fp16_utils.h>
-#include <bsp/spm.h>
+#include <bsp/spm_load.h>
 #include <bsp/tinyprintf.h>
 #include <bsp/simple_system_common.h>
 #include "redmule_utils.h"
@@ -71,21 +71,21 @@ int main(int argc, char *argv[]) {
   spm_addr = x_spm_addr;
   src = (uint32_t *)x_inp;
   elems = x_size;
-  spm_next_addr = spm_write(spm_addr, src, elems);
+  spm_next_addr = spm_load(spm_addr, src, elems);
 
   // w_input
   w_spm_addr = spm_next_addr;
   spm_addr = w_spm_addr;
   src = (uint32_t *)w_inp;
   elems = w_size;
-  spm_next_addr = spm_write(spm_addr, src, elems);
+  spm_next_addr = spm_load(spm_addr, src, elems);
 
   // y_inp
   y_spm_addr = spm_next_addr;
   spm_addr = y_spm_addr;
   src = (uint32_t *)y_inp;
   elems = y_size;
-  spm_next_addr = spm_write(spm_addr, src, elems);
+  spm_next_addr = spm_load(spm_addr, src, elems);
 
 
   printf("[SPM TCA ] TILE_ID= 0x%08x\n\n",isolde_get_tile());
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
 
   
   elems = sizeof(y_result) / sizeof(y_result[0]) / 2;
-  spm_read((uint32_t *)y_result, y_spm_addr, elems);
+  spm_store((uint32_t *)y_result, y_spm_addr, elems);
 
   errors = validate_result(y_result, golden, elems, K_SIZE, "y", &worst_ulp);
 

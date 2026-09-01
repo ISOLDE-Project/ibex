@@ -8,7 +8,7 @@ filesets:
   files_verilator:
     depend:
       - isolde:ibex:lca_system_core
-      - isolde:dv_verilator:debug_module_verilator
+#      - isolde:dv_verilator:debug_module_verilator
 
   files_questa:
     depend:

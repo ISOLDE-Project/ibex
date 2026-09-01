@@ -1,5 +1,14 @@
 sources:
   vanilla:
+    files:
     - sim/core/tb_top_verilator.cpp
+  tb_dm:
+    files:
+    - sim/core/tb_top_verilator.cpp
+    - ../../vendor/riscv-dbg/tb/remote_bitbang/remote_bitbang.c
+    - ../../vendor/riscv-dbg/tb/remote_bitbang/sim_jtag.c
+    include_dirs:
+    - ../../vendor/riscv-dbg/tb/remote_bitbang
   questa:
+    files:
     - sim/core/tb_top_questa.sv
