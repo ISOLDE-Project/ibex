@@ -29,13 +29,9 @@ static void spmld_start(uint32_t dmem_ptr, uint32_t spm_addr, uint32_t elems,
                         uint32_t dir) {
   spmld_check(spm_addr, elems);
 
-  /* CSR_ISOLDE_TILE_INTR_EN resets to all-ones, and crt0.S enables both
-   * mstatus.MIE and mie.MSIE while every vector points at
-   * default_exc_handler. An unmasked completion would therefore trap into
-   * the "EXCEPTION!!!" path rather than being handled. Polling is the
-   * default, so mask the loader's event here; spm_dma_wait_irq() re-enables
-   * it locally for the duration of the wfi. */
-  isolde_set_intr_en(isolde_get_intr_en() & ~spmld_event_bit());
+  /* The loader interrupt bit resets disabled. The polling path leaves the
+   * interrupt mask untouched; spm_dma_wait_irq() enables the bit only around
+   * WFI and restores the previous mask before returning. */
 
   /* Single channel: never touch the descriptor while a transfer is running.
    * The RTL freezes those registers when busy, but waiting here keeps the

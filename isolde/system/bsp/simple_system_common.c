@@ -17,7 +17,8 @@ DEV_WRITE(MMADDR_EXIT, (uint32_t)exit_code);
     }
 }
 
- void _putcf (void *, char c) {
+void _putcf(void *unused, char c) {
+  (void)unused;
   DEV_WRITE(MMADDR_PRINT, (uint32_t)c); 
 }
 

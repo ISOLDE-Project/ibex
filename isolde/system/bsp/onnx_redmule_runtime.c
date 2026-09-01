@@ -32,8 +32,8 @@
 #define OMRM_FP16_SIGN_PAIR  0x80008000u
 
 /* link.ld: loader-visible data RAM. */
-#define OMRM_DMEM_BASE 0x00110000u
-#define OMRM_DMEM_END  0x00114000u
+extern uint8_t __dmem_start[];
+extern uint8_t __dmem_end[];
 
 /* Clang/GCC: permit raw access to the object representation of _Float16. */
 typedef uint16_t omrm_fp16_storage_t __attribute__((may_alias));
@@ -62,6 +62,10 @@ uint32_t omrm_upload_f16(uint32_t tile, uint32_t spm_addr,
   const omrm_fp16_storage_t *src =
       (const omrm_fp16_storage_t *)source;
   uintptr_t source_addr = (uintptr_t)source;
+  const uintptr_t dmem_start = (uintptr_t)__dmem_start;
+  const uintptr_t dmem_end = (uintptr_t)__dmem_end;
+  const uintptr_t transfer_bytes =
+      (uintptr_t)elements * sizeof(omrm_fp16_storage_t);
   uint32_t rows;
   uint32_t row;
 
@@ -84,11 +88,10 @@ uint32_t omrm_upload_f16(uint32_t tile, uint32_t spm_addr,
    * accessed, so an exact-sized source object is sufficient: no staging row,
    * no guard word, and no CPU tail are required.
    */
-  if (negate == 0u &&
-      (source_addr & 3u) == 0u &&
-      elements <= ((OMRM_DMEM_END - OMRM_DMEM_BASE) / sizeof(uint16_t)) &&
-      source_addr >= OMRM_DMEM_BASE &&
-      source_addr <= OMRM_DMEM_END - elements * sizeof(uint16_t)) {
+  if ((source_addr & 3u) == 0u &&
+      transfer_bytes <= dmem_end - dmem_start &&
+      source_addr >= dmem_start &&
+      source_addr <= dmem_end - transfer_bytes) {
       
       if (negate != 0u) {
         return spm_load_negate_f16(spm_addr, (const uint32_t *)source, elements / 2u);
@@ -133,11 +136,7 @@ uint32_t omrm_upload_f16(uint32_t tile, uint32_t spm_addr,
 
 void omrm_zero_f16(uint32_t tile, uint32_t spm_addr, uint32_t elements)
 {
-  uint32_t rows;
-  uint32_t row;
-
   omrm_require_complete_rows(elements);
-  rows = elements / OMRM_FP16_PER_ROW;
   isolde_set_tile(tile);
   (void)spm_fill_zero(spm_addr, elements / 2u);
 }
@@ -159,6 +158,10 @@ void omrm_download_f16(uint32_t tile, uint32_t spm_addr, void *destination,
 {
   omrm_fp16_storage_t *dst = (omrm_fp16_storage_t *)destination;
   uintptr_t destination_addr = (uintptr_t)destination;
+  const uintptr_t dmem_start = (uintptr_t)__dmem_start;
+  const uintptr_t dmem_end = (uintptr_t)__dmem_end;
+  const uintptr_t transfer_bytes =
+      (uintptr_t)elements * sizeof(omrm_fp16_storage_t);
   uint32_t rows;
   uint32_t row;
 
@@ -176,9 +179,9 @@ void omrm_download_f16(uint32_t tile, uint32_t spm_addr, void *destination,
 
   /* Exact-sized, word-aligned dataram destinations can use the whole loader. */
   if ((destination_addr & 3u) == 0u &&
-      elements <= ((OMRM_DMEM_END - OMRM_DMEM_BASE) / sizeof(uint16_t)) &&
-      destination_addr >= OMRM_DMEM_BASE &&
-      destination_addr <= OMRM_DMEM_END - elements * sizeof(uint16_t)) {
+      transfer_bytes <= dmem_end - dmem_start &&
+      destination_addr >= dmem_start &&
+      destination_addr <= dmem_end - transfer_bytes) {
     (void)spm_store((uint32_t *)destination, spm_addr, elements / 2u);
     return;
   }

@@ -31,17 +31,33 @@ TINY_PRINTF_FLAGS += -DTINYPRINTF_DEFINE_TFP_PRINTF=1
 TINY_PRINTF_FLAGS += -DTINYPRINTF_DEFINE_TFP_SPRINTF=0
 
 # Compiler flags
-CFLAGS ?= -march=$(RISCV_MARCH) -mabi=ilp32 -static -mcmodel=medany -Wall -g -O3 \
-	-fvisibility=hidden -nostdlib -nostartfiles -ffreestanding $(TINY_PRINTF_FLAGS) $(RISCV_CFLAGS)
+# Size-first default for the 16 KiB IMEM. After a clean rebuild, override with
+# OPT_LEVEL=-Oz or OPT_LEVEL=-O3 to compare image size and runtime.
+OPT_LEVEL ?= -O3
+# LTO remains opt-in because support depends on the selected compiler/linker.
+ENABLE_LTO ?= 0
+
+ifeq ($(ENABLE_LTO),1)
+LTO_FLAGS := -flto
+endif
+
+CFLAGS ?= -march=$(RISCV_MARCH) -mabi=ilp32 -mcmodel=medany -Wall -g \
+	$(OPT_LEVEL) $(LTO_FLAGS) -ffunction-sections -fdata-sections \
+	-fvisibility=hidden -ffreestanding $(RISCV_CFLAGS)
+CPPFLAGS += $(TINY_PRINTF_FLAGS) $(RISCV_CPPFLAGS)
+DEPFLAGS = -MMD -MP -MF $(@:.o=.d) -MT $@
+LDFLAGS += $(LTO_FLAGS) -static -nostdlib -nostartfiles -Wl,--gc-sections
 
 
 # Compilation rules
 %.o : %.c
-	$(RISCV_CC) $(CFLAGS) -c $< -o $@
+	$(RISCV_CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
 
 %.o : %.S
-	$(RISCV_CC) $(CFLAGS) -c $< -o $@
+	$(RISCV_CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
 
+# LLVM IR is already preprocessed, so passing -I/-D options is both unnecessary
+# and diagnosed by Clang as unused.
 %.o : %.ll
 	$(RISCV_CC) $(CFLAGS) -c $< -o $@
 
@@ -59,6 +75,8 @@ vars:
 	@echo "   RISCV_EXE_PREFIX = $(RISCV_EXE_PREFIX)"
 	@echo "   RISCV_CC        = $(RISCV_CC)"
 	@echo "   RISCV_MARCH      = $(RISCV_MARCH)"    
+	@echo "   OPT_LEVEL        = $(OPT_LEVEL)"
+	@echo "   ENABLE_LTO       = $(ENABLE_LTO)"
 
 
 %.elf:  vars $(OBJS)
@@ -67,6 +85,7 @@ vars:
 	@echo "$(BANNER)"
 	$(RISCV_LD) \
 		$(CFLAGS) \
+		$(LDFLAGS) \
 		-o $@ \
 		$(OBJS) \
 		-fuse-ld=lld \
@@ -74,3 +93,5 @@ vars:
 		-T $(LD_FILE) -lc
 	$(OBJDUMP) -dh  $@ >$@.headers
 	@echo   $@.headers
+
+-include $(DEPS)

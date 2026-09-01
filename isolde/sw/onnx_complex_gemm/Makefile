@@ -3,6 +3,7 @@ ONNX_MLIR           ?=  $(ROOT_DIR)/install/onnx-mlir/bin/onnx-mlir
 mkfile_path         :=  $(ROOT_DIR)/isolde/sw/onnx_complex_gemm
 ONNX_MODEL          := redmule_complex_gemm_12x16x16.onnx
 SCRIPTS_DIR         :=  $(ROOT_DIR)/isolde/sw/scripts
+LLVM_TARGET_TRIPLE  ?= riscv32-unknown-unknown-elf
 
 # Directories
 DATA_DIR            := $(mkfile_path)/inc
@@ -36,7 +37,7 @@ golden-data: $(DATA_DIR)
     --out-dir ./inc
 
 graph:  $(MODEL_DIR)/$(ONNX_MODEL) 	
-	$(ONNX_MLIR) $(ONNX_MLIR_FLAGS) --mtriple=riscv32-unknown-elf --EmitSPADELLVM -o graph  $<
+	$(ONNX_MLIR) $(ONNX_MLIR_FLAGS) --mtriple=$(LLVM_TARGET_TRIPLE) --EmitSPADELLVM -o graph $<
 	@echo "🔔 $(mkfile_path)/graph.ll"
 
 # Ensure that directories exists

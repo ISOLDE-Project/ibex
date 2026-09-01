@@ -18,6 +18,10 @@ MEMORY
 _stack_len     = LENGTH(stack);
 _stack_start   = ORIGIN(stack) + LENGTH(stack);
 
+/* Loader-visible data-memory limits used by onnx_redmule_runtime.c. */
+__dmem_start   = ORIGIN(dataram);
+__dmem_end     = ORIGIN(dataram) + LENGTH(dataram);
+
 _entry_point = _vectors_start + 0x80;
 ENTRY(_entry_point)
 

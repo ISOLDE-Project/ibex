@@ -96,6 +96,8 @@ static inline int spm_dma_busy(void) {
 
 uint32_t get_addr_start(uint32_t row);
 uint32_t get_addr_end(uint32_t row);
-inline uint32_t get_row(uint32_t addr) { return (addr >> BANK_OFFSET_SHIFT); }
+static inline uint32_t get_row(uint32_t addr) {
+  return addr >> BANK_OFFSET_SHIFT;
+}
 
 #endif /* __SPM_LOAD_H__ */
