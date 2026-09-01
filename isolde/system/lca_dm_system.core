@@ -130,11 +130,6 @@ parameters:
     default: 40
     description: Bit width of performance monitor event counters [32/64]
 
-  BootROMEnable:
-    datatype: int
-    paramtype: vlogparam
-    default: 0
-    description: Enables booting from a ROM
 
 targets:
   default: &default_target
@@ -160,7 +155,7 @@ targets:
       - MHPMCounterNum
       - MHPMCounterWidth
       - SRAMInitFile
-      - BootROMEnable
+      
 
   lint:
     <<: *default_target
