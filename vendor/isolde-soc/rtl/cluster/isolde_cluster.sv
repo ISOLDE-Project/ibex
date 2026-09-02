@@ -409,6 +409,7 @@ aida_perfcnt #(
   rv_dm #() i_rv_dm (
       .clk_i,
       .rst_ni,
+      .next_dm_addr_i('0),
       /// Debug Module Interface (DMI) slave port 
       .s_periph(tcdm_dm_periph),
       //.s_dmi(tcdm_inst_dm),
@@ -417,7 +418,9 @@ aida_perfcnt #(
       /// JTAG
       .jtag_in(aida_jtag_in),
       .jtag_out(aida_jtag_out),
-      .debug_req_o(debug_req)
+      .debug_req_o(debug_req),
+      .dmactive_o(),
+      .unavailable_i('0)
   );
 `else
 // Without the debug SBA, the CPU directly drives the upstream memory ports.
