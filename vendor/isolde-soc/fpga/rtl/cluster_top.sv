@@ -1,7 +1,11 @@
 // Copyleft 2024 ISOLDE
 
-
-
+// cluster_top only exists in an SPM configuration: it wraps isolde_cluster,
+// which needs the scratchpad. The WHOLE module is guarded (rather than just its
+// body) because this file belongs to the `xilinx` and `fpga_sim` bender targets
+// and is therefore parsed even by builds that instantiate aida_top instead --
+// a bare `error in the else branch aborted those builds.
+`ifdef TARGET_SPM
 
 
 module cluster_top
@@ -89,7 +93,6 @@ module cluster_top
 
 
 
-`ifdef TARGET_SPM
   /********************************************************/
   /**    aida core                                       **/
   /********************************************************/
@@ -115,11 +118,10 @@ module cluster_top
 `endif
 
   );
-`else
-  `error "Unsupported target"
-`endif
 
   /********************************************************/
 
 
-endmodule  // isolde_cluster
+endmodule  // cluster_top
+
+`endif  // TARGET_SPM

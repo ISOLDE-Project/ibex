@@ -16,14 +16,18 @@ dependencies:
 # all(T1, ..., TN) matches if all of the targets T1 to TN match (boolean AND)
 # any(T1, ..., TN) matches if any of the targets T1 to TN match (boolean OR)
 # not(T)           matches if target T does not match (boolean NOT)
-sources: 
-   - target: all(all(not(spm),not(any(fpga_sim,yosys))), all(tb_dm ,redmule_hwpe ,rtl ,redmule_test_hwpe))
+# NOTE: every simulation testbench below must exclude the synthesis targets
+# (fpga_sim / yosys / xilinx). `xilinx` was missing, so tb/tb_spm.sv ended up in
+# the Vivado source list -- and it still imports the renamed `aida_lca_package`,
+# which fails elaboration (and common.tcl escalates Filemgmt 20-742 to an error).
+sources:
+   - target: all(all(not(spm),not(any(fpga_sim,yosys,xilinx))), all(tb_dm ,redmule_hwpe ,rtl ,redmule_test_hwpe))
      files:
         - tb/tb_dm.sv
-   - target: all(vanilla_lca,redmule_test_hwpe, rtl, redmule_hwpe)
+   - target: all(not(any(fpga_sim,yosys,xilinx)), all(vanilla_lca,redmule_test_hwpe, rtl, redmule_hwpe))
      files:
-       - tb/tb_lca_system.sv 
-   - target: all (not(any(fpga_sim,yosys)),any(spm, redmule_hwpe,redmule_complex, redmule_test_hwpe))
+       - tb/tb_lca_system.sv
+   - target: all (not(any(fpga_sim,yosys,xilinx)),any(spm, redmule_hwpe,redmule_complex, redmule_test_hwpe))
      files:
        - tb/tb_spm.sv
    - target: xilinx

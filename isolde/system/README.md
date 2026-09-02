@@ -16,7 +16,13 @@ make -f Makefile.cluster.nodbg  test-clean test-build
 ```sh
 cd isolde/system
 . ./eth.sh
-make -f Makefile.cluster.nodbg  veri-clean verilate veri-run
+make -f Makefile.nodbg veri-clean verilate
+```
+## regression
+```sh
+cd isolde/system
+. ./eth.sh
+bash ./regression_nodbg.sh 
 ```
 
 # QUESTA

@@ -1,4 +1,4 @@
-TEST ?= redmule128b_test
+TEST ?= omp_test
 %:
 	 @echo  $(MAKECMDGOALS)
 	 make DBG_MODULE=1 ENABLE_SPM=1 \

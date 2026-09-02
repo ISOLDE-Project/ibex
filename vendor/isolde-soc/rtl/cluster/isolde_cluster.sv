@@ -681,8 +681,8 @@ isolde_xif_relay #(
     .rst_ni,
     .cpu_xif_issue   (itf_core_xif.coproc_issue),
     .cpu_xif_result  (itf_core_xif.coproc_result),
-    .tile_xif_issue  (itf_hwe_xif.cpu_issue),
-    .tile_xif_result (itf_hwe_xif.cpu_result),
+    .tile_xif_issue  (itf_hwe_xif),
+    .tile_xif_result (itf_hwe_xif),
     .tile_evt_i(tile_evt),
     .core_evt_o(core_evt)
 );

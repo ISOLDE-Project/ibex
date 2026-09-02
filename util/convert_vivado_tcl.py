@@ -55,7 +55,13 @@ def main():
 
         if verilog_defines:
             defines_str = " ".join(f"{k}={v}" for k, v in verilog_defines.items())
-            f.write(f"set_property verilog_define {{{defines_str}}} [get_filesets sources_1]\n\n")
+            # Do NOT set the property here. `verilog_define` is a fileset
+            # property, so `set_property` REPLACES it, and the bender-generated
+            # part of vivado_synth.tcl (which is concatenated after this file)
+            # would silently drop these defines. Export them instead and let
+            # tcl/create_project.tcl merge them in, the same way it already
+            # does for $ibex_include_dirs.
+            f.write(f"set ibex_verilog_defines [list {defines_str}]\n\n")
 
         f.write(f'set ROOT_IBEX "{args.root}"\n')
         f.write("add_files -norecurse -fileset [current_fileset] [list \\\n")
