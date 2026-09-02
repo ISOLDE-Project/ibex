@@ -582,11 +582,25 @@ aida_perfcnt #(
   /********************************************************/
   /**     IBEX core                                     **/
   /*******************************************************/
-`ifdef TARGET_VERILATOR
+// --------------------------------------------------------
+// Compile-time guard: tracing is illegal during synthesis
+// --------------------------------------------------------
+`ifdef IBEX_TRACE
+  `ifdef SYNTHESIS
+    $fatal(1, "IBEX_TRACE must not be defined for synthesis");
+  `endif
+`endif
+
+// ---------------------------------------------------------------------------
+// Core instantiation:
+//   IBEX_TRACE defined → ibex_top_tracing ( trace_core_00000000.log)
+//   otherwise          → ibex_top          (fast sim / synthesis)
+// ---------------------------------------------------------------------------
+`ifdef IBEX_TRACE
   ibex_top_tracing #(
-`else    
+`else
   ibex_top #(
-`endif   
+`endif  
       .SecureIbex      (SecureIbex),
       .ICacheScramble  (ICacheScramble),
       .PMPEnable       (PMPEnable),
