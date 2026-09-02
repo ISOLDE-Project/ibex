@@ -14,7 +14,7 @@ LLVM_INSTALL_DIR          ?= ${INSTALL_DIR}/riscv-llvm
 ISA_SIM_INSTALL_DIR       ?= ${INSTALL_DIR}/riscv-isa-sim
 ISA_SIM_MOD_INSTALL_DIR   ?= ${INSTALL_DIR}/riscv-isa-sim-mod
 OPENOCD_INSTALL_DIR       ?= ${INSTALL_DIR}/openocd
-OSS_CAD_SUITE_INSTALL_DIR ?= ${INSTALL_DIR}/oss-cad-suite
+
 OPENROAD_INSTALL_DIR      ?= ${INSTALL_DIR}/openroad
 OPENROAD_VERSION          ?= a008522d88b669ac4c985609533cf5a3d2649222
 VERIL_INSTALL_DIR         ?= ${INSTALL_DIR}/verilator
@@ -119,18 +119,7 @@ openocd: $(TOOLS_DIR)/xpack-openocd.tar.gz
 	tar -xzvf xpack-openocd.tar.gz  --strip-components=1 -C $(OPENOCD_INSTALL_DIR)/ 
 	touch  $(OPENOCD_INSTALL_DIR)
 
-$(TOOLS_DIR)/oss-cad-suite-linux-x64-20260109.tgz: vendor/oss-cad-suite.url
-	cd $(TOOLS_DIR) && \
-	wget `cat $(CURDIR)/$<` -O oss-cad-suite-linux-x64-20260109.tgz 
-	touch $@
 
-.PHONY: oss-cad-suite
-## Install yosys from YosysHQ/oss-cad-suite
-oss-cad-suite: $(TOOLS_DIR) $(TOOLS_DIR)/oss-cad-suite-linux-x64-20260109.tgz
-	mkdir -p $(OSS_CAD_SUITE_INSTALL_DIR)
-	cd $(TOOLS_DIR) && \
-	tar -xzvf oss-cad-suite-linux-x64-20260109.tgz  --strip-components=1 -C $(OSS_CAD_SUITE_INSTALL_DIR)/ 
-	touch  $(OSS_CAD_SUITE_INSTALL_DIR)
 
 
 OPENROAD_REPO := $(TOOLS_DIR)/OpenROAD/.git

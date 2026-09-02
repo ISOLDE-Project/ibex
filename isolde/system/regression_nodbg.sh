@@ -28,10 +28,10 @@ for makefile in "${makefiles[@]}"; do
   log_file="${log_dir}/${test_name}.log"
 
   printf '\n========== %s ==========' "${test_name}"
-  printf '\nCommand: %s -f %s test-clean test-build veri-run\n\n' \
+  printf '\nCommand: %s -f %s golden test-clean test-build veri-run\n\n' \
     "${make_bin}" "${makefile}"
 
-  "${make_bin}" -f "${makefile}" test-clean test-build veri-run \
+  "${make_bin}" -f "${makefile}" golden test-clean test-build veri-run \
     2>&1 | tee "${log_file}"
   pipeline_status=("${PIPESTATUS[@]}")
   make_status=${pipeline_status[0]}

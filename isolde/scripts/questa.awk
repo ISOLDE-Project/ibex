@@ -64,6 +64,36 @@ function ts() {
 }
 
 # ---------------------------------------------------------------------------
+# g++ / compiler driver errors  (e.g. unrecognized command line option)
+# ---------------------------------------------------------------------------
+/^g\+\+:[[:space:]]*error:/ {
+    n_err++
+    print line >> warnings_file
+    print RED line RESET
+    next
+}
+/^g\+\+:[[:space:]]*warning:/ {
+    n_warn++
+    print line >> warnings_file
+    print YELLOW line RESET
+    next
+}
+
+/^make\[[0-9]+\]:[[:space:]]*\*\*\*[[:space:]]Waiting for unfinished/ {
+    print line
+    next
+}
+# ---------------------------------------------------------------------------
+# make recursive error lines:  make[N]: *** [...] Error N
+# ---------------------------------------------------------------------------
+/^make\[[0-9]+\]:[[:space:]]*\*\*\*/ {
+    n_err++
+    print line >> warnings_file
+    print RED line RESET
+    next
+}
+
+# ---------------------------------------------------------------------------
 # slang summary line: color to stdout only, do NOT write to warnings_file
 # ---------------------------------------------------------------------------
 /^Build (failed|succeeded)/ {

@@ -127,19 +127,20 @@ Assuming working directory *isolde/lca_system* and each command from bellow in a
 1. start simulation
 ```sh
 . ./eth.sh
-make DBG_MODULE=1 veri-clean verilate
-make DBG_MODULE=1 TEST=hello_test test-clean test-build  veri-run
+make -f Makefile.dbg veri-clean verilate
+make -f Makefile.dbg golden test-clean test-build veri-run
 ```
-or  
-```sh
-make DBG_MODULE=1 ENABLE_SPM=1 TEST=redmule_test veri-clean verilate  test-clean test-build veri-run
-```
-  
 
 2. start openocd
+
 ```sh
-. ./eth.sh
-openocd -f isolde.cfg 
+cd isolde/system
+. ./openocd_sim.sh
+```
+or, when connecting to FPGA:
+```sh
+cd isolde/system
+. ./openocd.sh
 ```
 3. start telnet connection
 ```sh
@@ -147,13 +148,13 @@ telnet localhost 4444
 ```
 In the telnet terminal type:   
 ```
-reset halt
-reg pc 0x100000
+halt
+reg pc 0x100080
 resume
 shutdown
 ```
 or 
-In the telnet terminal type( make sure that your working directory is **isolde/lca_system)**:   
+In the telnet terminal type:   
 ```
 source ./read_test.tcl
 ```

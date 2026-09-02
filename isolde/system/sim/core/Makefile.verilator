@@ -24,7 +24,7 @@ SV_CMP_FLAGS =
 VLT_TOP_MODULE     ?= tb_top_verilator
 
 # verilator configuration
-VERILATOR           = verilator
+VERILATOR          ?= verilator
 VLT_ROOT           ?= $(dir $(shell which $(VERILATOR)))../share/verilator
 	 
 

@@ -15,13 +15,17 @@ MINICONDA_ENV=ibex
 # Get the root directory of the Git repository
 export ROOT_DIR=$(git rev-parse --show-toplevel)
 
-export BENDER=$ROOT_DIR/eda/bender/bin/bender
-export SLANG=$ROOT_DIR/eda/slang/bin/slang
+export     BENDER=$ROOT_DIR/eda/bender/bin/bender
+export      SLANG=$ROOT_DIR/eda/oss-cad-suite/bin/slang
+export      YOSYS=$ROOT_DIR/eda/oss-cad-suite/bin/yosys
+export  VERILATOR=$ROOT_DIR/eda/verilator/bin/verilator
+export    OPENOCD=$ROOT_DIR/eda/oss-cad-suite/bin/openocd
+# export OPENROAD=$ROOT_DIR/install/openroad/usr/local/bin/openroad
 # export PULP_RISCV_GCC_TOOLCHAIN=$ROOT_DIR/install/riscv
-export GCC_TOOLCHAIN=$ROOT_DIR/install/riscv-gcc/bin
+# export GCC_TOOLCHAIN=$ROOT_DIR/install/riscv-gcc/bin
 # export LLVM_TOOLCHAIN=$ROOT_DIR/install/riscv-llvm/bin
-export CC=gcc-11
-export CXX=g++-11
+# export CC=clang
+# export CXX=clang++
 #
 # export CV_SIMULATOR=verilator
 # export CV_SW_TOOLCHAIN=$ROOT_DIR/install/riscv-gcc
@@ -33,11 +37,7 @@ export CXX=g++-11
 source $MINICONDA
 conda activate $MINICONDA_ENV
 
-export BENDER=$ROOT_DIR/eda/bender/bin/bender
-export    YOSYS=$ROOT_DIR/install/oss-cad-suite/bin/yosys
-export OPENROAD=$ROOT_DIR/install/openroad/usr/local/bin/openroad
-
-export PATH=~/verible/bin:$ROOT_DIR/eda/verilator/bin:$ROOT_DIR/install/openocd/bin:$GCC_TOOLCHAIN:$PATH
+# export PATH=$ROOT_DIR/eda/oss-cad-suite/bin:$PATH
 source ~/vivado.sh
 
-echo  `verilator --version`
+echo  `$VERILATOR --version`

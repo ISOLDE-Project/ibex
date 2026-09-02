@@ -1,9 +1,10 @@
-prj_path := $(shell git rev-parse --show-toplevel)
-TOOLS_DIR      ?= $(prj_path)/tools
-INSTALL_PREFIX ?= eda
-INSTALL_DIR    ?= $(prj_path)/$(INSTALL_PREFIX)
-
-EDA_URL     := https://github.com/ISOLDE-Project/task5.2/releases/download/v0.01/eda-ol-8.10-2026-08-05.tar.gz
+prj_path                   := $(shell git rev-parse --show-toplevel)
+TOOLS_DIR                  ?= $(prj_path)/tools
+INSTALL_PREFIX             ?= eda
+INSTALL_DIR                ?= $(prj_path)/$(INSTALL_PREFIX)
+OSS_CAD_SUITE_INSTALL_DIR  ?= ${INSTALL_DIR}/oss-cad-suite
+OSS_CAD_SUITE_ARCHIVE      := oss-cad-suite-linux-x64.tgz
+EDA_URL                    := https://github.com/ISOLDE-Project/task5.2/releases/download/v0.01/eda-ol-8.10-2026-08-05.tar.gz
 EDA_ARCHIVE := eda.tar.gz
 EDA_ARCHIVE_PATH := $(TOOLS_DIR)/$(EDA_ARCHIVE)
 
@@ -25,3 +26,18 @@ eda: $(INSTALL_DIR) $(EDA_ARCHIVE_PATH)
 
 clean:
 	rm -rf "$(INSTALL_DIR)" "$(EDA_ARCHIVE_PATH)"
+
+$(TOOLS_DIR)/$(OSS_CAD_SUITE_ARCHIVE): vendor/oss-cad-suite.url
+	cd $(TOOLS_DIR) && \
+	wget `cat $(CURDIR)/$<` -O $(OSS_CAD_SUITE_ARCHIVE) 
+	touch $@
+
+.PHONY: oss-cad-suite
+## Install yosys from YosysHQ/oss-cad-suite
+oss-cad-suite: $(TOOLS_DIR) $(TOOLS_DIR)/$(OSS_CAD_SUITE_ARCHIVE)
+	mkdir -p $(OSS_CAD_SUITE_INSTALL_DIR)
+	cd $(TOOLS_DIR) && \
+	tar -xzvf $(OSS_CAD_SUITE_ARCHIVE)  --strip-components=1 -C $(OSS_CAD_SUITE_INSTALL_DIR)/ 
+	touch  $(OSS_CAD_SUITE_INSTALL_DIR)
+
+include common.mk
