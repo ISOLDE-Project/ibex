@@ -22,6 +22,7 @@ make -f Makefile.cluster.nodbg  slang-clean slang
 
 ```sh
 make -f Makefile.tools
+make -f Makefile.eda eda oss-cad-suite 
 ```
 otherwise:  
 ```sh

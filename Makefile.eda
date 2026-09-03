@@ -40,4 +40,9 @@ oss-cad-suite: $(TOOLS_DIR) $(TOOLS_DIR)/$(OSS_CAD_SUITE_ARCHIVE)
 	tar -xzvf $(OSS_CAD_SUITE_ARCHIVE)  --strip-components=1 -C $(OSS_CAD_SUITE_INSTALL_DIR)/ 
 	touch  $(OSS_CAD_SUITE_INSTALL_DIR)
 
+.PHONY: free-space
+## deletes archives and installation directories to free up space
+free-space:
+	rm -rf $(TOOLS_DIR)/*
+	
 include common.mk
