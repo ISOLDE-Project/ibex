@@ -110,12 +110,28 @@ manifest.flist: Bender.yml
 	$(BENDER) script verilator $(common_targs) $(BENDER_EXTRA_TARGET) $(VLT_BENDER)  >$@
 	touch $@
 
+
+# Simulation top-module dependency extraction.
+SLANG_INPUTS_$(VLT_TOP_MODULE) := ibex_sim.slang manifest.slang
+
+SLANG_INPUTS_$(VLT_TOP_MODULE) := \
+	ibex_sim.slang \
+	manifest.slang
+
+SLANG_OPTS_$(VLT_TOP_MODULE) := \
+	$(addsuffix _opts,$(SLANG_INPUTS_$(VLT_TOP_MODULE)))
+
+.PHONY: vlt-deps vlt-slang
+vlt-deps: $(VLT_TOP_MODULE)_all_deps.f
+
+vlt-slang: $(VLT_TOP_MODULE)_slang
+
 VERILATE_LOG      := $(VERI_LOG_DIR)/verilate.log
 VERILATE_WARNINGS := $(VERI_LOG_DIR)/verilate_warnings.log
 
 ## build the simulation
 # verilate:  ibex_sim.flist manifest.flist
-verilate:  $(VLT_TOP_MODULE)_all_deps.f
+verilate:  vlt-deps 
 	mkdir -p  $(VERI_LOG_DIR)
 	cat ibex_sim.slang_veri_opts manifest.slang_veri_opts> ops.verilator.flist
 	python $(ROOT_DIR)/util/transform_paths.py  \
