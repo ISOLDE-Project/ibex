@@ -1,6 +1,6 @@
 board/xilinx.cfg
 Makefile.vivado
-synth-vivado/
+synth-verilator/
 vivado/
 *.jou
 *.log
@@ -9,3 +9,12 @@ vivado/
 *pulpissimo*
 padframe_adapter.sv
 *.str
+
+# generated source lists (flist-first: fusesoc/bender emit flists, slang
+# trims them, vivado_synth.tcl is generated last -- see isolde/mk/vivado.mk)
+ibex_synth.flist
+isolde_synth.flist
+ibex_synth.slang*
+isolde_synth.slang*
+vivado_synth.tcl
+*_synth_deps.f

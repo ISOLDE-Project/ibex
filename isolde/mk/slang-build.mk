@@ -150,6 +150,7 @@ slang-clean:
 	fi
 	$(SLANG_COMMON) \
 		--top $* \
+		$(SLANG_DEPS_FLAGS_$*) \
 		$(foreach f,$^,-f $(f)) \
 		--Mmodule $@ \
 		--depfile-sort \
