@@ -110,6 +110,10 @@ vivado-clean:  Makefile.vivado ## Removes the generated files together with the 
 Makefile.vivado: $(SYS_MAKEFILE)
 	cp $< $@
 
+
+vivado-stats:  Makefile.vivado ## Statistics on trimmed files
+	$(MAKE) -f Makefile.vivado $@
+
 ###############################################################################
 # Out-of-context IPs. They read part/board_part from board/xilinx.cfg through
 # tcl/common.tcl, so the board must be selected before they are built.

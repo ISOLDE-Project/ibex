@@ -194,3 +194,23 @@ slang-lint: ibex_sim.slang manifest.slang $(SLANG_TOP_MODULE)_all_deps.f
 		-f $(SLANG_TOP_MODULE)_all_deps.f \
 		2>&1 | tee "$(SLANG_LINT_LOG)" | \
 		gawk -v warnings_file="$(SLANG_LINT_WARN)" -f "$(SCRIPTS_DIR)/questa.awk"
+
+###############################################################################
+# Statistics 
+###############################################################################
+.PHONY: %-deps-stats
+
+%-deps-stats: %_all_deps.f
+	@total=$$(grep -hvE '^[[:space:]]*($$|#|\+|-)' \
+		$(SLANG_INPUTS_$*) | sort -u | wc -l); \
+	kept=$$(grep -hvE '^[[:space:]]*($$|#|\+|-)' \
+		$< | sort -u | wc -l); \
+	dropped=$$((total - kept)); \
+	printf "Slang dependency statistics for %s:\n" "$*"; \
+	printf "  input files : %d\n" $$total; \
+	printf "  kept files  : %d\n" $$kept; \
+	printf "  dropped     : %d\n" $$dropped; \
+	if [ $$total -gt 0 ]; then \
+		awk -v t=$$total -v d=$$dropped \
+			'BEGIN { printf "  reduction   : %.1f%%\n", 100*d/t }'; \
+	fi		

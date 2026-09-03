@@ -112,7 +112,8 @@ manifest_synth.flist: $(BENDER_RTL_ROOT)/Bender.yml
 # The actual recipe is the generic %_all_deps.f rule in slang-build.mk.
 ###############################################################################
 
-vivado-deps: $(VIVADO_TOP_MODULE)_all_deps.f
+vivado-deps:  $(VIVADO_TOP_MODULE)_all_deps.f
+vivado-stats: $(VIVADO_TOP_MODULE)-deps-stats
 
 ###############################################################################
 # Final Vivado source manifest.
