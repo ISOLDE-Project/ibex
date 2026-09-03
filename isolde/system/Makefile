@@ -44,7 +44,12 @@ endif
 ###
 VLT_TOP_MODULE        ?= tb_lca_system
 IMEM_LATENCY          ?= 0
+WAVES                 ?= 0
 VLT_TOP_MODULE_PARAMS := -GIMEM_LATENCY=$(IMEM_LATENCY)
+
+ifneq ($(filter $(WAVES),0 1),$(WAVES))
+$(error WAVES must be 0 or 1)
+endif
 
 ###
 # Static configurations (can be overridden by command-line)

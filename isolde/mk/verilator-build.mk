@@ -11,9 +11,9 @@ FUSESOC_IGNORE_FILE   := $(TASK52_DIR)/FUSESOC_IGNORE
 #############
 
 #####
-VERI_LOG_DIR      ?= $(mkfile_path)/log/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)
+VERI_LOG_DIR      ?= $(mkfile_path)/log/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)/waves-$(WAVES)
 SIM_TEST_INPUTS   ?= $(mkfile_path)/vsim
-BIN_DIR           = $(mkfile_path)/bin/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)
+BIN_DIR           = $(mkfile_path)/bin/$(VLT_TOP_MODULE)/$(IMEM_LATENCY)/waves-$(WAVES)
 VERI_FLAGS        +=
 NO_TEE		      ?= 1
 #####
@@ -25,18 +25,29 @@ endif
 
 
 
-.PHONY: veri-clean 
+.PHONY: veri-clean veri-hard-clean 
 
-# Clean all build directories and temporary files for verilator simulation
+## Clean all build directories and temporary files for verilator simulation
 veri-clean: 
 	rm -f *.flist
 	rm -fr log/$(VLT_TOP_MODULE) 
 	make -C sim/core -f Makefile.verilator  	 SIM_RESULTS=$(BIN_DIR)                  \
+												       WAVES=$(WAVES) \
 												   RUN_INDEX=$(IMEM_LATENCY)           \
 											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
 									   VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS)    \
-									 $@
+		$@
 	rm -fr $(FUSESOC_BUILD_ROOT) 
+
+
+## Clean ccache and all build directories and temporary files for verilator simulation
+veri-hard-clean: veri-clean
+	make -C sim/core -f Makefile.verilator  	 SIM_RESULTS=$(BIN_DIR)                  \
+												       WAVES=$(WAVES) \
+												   RUN_INDEX=$(IMEM_LATENCY)           \
+											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
+									   VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS)    \
+		$@
 
 
 ##
@@ -117,6 +128,7 @@ verilate:  $(VLT_TOP_MODULE)_all_deps.f
 	mkdir -p $(BIN_DIR)
 	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ops.verilator.flist     \
 											     PE_MANIFEST=${CURDIR}/manifest.verilator.flist    \
+												 WAVES=$(WAVES) \
 	                                             SIM_RESULTS=$(BIN_DIR)                  \
 												   RUN_INDEX=$(IMEM_LATENCY)           \
 											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
@@ -129,11 +141,12 @@ verilate:  $(VLT_TOP_MODULE)_all_deps.f
 veri-lint:  ibex_sim.flist manifest.flist
 	make -C sim/core -f Makefile.verilator CV_CORE_MANIFEST=${CURDIR}/ibex_sim.flist     \
 											     PE_MANIFEST=${CURDIR}/manifest.flist    \
+												 WAVES=$(WAVES) \
 	                                             SIM_RESULTS=$(BIN_DIR)                  \
 												   RUN_INDEX=$(IMEM_LATENCY)           \
 											  VLT_TOP_MODULE=$(VLT_TOP_MODULE)           \
 									   VLT_TOP_MODULE_PARAMS=$(VLT_TOP_MODULE_PARAMS)    \
-									   $@      
+		$@
 ## run the verilator simulation
 .PHONY: veri-run
 veri-run: $(BIN_DIR)/verilator_executable 
@@ -141,11 +154,16 @@ veri-run: $(BIN_DIR)/verilator_executable
 	@echo "* Running with Verilator: "
 	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
 	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/trace_core_00000000.log"
+ifeq ($(WAVES),1)
 	@echo "*                              *.vcd: $(VERI_LOG_DIR)/$(TEST).vcd"
+else
+	@echo "*                           VCD trace: disabled"
+endif
 	@echo "$(BANNER)"
 	# === Create/clean-up destination log folder ===
 	mkdir -p $(VERI_LOG_DIR)
 	rm -f $(VERI_LOG_DIR)/*
+	rm -f verilator_tb.vcd
 	@echo "TEE_CMD=$(TEE_CMD)"
 
 	# === Check for required input files ===
@@ -164,12 +182,14 @@ veri-run: $(BIN_DIR)/verilator_executable
 		"+STIM_DATA=$(test-program)-d.hex" \
 		$(TEE_CMD)
 
-	# === Check for expected output files ===
+# === Check for expected output files ===
+ifeq ($(WAVES),1)
 	@if [ ! -f "verilator_tb.vcd" ]; then \
 		echo "⚠️  CRITICAL WARNING: Output file missing: verilator_tb.vcd"; \
 		else \
 		mv verilator_tb.vcd $(VERI_LOG_DIR)/$(TEST).vcd; \
 	fi
+endif
 
 	@if [ ! -f "trace_core_00000000.log" ]; then \
 		echo "⚠️  CRITICAL WARNING: Output file missing: trace_core_00000000.log"; \
@@ -191,14 +211,19 @@ veri-run-u-test: $(BIN_DIR)/verilator_executable
 	@echo "* Running with Verilator: "
 	@echo "*                            logfile: $(VERI_LOG_DIR)/$(TEST).log"
 	@echo "*                    rtl debug trace: $(VERI_LOG_DIR)/trace_core_00000000.log"
+ifeq ($(WAVES),1)
 	@echo "*                              *.vcd: $(VERI_LOG_DIR)"
+else
+	@echo "*                           VCD trace: disabled"
+endif
 	@echo "$(shell pwd)"
 	mkdir -p $(VERI_LOG_DIR)
-	rm -f $(VERI_LOG_DIR)/verilator_tb.vcd
+	rm -f verilator_tb.vcd
 	$(BIN_DIR)/verilator_executable  \
 		| tee $(VERI_LOG_DIR)/$(VLT_TOP_MODULE).log
+ifeq ($(WAVES),1)
 	mv verilator_tb.vcd $(VERI_LOG_DIR)/$(VLT_TOP_MODULE).vcd
+endif
 	
 
 	
-
