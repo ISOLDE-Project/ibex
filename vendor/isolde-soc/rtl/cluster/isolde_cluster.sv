@@ -693,7 +693,9 @@ isolde_xif_relay #(
 ) i_xif_relay (
     .clk_i,
     .rst_ni,
-    .cpu_xif_issue   (itf_core_xif.coproc_issue),
+    // coproc_issue_no_status: cluster_status is driven below by this module,
+    // so it must NOT be an output of the relay as well (multi-driven net).
+    .cpu_xif_issue   (itf_core_xif.coproc_issue_no_status),
     .cpu_xif_result  (itf_core_xif.coproc_result),
     .tile_xif_issue  (itf_hwe_xif),
     .tile_xif_result (itf_hwe_xif),

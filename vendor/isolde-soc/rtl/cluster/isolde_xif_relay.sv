@@ -14,7 +14,11 @@ module isolde_xif_relay #(
     input logic rst_ni,
 
     // cpu interface
-    isolde_cv_x_if.coproc_issue  cpu_xif_issue,
+    // NOTE: coproc_issue_no_status (not coproc_issue): this relay does not
+    // produce cluster_status - the cluster wrapper drives it. Using
+    // coproc_issue here would make cluster_status a (never assigned) output
+    // of this module and thus a second driver on that net.
+    isolde_cv_x_if.coproc_issue_no_status cpu_xif_issue,
     isolde_cv_x_if.coproc_result cpu_xif_result,
 
     // tile interfaces
