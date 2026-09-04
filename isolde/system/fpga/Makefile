@@ -33,6 +33,15 @@ interrupt_enable_mask / cluster_status, which vendor/core-v-xif declares only \
 under `ifdef REDMULE_CLUSTER. Elaboration will fail until that file is guarded.)
 endif
 
+VIVADO_TOP_MODULE     := $(or $(shell sed -n 's/^set _top_module_[[:space:]]*"\?\([A-Za-z_0-9]*\)"\?.*/\1/p' $(BOARD_CFG) 2>/dev/null),xilinx_aida)
+MAKEFILE_VIVADO_BASE  := $(MAKE) -f Makefile.vivado \
+									VIVADO_TOP_MODULE=$(VIVADO_TOP_MODULE) \
+									DBG_MODULE=1 ENABLE_SPM=$(ENABLE_SPM) \
+									FUSESOC_SYNTH_ROOT=$(FPGA_DIR) \
+									BENDER_RTL_ROOT=$(SYS_DIR) \
+									"BENDER_SYNTH_TARGET=$(SYNTH_TARGET)" 
+
+
 .DEFAULT_GOAL:=help
 
 all: vivado-prj
@@ -62,11 +71,7 @@ boards:                     ## Lists the available board profiles
 # Source list generation (fusesoc for ibex, bender for the ISOLDE SoC)
 ###############################################################################
 vivado_synth.tcl: Makefile.vivado $(FPGA_DIR)/ips/xilinx_sys_rst/xilinx_sys_rst.xpr $(FPGA_DIR)/ips/xilinx_clk_mngr/xilinx_clk_mngr.xpr
-	$(MAKE) -f Makefile.vivado \
-			 DBG_MODULE=1 ENABLE_SPM=$(ENABLE_SPM) \
-	         FUSESOC_SYNTH_ROOT=$(FPGA_DIR) \
-			 BENDER_RTL_ROOT=$(SYS_DIR) \
-			 "BENDER_SYNTH_TARGET=$(SYNTH_TARGET)" \
+	$(MAKEFILE_VIVADO_BASE) \
 	         $@
 
 
@@ -91,20 +96,20 @@ impl: $(BOARD_CFG) vivado_synth.tcl	      ## Creates the vivado project and gene
 rpt: $(BOARD_CFG) vivado_synth.tcl	      ## Opens the vivado project and generates a brief timing summary.
 	vivado -mode batch -source  ./tcl/report.tcl
 
-.PHONY: clean clean-vivado
-clean:                      ## Removes all build products
-	- $(MAKE) -f Makefile.vivado vivado-clean || true
-	rm -fr vivado synth-vivado
-	rm -f  Makefile.vivado *.jou *.log
-	rm -f ibex_synth.tcl isolde_synth.tcl vivado_synth.tcl
+.PHONY: clean vivado-clean
+clean: vivado-clean                      ## Removes all build products
 	$(MAKE) -C $(FPGA_DIR)/ips/xilinx_clk_mngr  $@
 	$(MAKE) -C $(FPGA_DIR)/ips/xilinx_sys_rst   $@
+	rm -f  Makefile.vivado
 
-
-vivado-clean:  Makefile.vivado ## Removes the generated files together with the vivado project
-	rm -fr vivado synth-vivado
-	rm -f ibex_synth.tcl isolde_synth.tcl vivado_synth.tcl
-	$(MAKE) -f Makefile.vivado $@
+vivado-clean:   ## Removes the generated files together with the vivado project
+	$(MAKEFILE_VIVADO_BASE) $@
+	rm -f  vivado_synth.tcl
+	rm -fr vivado 
+	rm -f  *.jou *.log
+	
+	
+	
 
 
 Makefile.vivado: $(SYS_MAKEFILE)
@@ -112,7 +117,12 @@ Makefile.vivado: $(SYS_MAKEFILE)
 
 
 vivado-stats:  Makefile.vivado ## Statistics on trimmed files
-	$(MAKE) -f Makefile.vivado $@
+	$(MAKEFILE_VIVADO_BASE) $@
+
+vivado-deps:  Makefile.vivado ## build up the dependency list for the top module
+	$(MAKEFILE_VIVADO_BASE) $@
+	@printf "\033[33mINFO: See $(VIVADO_TOP_MODULE)_all_deps.f for the full dependency list.\033[0m\n"
+	
 
 ###############################################################################
 # Out-of-context IPs. They read part/board_part from board/xilinx.cfg through
@@ -124,8 +134,8 @@ $(FPGA_DIR)/ips/xilinx_sys_rst/xilinx_sys_rst.xpr: $(BOARD_CFG)
 $(FPGA_DIR)/ips/xilinx_clk_mngr/xilinx_clk_mngr.xpr: $(BOARD_CFG)
 	$(MAKE) -C $(FPGA_DIR)/ips/xilinx_clk_mngr all
 
-help: ## Shows this help message
-	@echo $(FPGA_DIR)
-	@echo "BOARD=$(BOARD)  CLUSTER=$(CLUSTER)  ENABLE_SPM=$(ENABLE_SPM)"
-	@echo "bender synth targets: $(SYNTH_TARGET)"
+help: Makefile.vivado  ## Shows this help message
+	@printf "\033[33mINFO: FPGA_DIR: $(FPGA_DIR)\033[0m\n"
+	@printf "\033[33mINFO: Top module: $(VIVADO_TOP_MODULE)\033[0m\n"
+	@printf "\033[33mINFO: BOARD=$(BOARD)  CLUSTER=$(CLUSTER)  ENABLE_SPM=$(ENABLE_SPM)\033[0m\n"
 	@grep -E -h '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

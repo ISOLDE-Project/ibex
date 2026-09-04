@@ -7,7 +7,7 @@ description: "Generic simple system for running binaries on ibex using verilator
 filesets:
   files_verilator:
     depend:
-      - isolde:ibex:lca_system_core
+       - lowrisc:ibex:ibex_top
 #      - isolde:dv_verilator:debug_module_verilator
 
   files_questa:
@@ -19,7 +19,7 @@ filesets:
   files_synth:
     depend:
       - lowrisc:prim:fifo
-      - isolde:ibex:lca_system_core
+      - lowrisc:ibex:ibex_top
       
 
 parameters:
