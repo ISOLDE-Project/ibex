@@ -92,6 +92,12 @@ synth: $(BOARD_CFG) vivado_synth.tcl	      ## Creates the vivado project and run
 impl: $(BOARD_CFG) vivado_synth.tcl	      ## Creates the vivado project and generates the bitstream.
 	vivado -mode batch -source ./tcl/create_project.tcl  ./tcl/run.tcl
 
+.PHONY: flash
+flash: $(BOARD_CFG)                    ## Programs the FPGA with the generated bitstream.
+	ROOT_DIR=$(ROOT_DIR) vivado -mode batch \
+		-source $(FPGA_DIR)/tcl/program_fpga.tcl \
+		-tclargs $(BOARD_CFG)
+		
 .PHONY: rpt
 rpt: $(BOARD_CFG) vivado_synth.tcl	      ## Opens the vivado project and generates a brief timing summary.
 	vivado -mode batch -source  ./tcl/report.tcl

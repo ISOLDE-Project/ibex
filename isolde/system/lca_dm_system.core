@@ -130,6 +130,11 @@ parameters:
     default: 40
     description: Bit width of performance monitor event counters [32/64]
 
+  PRIM_DEFAULT_IMPL:
+    datatype: str
+    paramtype: vlogdefine
+    description: lowRISC primitive implementation
+    default: prim_pkg::ImplXilinx
 
 targets:
   default: &default_target
@@ -217,6 +222,8 @@ targets:
     filesets_append:
       - files_synth
     toplevel: ibex_top
+    parameters:
+      - PRIM_DEFAULT_IMPL
     tools:
       vivado:
         part: "xczu7ev-ffvc1156-2-e"  # Default to ZCU102    

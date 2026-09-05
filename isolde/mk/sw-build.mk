@@ -208,7 +208,7 @@ test-build: $(TEST_BIN_DIR) $(test-program).hex
 
 test-clean: clean-bsp
 	rm -f $(test-program)*
-	rm -fr $(TEST_BIN_DIR) 
+# 	rm -fr $(TEST_BIN_DIR) 
 	rm -fr $(SIM_BSP_RESULTS)
 	-find $(TEST_SRC_DIR) -name "*.o"       -delete
 

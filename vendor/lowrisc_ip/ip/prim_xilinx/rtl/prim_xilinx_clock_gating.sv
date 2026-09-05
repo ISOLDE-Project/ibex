@@ -20,9 +20,7 @@ module prim_xilinx_clock_gating #(
       // These resources are scarce (32 in monolithic 7 series devices) and under some
       // circumstances cannot be cascaded. They should especially be used for (gating)
       // clocks that span big parts of the design/multiple clock regions.
-      BUFGCE #(
-        .SIM_DEVICE("7SERIES")
-      ) u_bufgce (
+      BUFGCE  u_bufgce (
         .I (clk_i),
         .CE(en_i | test_en_i),
         .O (clk_o)

@@ -23,10 +23,10 @@
 
 VIVADO_TOP_MODULE ?= undefined
 
-FUSESOC_SYNTH_TARGET      := synth
-FUSESOC_SYNTH_TOOL        := verilator
-FUSESOC_SYNTH_OUTPUT_DIR  := $(FUSESOC_SYNTH_ROOT)/$(FUSESOC_SYNTH_TARGET)-$(FUSESOC_SYNTH_TOOL)
-FUSESOC_SYNTH_OUTPUT_FILE := $(FUSESOC_SYNTH_OUTPUT_DIR)/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc
+FUSESOC_SYNTH_TARGET       := synth
+FUSESOC_SYNTH_TOOL         := verilator
+FUSESOC_SYNTH_OUTPUT_DIR   := $(FUSESOC_SYNTH_ROOT)/$(FUSESOC_SYNTH_TARGET)-$(FUSESOC_SYNTH_TOOL)
+FUSESOC_SYNTH_OUTPUT_FILE  := $(FUSESOC_SYNTH_OUTPUT_DIR)/$(FUSESOC_PROJECT)_$(FUSESOC_CORE)_$(FUSESOC_SYSTEM)_0.vc
 
 ###############################################################################
 # Register the Vivado/FPGA dependency universe with slang-build.mk.
@@ -100,6 +100,7 @@ manifest_synth.flist: $(BENDER_RTL_ROOT)/Bender.yml
 	$(BENDER) script verilator \
 		--no-default-target \
 		-t synthesis \
+		-t fpga \
 		-t vivado \
 		$(common_targs) \
 		$(BENDER_SYNTH_TARGET) \

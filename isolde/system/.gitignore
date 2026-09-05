@@ -22,3 +22,4 @@ vivado_synth.tcl
 *_all_deps.f
 *.slang*
 regression-logs/
+nxp-ro/
