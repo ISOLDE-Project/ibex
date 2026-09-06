@@ -18,8 +18,8 @@ BENDER_SYNTH_TARGET ?=
 BENDER_EXTRA_TARGET ?= -t aida_mmio
 FUSESOC_PROJECT     := isolde
 FUSESOC_CORE        := ibex
-FUSESOC_SYSTEM      := lca_dm_system
-FUSESOC_PKG_NAME    := $(FUSESOC_PROJECT):$(FUSESOC_CORE):$(FUSESOC_SYSTEM)
+FUSESOC_SYSTEM      ?= dm_system
+FUSESOC_PKG_NAME    = $(FUSESOC_PROJECT):$(FUSESOC_CORE):$(FUSESOC_SYSTEM)
 ONNX_MLIR           := $(ROOT_DIR)/install/onnx-mlir/bin/onnx-mlir
 ##
 
@@ -51,6 +51,11 @@ ifneq ($(filter $(WAVES),0 1),$(WAVES))
 $(error WAVES must be 0 or 1)
 endif
 
+ifeq ($(WAVES),1)
+	FUSESOC_SYSTEM    := dm_system_trace
+	FUSESOC_PKG_NAME   = $(FUSESOC_PROJECT):$(FUSESOC_CORE):$(FUSESOC_SYSTEM)
+	tb_target         += -D IBEX_TRACE
+endif
 ###
 # Static configurations (can be overridden by command-line)
 ###

@@ -2,12 +2,12 @@ CAPI=2:
 # Copyright lowRISC contributors.
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
-name: "isolde:ibex:lca_dm_system"
+name: "isolde:ibex:dm_system_trace"
 description: "Generic simple system for running binaries on ibex using verilator"
 filesets:
   files_verilator:
     depend:
-       - lowrisc:ibex:ibex_top
+       - lowrisc:ibex:ibex_top_tracing
 #      - isolde:dv_verilator:debug_module_verilator
 
   files_questa:
@@ -130,11 +130,12 @@ parameters:
     default: 40
     description: Bit width of performance monitor event counters [32/64]
 
-  PRIM_DEFAULT_IMPL:
-    datatype: str
-    paramtype: vlogdefine
-    description: lowRISC primitive implementation
-    default: prim_pkg::ImplXilinx
+scripts:
+  synth_not_supported:
+    cmd:
+      - bash
+      - -c
+      - 'echo "ERROR: Synthesis is not supported for isolde:ibex:dm_system_trace" >&2; exit 1'
 
 targets:
   default: &default_target
@@ -218,12 +219,13 @@ targets:
 
   synth:
     <<: *default_target
+    hooks:
+      pre_build:
+        - synth_not_supported
     default_tool: vivado
     filesets_append:
       - files_synth
     toplevel: ibex_top
-    parameters:
-      - PRIM_DEFAULT_IMPL
     tools:
       vivado:
         part: "xczu7ev-ffvc1156-2-e"  # Default to ZCU102    
