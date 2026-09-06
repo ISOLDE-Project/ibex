@@ -30,10 +30,6 @@ FUSESOC_SYNTH_OUTPUT_FILE  := $(FUSESOC_SYNTH_OUTPUT_DIR)/$(FUSESOC_PROJECT)_$(F
 
 ###############################################################################
 # Register the Vivado/FPGA dependency universe with slang-build.mk.
-#
-# The FuseSoC target parameters (-G...) belong to ibex_top, whereas dependency
-# extraction is rooted at xilinx_aida.  Use the .deps.slang variants so those
-# top-level parameter overrides are not incorrectly applied to xilinx_aida.
 ###############################################################################
 
 SLANG_INPUTS_$(VIVADO_TOP_MODULE) := \
