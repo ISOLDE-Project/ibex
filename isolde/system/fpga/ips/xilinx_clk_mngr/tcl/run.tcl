@@ -1,21 +1,5 @@
 source $::env(FPGA_DIR)/tcl/common.tcl
 
-# detect target clock
-if [info exists ::env(FC_CLK_PERIOD_NS)] {
-    set FC_CLK_PERIOD_NS $::env(FC_CLK_PERIOD_NS)
-} else {
-    set FC_CLK_PERIOD_NS 10.000
-}
-if [info exists ::env(PER_CLK_PERIOD_NS)] {
-    set PER_CLK_PERIOD_NS $::env(PER_CLK_PERIOD_NS)
-} else {
-    set PER_CLK_PERIOD_NS 20.000
-}
-
-
-set FC_CLK_FREQ_MHZ [expr 1000 / $FC_CLK_PERIOD_NS]
-set PER_CLK_FREQ_MHZ [expr 1000 / $PER_CLK_PERIOD_NS]
-
 
 create_ip -name clk_wiz -vendor xilinx.com -library ip -module_name $ipName
 

@@ -95,9 +95,13 @@ set_output_delay -clock tck -min $jtag_out_min [get_ports pad_jtag_tdo]
 ## or set_max_delay -datapath_only constraint but no double-registers logic
 ##  synchronizer has been found on the side of the capture clock. 
 ## 
-set_clock_groups -name async_sys_tck -asynchronous \
-    -group [get_clocks clk_out1_xilinx_clk_mngr] \
-    -group [get_clocks tck]
+set clk_sys [get_clocks -quiet -of_objects [get_pins  i_xilinx_clk_mngr/inst/clkout1_buf/O]]
+
+set clk_tck [get_clocks -quiet -of_objects [get_pins  i_bufgce_pad_jtag_tck/O]]
+
+
+set_clock_groups -quiet -name async_sys_tck -asynchronous -group $clk_sys -group $clk_tck
+
 
 
 ## UART TX
