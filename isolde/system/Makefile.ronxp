@@ -1,0 +1,8 @@
+TEST ?= nxp-ro/anomality_2devices_opt_present/omp_test
+%:
+	 @echo  $(MAKECMDGOALS)
+	 make DBG_MODULE=0 ENABLE_SPM=1 \
+	    VLT_TOP_MODULE=aida_tb     \
+		WAVES=1 \
+		BENDER_EXTRA_TARGET="-t fpga_sim -D REDMULE_CLUSTER" \
+	 	test-program=$(TEST) $@

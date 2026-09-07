@@ -1,4 +1,18 @@
 # ISOLDE 
+# Data Memory map inference from RTL 
+```sh
+cd isolde/system/
+. ./eth.sh 
+python3 $SCRIPTS_DIR/vcd_memory_map.py verilator_tb.vcd
+```
+```
+[0] DMEM         0x00110000 .. 0x00114000
+[1] SMEM         0x00140000 .. 0x00140800
+[2] MMIO         0x80000000 .. 0x8000000c
+[3] PERFCNT      0x8000000c .. 0x80000029
+[4] SPMLD        0x80000100 .. 0x80000120
+[5] SPM_NARROW   0x80001000 .. 0x80011000
+```
 ## Generate test data
 ```sh
 cd isolde/system
@@ -251,3 +265,4 @@ Where `*.qsta_opts` = `+incdir+` verbatim + `-D` rewritten to `+define+`. Param 
 
 
 ###############
+
