@@ -54,3 +54,6 @@ eda
 .task5.2/
 .task5.2
 *.*xx
+.isolde-flow/
+isolde/scripts/tests/
+isolde/scripts/cluster_diagram.py

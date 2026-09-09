@@ -23,3 +23,7 @@ vivado_synth.tcl
 *.slang*
 regression-logs/
 nxp-ro/
+doc/
+model.json
+README.cluster-diagram.md
+Makefile.cluster

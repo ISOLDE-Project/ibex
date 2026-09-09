@@ -2,6 +2,7 @@ ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
 FPGA_DIR            := $(ROOT_DIR)/isolde/system/fpga
 SYS_DIR             := $(ROOT_DIR)/isolde/system
 SYS_MAKEFILE        := $(ROOT_DIR)/isolde/system/Makefile
+SLANG_BLOCKS		 := $(ROOT_DIR)/eda/slang-blocks/bin/slang-blocks
 
 export FPGA_DIR
 
@@ -129,6 +130,14 @@ vivado-deps:  Makefile.vivado ## build up the dependency list for the top module
 	$(MAKEFILE_VIVADO_BASE) $@
 	@printf "\033[33mINFO: See $(VIVADO_TOP_MODULE)_all_deps.f for the full dependency list.\033[0m\n"
 	
+
+.PHONY: diagram
+diagram:
+	$(SLANG_BLOCKS) --level isolde_cluster --filter isolde_cluster.filter -o model.json \
+		--timescale 1ns/1ps --top xilinx_aida --ignore-unknown-modules \
+		-f ibex_synth.slang -f manifest_synth.slang
+	python3 ../../../util/slang_hier_to_dot.py --from-model model.json \
+	    --outdir doc/diagrams --format svg,drawio
 
 ###############################################################################
 # Out-of-context IPs. They read part/board_part from board/xilinx.cfg through
