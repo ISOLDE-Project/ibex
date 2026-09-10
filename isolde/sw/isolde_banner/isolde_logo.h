@@ -14,7 +14,7 @@ extern "C" {
 #define ISOLDE_LOGO_HEIGHT 14
 
 
-static const char *const isolde_logo_ascii[ISOLDE_LOGO_HEIGHT] = {
+static const char *const isolde_logo_ascii[] = {
 
     
 "      ___ ____   ___  _     ____  _____ ",

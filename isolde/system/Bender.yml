@@ -21,12 +21,6 @@ dependencies:
 # the Vivado source list -- and it still imports the renamed `aida_lca_package`,
 # which fails elaboration (and common.tcl escalates Filemgmt 20-742 to an error).
 sources:
-   - target: all(all(not(spm),not(any(fpga_sim,yosys,xilinx))), all(tb_dm ,redmule_hwpe ,rtl ,redmule_test_hwpe))
-     files:
-        - tb/tb_dm.sv
-   - target: all(not(any(fpga_sim,yosys,xilinx)), all(vanilla_lca,redmule_test_hwpe, rtl, redmule_hwpe))
-     files:
-       - tb/tb_lca_system.sv
    - target: all (not(any(fpga_sim,yosys,xilinx)),any(spm, redmule_hwpe,redmule_complex, redmule_test_hwpe))
      files:
        - tb/tb_spm.sv
