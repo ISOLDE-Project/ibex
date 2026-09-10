@@ -27,3 +27,4 @@ doc/
 model.json
 README.cluster-diagram.md
 Makefile.cluster
+.generated.stamp

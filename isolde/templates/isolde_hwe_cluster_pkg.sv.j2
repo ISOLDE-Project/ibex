@@ -1,7 +1,7 @@
 // Copyright (c) ISOLDE 2026
 // SPDX-License-Identifier: Apache-2.0
 // THIS IS A GENERATED FILE - DO NOT EDIT.
-// Source: config/platform.yml, template templates/isolde_hwe_cluster_pkg.sv.j2, platform 'demo'.
+// Source: config/platform.yml, template templates/isolde_hwe_cluster_pkg.sv.j2, platform '{{ platform }}'.
 
 package isolde_hwe_cluster_pkg;
 
@@ -10,15 +10,15 @@ package isolde_hwe_cluster_pkg;
   parameter int unsigned RegDataWidth = 32;
 
 
-  parameter int unsigned N_HWE_TILES  = 2; //hardware engine(HWE) tiles
+  parameter int unsigned N_HWE_TILES  = {{ n_tiles }}; //hardware engine(HWE) tiles
   
   parameter int unsigned ID_WIDTH = (N_HWE_TILES > 1) ? $clog2(N_HWE_TILES) : 1;
   parameter int unsigned CSR_WIDTH = N_HWE_TILES +1 ;
   //parameter int unsigned RegByteWidth = RegDataWidth / 8;
 
   // === spm narrow port start ====
-  localparam int unsigned SPM_NARROW_ADDR_BASE = 32'h8000_1000;
-  localparam int unsigned SPM_NARROW_SIZE = 32'h0000_8000;  //32kB
+  localparam int unsigned SPM_NARROW_ADDR_BASE = {{ spm.narrow_addr_base | sv32 }};
+  localparam int unsigned SPM_NARROW_SIZE = {{ spm.narrow_size | sv32 }};  //{{ (spm.narrow_size // 1024) }}kB
 
   // Common typedefs
   typedef logic [RegDataWidth-1:0] isolde_reg_data_t;

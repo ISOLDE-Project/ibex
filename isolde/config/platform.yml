@@ -1,0 +1,47 @@
+# ---------------------------------------------------------------------------
+# ISOLDE platform configuration - single source of truth for the memory map
+# and the HWE tile count.
+#
+# Generated from this file (see jobs.yml):
+#   rtl/isolde_hwe_cluster_pkg.sv                     (fusesoc, ibex_pkg.core)
+#   vendor/isolde-soc/rtl/aida_pkg.sv                 (bender, Bender.yml)
+#   vendor/isolde-soc/rtl/cluster/isolde_xif_relay.sv (bender, Bender.yml)
+#   isolde/system/bsp/link.ld                         (sw-build.mk)
+#
+# Region lengths are in BYTES and must be a multiple of 4: aida_pkg.sv sizes
+# the SRAMs in 32-bit words (*_SIZE_I32), so a non-word-multiple length cannot
+# be expressed in RTL. The three region names instrram/dataram/stack are
+# fixed - link.ld's SECTIONS and aida_pkg's IMEM/DMEM/SMEM both bind to them.
+# ---------------------------------------------------------------------------
+schema_version: 1
+
+defaults: &defaults
+  # Offset of the RISC-V reset vector within instrram. crt0.S places
+  # .vectors at the start of instrram and link.ld computes
+  # _entry_point = _vectors_start + boot_offset; aida_pkg's RV_BOOT_ADDR
+  # must equal instrram.origin + boot_offset or the core boots into garbage.
+  boot_offset: 0x80
+  spm:
+    # Per-tile SPM narrow window. isolde_cluster.sv routes
+    # [narrow_addr_base, narrow_addr_base + n_tiles * narrow_size).
+    narrow_addr_base: 0x80001000
+    narrow_size: 0x8000        # 32 kB per tile
+
+platforms:
+  aida:
+    <<: *defaults
+    description: "development, 2 tiles"
+    n_tiles: 2
+    memory:
+      instrram: { origin: 0x00100000, length: 0x4000 }
+      dataram:  { origin: 0x00110000, length: 0x4000 }
+      stack:    { origin: 0x00140000, length: 0x800  }
+
+  demo:
+    <<: *defaults
+    description: "joined demo, 2 tiles"
+    n_tiles: 2
+    memory:
+      instrram: { origin: 0x00100000, length: 0x8000 }
+      dataram:  { origin: 0x00110000, length: 0x8000 }
+      stack:    { origin: 0x00140000, length: 0x4000 }

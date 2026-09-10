@@ -1,6 +1,7 @@
 ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
-mkfile_path         := $(ROOT_DIR)/isolde/system
-SCRIPTS_DIR         := $(ROOT_DIR)/isolde/scripts
+PROJECT_DIR         :=  $(ROOT_DIR)/isolde
+mkfile_path         :=  $(PROJECT_DIR)/system
+SCRIPTS_DIR         :=  $(PROJECT_DIR)/scripts
 IBEX_CONFIG         ?=  isolde
 FUSESOC_CONFIG_OPTS ?= 
 FUSESOC_PARAMS      ?=
@@ -91,11 +92,12 @@ include $(mkfile_path)/../mk/questa-build.mk
 include $(mkfile_path)/../mk/slang-build.mk
 include $(mkfile_path)/../mk/vivado.mk
 include $(mkfile_path)/../mk/bender-wrapper.mk
+include $(mkfile_path)/../mk/generate.mk
 include $(ROOT_DIR)/common.mk
 
 
-generate:
-	make -C $(ROOT_DIR)/vendor/isolde-soc -f Makefile.jinja N_TILES=2 clean generate
+# generate:
+# 	make -C $(ROOT_DIR)/vendor/isolde-soc -f Makefile.jinja N_TILES=2 clean generate
 	
 ## apply slang patches	
 patch:

@@ -1,6 +1,6 @@
 // Copyleft ISOLDE 2025
 // THIS IS A GENERATED FILE - DO NOT EDIT.
-// Source: config/platform.yml, template templates/aida_pkg.sv.j2, platform 'demo'.
+// Source: config/platform.yml, template templates/aida_pkg.sv.j2, platform '{{ platform }}'.
 
 package aida_package;
   import isolde_tcdm_pkg::*;
@@ -8,30 +8,30 @@ package aida_package;
   /* mirrors bsp/link.ld - both are generated from config/platform.yml
 MEMORY
 {
-    instrram    : ORIGIN = 0x00100000, LENGTH = 0x8000
-    dataram     : ORIGIN = 0x00110000, LENGTH = 0x8000
-    stack       : ORIGIN = 0x00140000, LENGTH = 0x4000
+{% for r, c in memory.items() %}
+    {{ "%-12s"|format(r) }}: ORIGIN = 0x{{ "%08x"|format(c.origin) }}, LENGTH = 0x{{ "%x"|format(c.length) }}
+{% endfor %}
 }
 */
   // instructon memory size in 32-bit words
-  localparam int unsigned IMEM_SIZE_I32 = 32'h0000_2000;
+  localparam int unsigned IMEM_SIZE_I32 = {{ memory.instrram.length_i32 | sv32 }};
   // data memory size in 32-bit words
-  localparam int unsigned DMEM_SIZE_I32 = 32'h0000_2000;
+  localparam int unsigned DMEM_SIZE_I32 = {{ memory.dataram.length_i32 | sv32 }};
   // stack memory size in 32-bit words
-  localparam int unsigned SMEM_SIZE_I32 = 32'h1000;
+  localparam int unsigned SMEM_SIZE_I32 = {{ memory.stack.length_i32 | sv32short }};
 
 
   localparam rule_addr_t ROM_BOOT_ADDR = 32'h0000_0080;
   localparam int unsigned ROM_BOOT_SIZE = 32'h16;
-  localparam rule_addr_t IMEM_ADDR = 32'h0010_0000;
+  localparam rule_addr_t IMEM_ADDR = {{ memory.instrram.origin | sv32 }};
   localparam int unsigned IMEM_SIZE = 32'h4 * IMEM_SIZE_I32;
-  localparam rule_addr_t DMEM_ADDR = 32'h0011_0000;
+  localparam rule_addr_t DMEM_ADDR = {{ memory.dataram.origin | sv32 }};
   localparam int unsigned DMEM_SIZE = 32'h4 * DMEM_SIZE_I32;
-  localparam rule_addr_t SMEM_ADDR = 32'h0014_0000;
+  localparam rule_addr_t SMEM_ADDR = {{ memory.stack.origin | sv32 }};
   localparam int unsigned SMEM_SIZE = 32'h4 * SMEM_SIZE_I32;
   //localparam int unsigned GMEM_SIZE = SMEM_ADDR + SMEM_SIZE - IMEM_ADDR;
   //  see reset vector in bsp/crt0.S
-  localparam rule_addr_t RV_BOOT_ADDR = 32'h0010_0080;
+  localparam rule_addr_t RV_BOOT_ADDR = {{ boot_offset | sv32 }};
   localparam rule_addr_t PERIPH_ADDR = 32'h0000_1000;
   //see bsp/simple_system_regs.h
   localparam rule_addr_t MMIO_ADDR = 32'h8000_0000;

@@ -1,0 +1,19 @@
+# Files generated from config/platform.yml. Outputs are repo-relative and are
+# the real committed paths - regenerate with `make generate`, verify with
+# `make check-generated`.
+jobs:
+  - template: isolde_hwe_cluster_pkg.sv.j2
+    platform: demo
+    output: rtl/isolde_hwe_cluster_pkg.sv
+
+  - template: aida_pkg.sv.j2
+    platform: demo
+    output: vendor/isolde-soc/rtl/aida_pkg.sv
+
+  - template: isolde_xif_relay.sv.j2
+    platform: demo
+    output: vendor/isolde-soc/rtl/cluster/isolde_xif_relay.sv
+
+  - template: link.ld.j2
+    platform: demo
+    output: isolde/system/bsp/link.ld

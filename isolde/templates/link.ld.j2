@@ -1,5 +1,5 @@
 /* THIS IS A GENERATED FILE - DO NOT EDIT. */
-/* Source: config/platform.yml, template templates/link.ld.j2, platform 'demo'. */
+/* Source: config/platform.yml, template templates/link.ld.j2, platform '{{ platform }}'. */
 /* Copyright 2023 ETH Zurich and University of Bologna. */
 /* Licensed under the Apache License, Version 2.0, see LICENSE for details. */
 /* SPDX-License-Identifier: Apache-2.0 */
@@ -11,9 +11,9 @@ __DYNAMIC  =  0;
 
 MEMORY
 {
-    instrram    : ORIGIN = 0x00100000, LENGTH = 0x8000
-    dataram     : ORIGIN = 0x00110000, LENGTH = 0x8000
-    stack       : ORIGIN = 0x00140000, LENGTH = 0x4000
+{% for r, c in memory.items() %}
+    {{ "%-12s"|format(r) }}: ORIGIN = 0x{{ "%08x"|format(c.origin) }}, LENGTH = 0x{{ "%x"|format(c.length) }}
+{% endfor %}
 }
 
 /* Stack information variables */
