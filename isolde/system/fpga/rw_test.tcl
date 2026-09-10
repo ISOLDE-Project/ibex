@@ -7,7 +7,7 @@ riscv set_mem_access sysbus
 set width 32
 # ===   | Instruction Memory | Data Memory | Stack Memory | Scratchpad Memory  | \
 #         MMIO_ADDR_EXIT | ===
-set test_addrs {0x00100000  0x00110000 0x00140000 0x80001000  0x80000000  }
+set test_addrs {0x00100000  0x00110000 0x00140400 0x80001000  0x80000000  }
 set uart_addr 0x80000004
 # Generate random 32-bit values for each address
 set tests {}

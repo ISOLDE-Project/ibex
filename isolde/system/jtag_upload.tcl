@@ -1,5 +1,7 @@
 
 # 
+source ./fpga/uart_test.tcl
+
 proc nxp_upload {app_name} {
     set APP_PATH ./nxp-ro/${app_name}
     set INSTR_IMG "${APP_PATH}/omp_test-m.ihex"
@@ -24,6 +26,7 @@ proc nxp_upload {app_name} {
     puts "\n✅ data mem loaded!"
 
 #   soft restart
+    write_uart_info "Starting nxp application: $app_name"
     reg pc 0x00100080
     resume
 
