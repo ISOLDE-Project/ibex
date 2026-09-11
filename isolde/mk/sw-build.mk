@@ -95,7 +95,7 @@ TEST_RESULTS_LD = $(addprefix $(SIM_TEST_PROGRAM_RESULTS)/, link.ld)
 TEST_LD         = $(addprefix $(TEST_SRC_DIR)/, link.ld)
 
 LD_LIBRARY 	= $(if $(wildcard $(TEST_RESULTS_LD)),-L $(SIM_TEST_PROGRAM_RESULTS),$(if $(wildcard $(TEST_LD)),-L $(TEST_SRC_DIR),))
-LD_FILE 	= $(if $(wildcard $(TEST_RESULTS_LD)),$(TEST_RESULTS_LD),$(if $(wildcard $(TEST_LD)),$(TEST_LD),$(BSP)/link.ld))
+LD_FILE 	= $(GEN_LINK_LD)
 
 
 
@@ -131,7 +131,7 @@ RISCV_CFLAGS += $(TEST_CFLAGS)
 		RISCV_MARCH=$(RISCV_MARCH) \
 		RISCV_CPPFLAGS="$(RISCV_CPPFLAGS)" \
 		RISCV_CFLAGS="$(RISCV_CFLAGS)" \
-		LD_FILE=$(BSP)/link.ld \
+		LD_FILE=$(LD_FILE) \
 		$@
 
 
