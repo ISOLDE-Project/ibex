@@ -87,6 +87,10 @@ TEST_FILES        ?= $(filter %.c %.S %.ll,$(wildcard  $(TEST_SRC_DIR)/*))
 # Optionally use linker script provided in test directory
 # this must be evaluated at access time, so ifeq/ifneq does
 # not get parsed correctly
+# Memory map and tile count, generated from isolde/config/platform.yml.
+# If it is missing, generate.mk's rule builds it and make restarts.
+include $(GEN_PLATFORM_MK)
+
 TEST_RESULTS_LD = $(addprefix $(SIM_TEST_PROGRAM_RESULTS)/, link.ld)
 TEST_LD         = $(addprefix $(TEST_SRC_DIR)/, link.ld)
 
@@ -109,7 +113,9 @@ RISCV_CPPFLAGS += -DIBEX
 RISCV_CPPFLAGS += $(TEST_CPPFLAGS)
 RISCV_CFLAGS += $(TEST_CFLAGS)
 
-%.elf:
+# link.ld is generated from platform.yml: a config edit must relink rather
+# than silently reuse an .elf built against the previous memory map.
+%.elf: $(GEN_LINK_LD)
 	@echo "**** sw-build.mk compiling:"
 	@echo "**** $@"
 	@echo "**** TEST_FILES = $(TEST_FILES) "
@@ -136,8 +142,8 @@ RISCV_CFLAGS += $(TEST_CFLAGS)
 	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objcopy -O verilog \
 		$< \
 		$@
-	python $(SCRIPTS_DIR)/hex_fragment.py   $@  0x00100000  0x0010FFFF $*-m 
-	python $(SCRIPTS_DIR)/hex_fragment.py   $@  0x00110000  0x00140000 $*-d  		
+	python $(SCRIPTS_DIR)/hex_fragment.py $@ $(IMAGE_INSTR_RANGE) $*-m
+	python $(SCRIPTS_DIR)/hex_fragment.py $@ $(IMAGE_DATA_RANGE)  $*-d
 # 	python $(SCRIPTS_DIR)/addr_offset.py   $@  $*-m.hex 0x00100000
 # 	python $(SCRIPTS_DIR)/addr_offset.py   $@  $*-d.hex 0x00100000
 #	python $(SCRIPTS_DIR)/hex2bin_split.py $@  $*-instr.bin $*-data.bin

@@ -1,0 +1,24 @@
+# THIS IS A GENERATED FILE - DO NOT EDIT.
+# Source: isolde/config/platform.yml, template isolde/templates/platform.mk.j2,
+# platform '{{ platform }}'.
+#
+# Memory map and tile count for the software build. Included by
+# isolde/mk/sw-build.mk and sourced by isolde/system/fragment_hex.sh, so the
+# image-split addresses come from the same place as link.ld and the RTL
+# packages instead of being retyped.
+
+PLATFORM_NAME   := {{ platform }}
+N_TILES         := {{ n_tiles }}
+
+{% for r, c in memory.items() %}
+{{ "%-16s"|format(r|upper ~ "_ORIGIN") }}:= 0x{{ "%08x"|format(c.origin) }}
+{{ "%-16s"|format(r|upper ~ "_LENGTH") }}:= 0x{{ "%x"|format(c.length) }}
+{{ "%-16s"|format(r|upper ~ "_LAST") }}:= 0x{{ "%08x"|format(c.origin + c.length - 1) }}
+{% endfor %}
+
+# Inclusive [start end] bounds for hex_fragment.py, which trims the emitted
+# image down to the last non-zero byte inside the window. Bounds are the
+# region's own extent: link.ld binds each section with "> instrram" /
+# "> dataram", so GNU ld already errors if a section outgrows its region.
+IMAGE_INSTR_RANGE := $(INSTRRAM_ORIGIN) $(INSTRRAM_LAST)
+IMAGE_DATA_RANGE  := $(DATARAM_ORIGIN) $(DATARAM_LAST)

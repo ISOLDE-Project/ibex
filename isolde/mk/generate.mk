@@ -17,17 +17,19 @@ GEN_HWE_PKG   := $(ROOT_DIR)/rtl/isolde_hwe_cluster_pkg.sv
 # bender consumes these two (vendor/isolde-soc/Bender.yml)
 GEN_AIDA_PKG  := $(ROOT_DIR)/vendor/isolde-soc/rtl/aida_pkg.sv
 GEN_RELAY     := $(ROOT_DIR)/vendor/isolde-soc/rtl/cluster/isolde_xif_relay.sv
-# sw-build.mk consumes this one
+# sw-build.mk consumes these two
 GEN_LINK_LD   := $(PROJECT_DIR)/system/bsp/link.ld
+GEN_PLATFORM_MK := $(PROJECT_DIR)/mk/platform.mk
 
-GENERATED_FILES := $(GEN_HWE_PKG) $(GEN_AIDA_PKG) $(GEN_RELAY) $(GEN_LINK_LD)
+GENERATED_FILES := $(GEN_HWE_PKG) $(GEN_AIDA_PKG) $(GEN_RELAY) $(GEN_LINK_LD) \
+                   $(GEN_PLATFORM_MK)
 
 .PHONY: generate check-generated clean-generated
 
 ## generate: re-render every file described by config/jobs.yml
 generate: $(GENERATED_FILES)
 
-# One recipe renders all four; the stamp keeps make from running it per target.
+# One recipe renders them all; the stamp keeps make from running it per target.
 $(GENERATED_FILES): .generated.stamp ;
 .generated.stamp: $(GEN_DEPS)
 	$(GEN_RUN) --batch $(GEN_JOBS)

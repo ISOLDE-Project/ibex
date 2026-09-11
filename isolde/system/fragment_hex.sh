@@ -19,6 +19,15 @@ if [[ -z "${SCRIPTS_DIR:-}" ]]; then
 fi
 
 HEX_FRAGMENT="${SCRIPTS_DIR}/hex_fragment.py"
+PLATFORM_MK="$ROOT_DIR/isolde/config/platform.mk"
+
+# Memory map comes from the generated config, same as sw-build.mk and link.ld.
+if [[ ! -f "$PLATFORM_MK" ]]; then
+    echo "ERROR: Cannot find: $PLATFORM_MK" >&2
+    echo "run 'make generate' in isolde/system first" >&2
+    exit 1
+fi
+eval "$(sed -n 's/^\([A-Z_][A-Z_0-9]*\) *:= *\([^ ]*\) *$/\1=\2/p' "$PLATFORM_MK")"
 
 if [[ ! -f "$HEX_FRAGMENT" ]]; then
     echo "ERROR: Cannot find: $HEX_FRAGMENT" >&2
@@ -46,15 +55,15 @@ while IFS= read -r -d '' elf_file; do
     $ROOT_DIR/install/riscv-llvm/bin/riscv32-unknown-elf-objcopy -O verilog "$elf_file" "$hex_file"
     python "$HEX_FRAGMENT" \
         "$hex_file" \
-        0x00100000 \
-        0x0010FFFF \
+        "$INSTRRAM_ORIGIN" \
+        "$INSTRRAM_LAST" \
         "$m_file"
 
     echo "  -> $d_file"
     python "$HEX_FRAGMENT" \
         "$hex_file" \
-        0x00110000 \
-        0x00140000 \
+        "$DATARAM_ORIGIN" \
+        "$DATARAM_LAST" \
         "$d_file"
 
     count=$((count + 1))

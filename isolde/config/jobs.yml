@@ -17,3 +17,7 @@ jobs:
   - template: link.ld.j2
     platform: demo
     output: isolde/system/bsp/link.ld
+
+  - template: platform.mk.j2
+    platform: demo
+    output: isolde/mk/platform.mk
