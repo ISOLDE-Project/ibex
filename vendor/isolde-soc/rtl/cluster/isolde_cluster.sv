@@ -131,7 +131,6 @@ module isolde_cluster
     DM_SBA_DMEM_IDX,  //data
     DM_SBA_SMEM_IDX,  //stack
     DM_SBA_MMIO_IDX,   // memory mapped I/O
-    DM_SBA_SPM_IDX,   // scratchpad memory
     DM_SBA_LAST_IDX
   } sba_map_idx_t;
 
@@ -140,8 +139,7 @@ module isolde_cluster
       '{start_addr: IMEM_ADDR, end_addr: IMEM_ADDR + IMEM_SIZE},
       '{start_addr: DMEM_ADDR, end_addr: DMEM_ADDR + DMEM_SIZE},
       '{start_addr: SMEM_ADDR, end_addr: SMEM_ADDR + SMEM_SIZE},
-      '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END},
-      '{start_addr: SPM_NARROW_ADDR, end_addr: SPM_NARROW_ADDR + SPM_NARROW_SIZE}
+      '{start_addr: MMIO_ADDR, end_addr: MMIO_ADDR_END}
       
   };
  `else
@@ -160,7 +158,7 @@ module isolde_cluster
   isolde_tcdm_if tcdm_core_data ();
   isolde_tcdm_if tcdm_dmem_upstream ();
   isolde_tcdm_if tcdm_dmem_muxed ();
-  isolde_tcdm_if redmule_ctrl ();  // HWE peripheral  interface
+
 
   // === stack memory port ===
   isolde_tcdm_if tcdm_stack_muxed ();
@@ -175,7 +173,6 @@ module isolde_cluster
 
   // === CPU -> SPM-s ports ===
   isolde_tcdm_if tcdm_spm_hwe[N_REDMULE_TILES] ();
-  isolde_tcdm_if tcdm_spm_upstream ();
   isolde_tcdm_if tcdm_spm_dma_muxed ();
 
   // === SPM loader ===
@@ -396,16 +393,6 @@ aida_perfcnt #(
   );
 
 
-  isolde_mux_tcdm i_mux_dm_sb_spm (
-      .clk_i,
-      .rst_ni,
-      .req_1_i(noc_dm_sba_reqs[DM_SBA_SPM_IDX]),
-      .req_2_i(noc_data_reqs[SPM_IDX]),
-      .rsp_1_o(noc_dm_sba_rsps[DM_SBA_SPM_IDX]),
-      .rsp_2_o(noc_data_rsps[SPM_IDX]),
-      .tcdm_master_o(tcdm_spm_upstream)
-  );
-
   rv_dm #() i_rv_dm (
       .clk_i,
       .rst_ni,
@@ -424,8 +411,7 @@ aida_perfcnt #(
   );
 `else
 // Without the debug SBA, the CPU directly drives the upstream memory ports.
-    assign tcdm_spm_upstream.req = noc_data_reqs[SPM_IDX];
-    assign noc_data_rsps[SPM_IDX] = tcdm_spm_upstream.rsp;
+
     assign tcdm_dmem_upstream.req = noc_data_reqs[DATA_IDX];
     assign noc_data_rsps[DATA_IDX] = tcdm_dmem_upstream.rsp;
 // === tcdm_imem_muxed assignment ===
@@ -442,8 +428,8 @@ aida_perfcnt #(
   isolde_mux_tcdm i_mux_spmld_spm (
       .clk_i,
       .rst_ni,
-      .req_1_i(tcdm_spm_upstream.req),
-      .rsp_1_o(tcdm_spm_upstream.rsp),
+      .req_1_i(noc_data_reqs[SPM_IDX]),
+      .rsp_1_o(noc_data_rsps[SPM_IDX]),
       .req_2_i(spmld_spm.req),
       .rsp_2_o(spmld_spm.rsp),
       .tcdm_master_o(tcdm_spm_dma_muxed)
