@@ -6,7 +6,7 @@
 ********************************************
 */
 module isolde_xif_relay #(
-    parameter int unsigned N_TILES  = 2,
+    parameter int unsigned N_TILES  = 3,
     parameter int unsigned NC       = 1,
     parameter int unsigned ID_WIDTH = (N_TILES > 1) ? $clog2(N_TILES) : 1
 ) (
@@ -134,6 +134,7 @@ assign rsp_idx = rsp_idx_fifo;
         unique case (req_idx)
             0: cpu_xif_issue.issue_ready = tile_xif_issue[0].issue_ready;
             1: cpu_xif_issue.issue_ready = tile_xif_issue[1].issue_ready;
+            2: cpu_xif_issue.issue_ready = tile_xif_issue[2].issue_ready;
             default: cpu_xif_issue.issue_ready = 1'b0;
         endcase
     end
@@ -153,6 +154,10 @@ assign rsp_idx = rsp_idx_fifo;
             1: begin
                 cpu_xif_result.result_valid = tile_xif_result[1].result_valid;
                 cpu_xif_result.result       = tile_xif_result[1].result;
+            end
+            2: begin
+                cpu_xif_result.result_valid = tile_xif_result[2].result_valid;
+                cpu_xif_result.result       = tile_xif_result[2].result;
             end
             default: begin
                 cpu_xif_result.result_valid = 1'b0;

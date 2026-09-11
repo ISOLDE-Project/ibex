@@ -27,7 +27,7 @@ static const char *const isolde_logo_ascii[] = {
 " ",
 " A U T O M O T I V E   D E M O N S T R A T O R",
 "  _                           _ ",
-" (_) 1 x IBEX , 2 x  RedMulE (_) @ 80MHz",
+" (_) 1 x IBEX , 3 x  RedMulE (_) @ 80MHz",
 "  ",
 " Open-Source DSP pipeline",
 " https://github.com/ISOLDE-Project",

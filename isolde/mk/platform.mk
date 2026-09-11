@@ -1,14 +1,14 @@
 # THIS IS A GENERATED FILE - DO NOT EDIT.
 # Source: isolde/config/platform.yml, template isolde/templates/platform.mk.j2,
-# platform 'demo'.
+# platform 'demo_3'.
 #
 # Memory map and tile count for the software build. Included by
 # isolde/mk/sw-build.mk and sourced by isolde/system/fragment_hex.sh, so the
 # image-split addresses come from the same place as link.ld and the RTL
 # packages instead of being retyped.
 
-PLATFORM_NAME   := demo
-N_TILES         := 2
+PLATFORM_NAME   := demo_3
+N_TILES         := 3
 
 INSTRRAM_ORIGIN := 0x00100000
 INSTRRAM_LENGTH := 0x8000

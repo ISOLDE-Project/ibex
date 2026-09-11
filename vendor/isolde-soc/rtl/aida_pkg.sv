@@ -1,6 +1,6 @@
 // Copyleft ISOLDE 2025
 // THIS IS A GENERATED FILE - DO NOT EDIT.
-// Source: config/platform.yml, template templates/aida_pkg.sv.j2, platform 'demo'.
+// Source: config/platform.yml, template templates/aida_pkg.sv.j2, platform 'demo_3'.
 
 package aida_package;
   import isolde_tcdm_pkg::*;

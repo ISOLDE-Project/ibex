@@ -45,3 +45,12 @@ platforms:
       instrram: { origin: 0x00100000, length: 0x8000 }
       dataram:  { origin: 0x00110000, length: 0x8000 }
       stack:    { origin: 0x00140000, length: 0x4000 }
+
+  demo_3:
+    <<: *defaults
+    description: "joined demo, 3 tiles"
+    n_tiles: 3
+    memory:
+      instrram: { origin: 0x00100000, length: 0x8000 }
+      dataram:  { origin: 0x00110000, length: 0x8000 }
+      stack:    { origin: 0x00140000, length: 0x4000 }

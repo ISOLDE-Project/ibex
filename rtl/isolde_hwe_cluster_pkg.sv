@@ -1,7 +1,7 @@
 // Copyright (c) ISOLDE 2026
 // SPDX-License-Identifier: Apache-2.0
 // THIS IS A GENERATED FILE - DO NOT EDIT.
-// Source: config/platform.yml, template templates/isolde_hwe_cluster_pkg.sv.j2, platform 'demo'.
+// Source: config/platform.yml, template templates/isolde_hwe_cluster_pkg.sv.j2, platform 'demo_3'.
 
 package isolde_hwe_cluster_pkg;
 
@@ -10,7 +10,7 @@ package isolde_hwe_cluster_pkg;
   parameter int unsigned RegDataWidth = 32;
 
 
-  parameter int unsigned N_HWE_TILES  = 2; //hardware engine(HWE) tiles
+  parameter int unsigned N_HWE_TILES  = 3; //hardware engine(HWE) tiles
   
   parameter int unsigned ID_WIDTH = (N_HWE_TILES > 1) ? $clog2(N_HWE_TILES) : 1;
   parameter int unsigned CSR_WIDTH = N_HWE_TILES +1 ;

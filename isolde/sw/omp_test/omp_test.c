@@ -40,7 +40,7 @@
 
 // #define SEQUENTIAL 
 
-static const int NUM_TESTS =2;
+static const int NUM_TESTS = 4;
 // static const int TILE_ID = 0x0;
 
 static const int y_flat_size=sizeof(golden) / sizeof(golden[0])+1; //+1 to accomodate data alignment
@@ -57,7 +57,7 @@ const uint32_t w_size =
 
 
     
-static const gemm_inputs_t tests[NUM_TESTS] = {
+static const gemm_inputs_t tests[] = {
     {
         .x = x_inp,
         .w = w_inp,
@@ -68,16 +68,16 @@ static const gemm_inputs_t tests[NUM_TESTS] = {
         .y_size = y_size,
         .golden_size = M_SIZE * K_SIZE / 2
     },
-    {
-        .x = x_inp,
-        .w = w_inp,
-        .y = y_inp,
-        .golden = golden,
-        .x_size = x_size,
-        .w_size = w_size,
-        .y_size = y_size,
-        .golden_size = M_SIZE * K_SIZE / 2
-    },
+    // {
+    //     .x = x_inp,
+    //     .w = w_inp,
+    //     .y = y_inp,
+    //     .golden = golden,
+    //     .x_size = x_size,
+    //     .w_size = w_size,
+    //     .y_size = y_size,
+    //     .golden_size = M_SIZE * K_SIZE / 2
+    // },
 
     // {
     //     .x = x_inp_2,
@@ -93,6 +93,7 @@ static const gemm_inputs_t tests[NUM_TESTS] = {
     //     .K = 16,
     // },
 };
+
  gemm_spm_t spm_cfg[NUM_TESTS];
 
 int main(int argc, char *argv[]) {
@@ -125,17 +126,17 @@ int main(int argc, char *argv[]) {
 //
    START_PERFCNT(0x1)
 //   
-
-   for (uint32_t i = 0; i < NUM_TESTS; ++i) {
+  unsigned int tiles=isolde_get_tile_cnt();
+   for (uint32_t i = 0; i < tiles; ++i) {
 #ifdef SEQUENTIAL    
         spm_cfg[i].tile_id =0x0;
 #else
         spm_cfg[i].tile_id =i;
 #endif        
   
-        redmule_upload(
+        spm_addr=redmule_upload(
             spm_addr
-        ,&tests[i]
+        ,&tests
         ,&spm_cfg[i]
         );
         redmule_gemm_async(  spm_cfg[i].tile_id
@@ -156,7 +157,7 @@ int main(int argc, char *argv[]) {
    printPerfCnt();
 //
    printf("[OpenMP ] hod op ste odon!\n");
-   for (uint32_t i = 0; i < NUM_TESTS; ++i) {
+   for (uint32_t i = 0; i < tiles; ++i) {
         redmule_download_result(&y_flat[i]
                                ,&tests[i]
                                ,&spm_cfg[i]);
