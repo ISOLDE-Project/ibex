@@ -144,17 +144,7 @@ RISCV_CFLAGS += $(TEST_CFLAGS)
 		$@
 	python $(SCRIPTS_DIR)/hex_fragment.py $@ $(IMAGE_INSTR_RANGE) $*-m
 	python $(SCRIPTS_DIR)/hex_fragment.py $@ $(IMAGE_DATA_RANGE)  $*-d
-# 	python $(SCRIPTS_DIR)/addr_offset.py   $@  $*-m.hex 0x00100000
-# 	python $(SCRIPTS_DIR)/addr_offset.py   $@  $*-d.hex 0x00100000
-#	python $(SCRIPTS_DIR)/hex2bin_split.py $@  $*-instr.bin $*-data.bin
-# 	python $(SCRIPTS_DIR)/hex2ihex_split.py  --input $@ \
-# 											--instr-base 0x00100000 --instr-size 0x40000 \
-# 											--data-base  0x00100000 --data-size  0x40000 \
-# 											--instr-out $*_ihex-i.hex \
-# 											--data-out  $*_ihex-m.hex \
-# 											--verbose
-# 	python $(SCRIPTS_DIR)/hex2ihex.py --input $*-m.hex --base 0x00100000 --region_size 0x1404 --output $*_ihex-i.hex 
-# 	python $(SCRIPTS_DIR)/hex2ihex.py --input $*-d.hex --base 0x00110000 --region_size 0x30000 --output $*_ihex-d.hex 
+
 	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-readelf -a $< > $*.readelf
 	$(CV_SW_TOOLCHAIN)/bin/llvm-objdump   \
 		-fhSD \
