@@ -18,3 +18,4 @@ ibex_synth.slang*
 isolde_synth.slang*
 vivado_synth.tcl
 *_synth_deps.f
+paper_reports_*/

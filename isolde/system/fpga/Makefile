@@ -103,6 +103,10 @@ flash: $(BOARD_CFG)                    ## Programs the FPGA with the generated b
 rpt: $(BOARD_CFG) vivado_synth.tcl	      ## Opens the vivado project and generates a brief timing summary.
 	vivado -mode batch -source  ./tcl/report.tcl
 
+.PHONY: rpt-paper  ## Opens the vivado project and generates  reports.
+rpt-paper: $(BOARD_CFG) $(FPGA_DIR)/tcl/report_paper.tcl $(FPGA_DIR)/tcl/export_vivado_reports.tcl ## Exports paper reports from the existing impl_1 run.
+	cd "$(FPGA_DIR)" && vivado -mode batch -source ./tcl/report_paper.tcl
+
 .PHONY: clean vivado-clean
 clean: vivado-clean                      ## Removes all build products
 	$(MAKE) -C $(FPGA_DIR)/ips/xilinx_clk_mngr  $@
