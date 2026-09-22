@@ -36,6 +36,7 @@ export    OPENOCD=$ROOT_DIR/eda/oss-cad-suite/bin/openocd
 
 source $MINICONDA
 conda activate $MINICONDA_ENV
+conda list --explicit > packages.txt
 
 # export PATH=$ROOT_DIR/eda/oss-cad-suite/bin:$PATH
 source ~/vivado.sh
