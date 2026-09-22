@@ -147,4 +147,38 @@ openroad: openroad-clone
 	cmake .. && \
 	make -j2 && make DESTDIR=$(OPENROAD_INSTALL_DIR) install
 	
+
+.PHONY: miniconda miniconda-installer
+
+MINICONDA_ROOT         ?= $(HOME)/hdd1
+MINICONDA_INSTALL_DIR  ?= $(MINICONDA_ROOT)/miniconda3
+MINICONDA_INSTALLER    ?= $(MINICONDA_ROOT)/Miniconda3-latest-Linux-x86_64.sh
+MINICONDA_ENV          ?= ibex
+MINICONDA_PACKAGES     ?= packages.txt
+PYTHON_VERSION         ?= 3.10
+PYTHON_REQUIREMENTS    ?= python-requirements.txt
+
+$(MINICONDA_INSTALLER):
+	mkdir -p $(MINICONDA_ROOT)
+	wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $@
+	touch $@
+
+miniconda-installer: $(MINICONDA_INSTALLER)
+
+## install miniconda on local machine under $HOME/hdd1
+miniconda: miniconda-installer
+	bash $(MINICONDA_INSTALLER) -b -p $(MINICONDA_INSTALL_DIR)
+	$(MINICONDA_INSTALL_DIR)/bin/conda create -y \
+		--name $(MINICONDA_ENV) \
+		python=$(PYTHON_VERSION) pip
+	$(MINICONDA_INSTALL_DIR)/bin/conda run \
+		-n $(MINICONDA_ENV) \
+		pip install -r $(PYTHON_REQUIREMENTS)
+
+## update the  miniconda from local machine under $HOME/hdd1
+miniconda-update:
+	$(MINICONDA_INSTALL_DIR)/bin/conda run \
+		-n $(MINICONDA_ENV) \
+		pip install --upgrade -r $(PYTHON_REQUIREMENTS)
+
 include common.mk

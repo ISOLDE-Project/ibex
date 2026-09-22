@@ -2,7 +2,9 @@
 # Copyleft
 
 # Define environment variables
-MINICONDA=$HOME/hdd1/miniconda3/etc/profile.d/conda.sh
+MINICONDA_ROOT=$HOME/hdd1
+MINICONDA_INSTALL_DIR=$MINICONDA_ROOT/miniconda3
+MINICONDA=$MINICONDA_INSTALL_DIR/etc/profile.d/conda.sh
 MINICONDA_ENV=ibex
 # To activate this environment, use
 #
@@ -36,7 +38,9 @@ export    OPENOCD=$ROOT_DIR/eda/oss-cad-suite/bin/openocd
 
 source $MINICONDA
 conda activate $MINICONDA_ENV
-conda list --explicit > packages.txt
+$MINICONDA_INSTALL_DIR/bin/conda run \
+    -n $MINICONDA_ENV \
+    python -m pip freeze > python-requirements.txt
 
 # export PATH=$ROOT_DIR/eda/oss-cad-suite/bin:$PATH
 source ~/vivado.sh
