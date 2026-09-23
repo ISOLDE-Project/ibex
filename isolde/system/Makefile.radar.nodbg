@@ -1,0 +1,37 @@
+# Run from isolde/system: make -f Makefile.radar.nodbg test-build
+# BF_BACKEND=onnx selects the existing two-tile generated graph.
+.DEFAULT_GOAL := test-build
+ROOT_DIR := $(shell git rev-parse --show-toplevel)
+RADAR_DIR := $(ROOT_DIR)/isolde/sw/radar_beamforming
+BF_BACKEND ?= runtime3
+BF_DUMP ?= 0
+
+ifeq ($(BF_BACKEND),runtime3)
+RADAR_FILES := $(RADAR_DIR)/main.c $(RADAR_DIR)/beamform_runtime.c
+RADAR_DEFINES := -DBF_USE_ONNX=0
+else ifeq ($(BF_BACKEND),onnx)
+RADAR_FILES := $(RADAR_DIR)/main.c $(RADAR_DIR)/graph.ll
+RADAR_DEFINES := -DBF_USE_ONNX=1
+else
+$(error BF_BACKEND must be runtime3 or onnx)
+endif
+
+.PHONY: test-build test-clean
+# The shared BSP does not track changes to flags or top-level C prerequisites.
+# Clean this application's firmware before each build, including mode switches.
+test-build:
+ifeq ($(BF_BACKEND),onnx)
+	@test -s $(RADAR_DIR)/graph.ll || (echo "Run make -C ../sw/radar_beamforming graph first"; exit 1)
+endif
+	$(MAKE) -f Makefile TEST=radar_beamforming test-clean
+	$(MAKE) -f Makefile DBG_MODULE=0 ENABLE_SPM=1 VLT_TOP_MODULE=aida_tb \
+	  BENDER_EXTRA_TARGET="-t fpga_sim -D REDMULE_CLUSTER" TEST=radar_beamforming \
+	  TEST_FILES="$(RADAR_FILES)" TEST_CPPFLAGS="$(RADAR_DEFINES) -DBF_DUMP=$(BF_DUMP)" test-build
+
+test-clean:
+	$(MAKE) -f Makefile TEST=radar_beamforming test-clean
+
+%:
+	$(MAKE) -f Makefile DBG_MODULE=0 ENABLE_SPM=1 VLT_TOP_MODULE=aida_tb \
+	  BENDER_EXTRA_TARGET="-t fpga_sim -D REDMULE_CLUSTER" TEST=radar_beamforming \
+	  TEST_FILES="$(RADAR_FILES)" TEST_CPPFLAGS="$(RADAR_DEFINES) -DBF_DUMP=$(BF_DUMP)" $@
