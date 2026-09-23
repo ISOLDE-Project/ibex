@@ -4,7 +4,7 @@
 ROOT_DIR := $(shell git rev-parse --show-toplevel)
 RADAR_DIR := $(ROOT_DIR)/isolde/sw/radar_beamforming
 BF_BACKEND ?= runtime3
-BF_DUMP ?= 0
+BF_DUMP ?= 1
 
 ifeq ($(BF_BACKEND),runtime3)
 RADAR_FILES := $(RADAR_DIR)/main.c $(RADAR_DIR)/beamform_runtime.c

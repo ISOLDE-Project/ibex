@@ -1,5 +1,9 @@
 # Radar receive beamforming on ISOLDE / Ibex
 
+For an animated Linux display of FPGA results received over UART, see
+[UART_VIEWER.md](UART_VIEWER.md). The viewer consumes the existing `BF_DUMP=1`
+printf output and can export a GIF without firmware or RTL changes.
+
 This example forms 36 receive beams from a synthetic 16-antenna,
 16-range-bin input using complex GEMM. It provides a Python radar view,
 an animated receive beam pattern, a three-RedMulE bare-metal application,
