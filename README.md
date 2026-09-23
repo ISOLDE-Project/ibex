@@ -4,38 +4,40 @@
 </a>
 
 # ISOLDE
-
+* git workflow, i.e. on every `git pull`
+```text
+git checkout tmp/cluster
+git clean -ffdx
+git submodule update --init
+```
 First time, in the root folder:   
 ```sh
 make -f Makefile.eda 
 make -f Makefile.tools miniconda
 make -f Makefile.tools riscv32-llvm
-```sh
+```
 
 for a list of available targets:  
 ```sh
 make -f Makefile.tools help
 ```
 *Optional(onnx-mlir)*:  
-```text8
+```text
 . ./eda.sh
 ```
-**Workflow - on every `git pull`:**  
+
 ```text
-git checkout tmp/cluster
-git clean -ffdx
-git submodule update --init
 . ./eth.sh 
 cd isolde/system/
 make bender-update
 make -f Makefile.cluster.nodbg  slang-clean slang-lint
 ```
 
-otherwise:  
+**Otherwise:**  
 ```sh
 . ./eth.sh 
 ```
-see also [isolde/simple_system/README.md](isolde/simple_system/README.md)
+see also [isolde/system/doc/ISOLDE_Verilator_User_Guide.md](isolde/system/doc/ISOLDE_Verilator_User_Guide.md)
 # Directory structure
 ```
 ├── ci
