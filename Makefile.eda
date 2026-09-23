@@ -10,7 +10,7 @@ EDA_ARCHIVE_PATH := $(TOOLS_DIR)/$(EDA_ARCHIVE)
 
 .PHONY: all eda clean
 
-all: eda
+all: oss-cad-suite eda
 
 $(TOOLS_DIR):
 	mkdir -p "$@"

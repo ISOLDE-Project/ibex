@@ -5,25 +5,32 @@
 
 # ISOLDE
 
-First time:   
+First time, in the root folder:   
 ```sh
-. ./setup.sh 
+make -f Makefile.eda 
+make -f Makefile.tools miniconda
+make -f Makefile.tools riscv32-llvm
 ```sh
+
+for a list of available targets:  
+```sh
+make -f Makefile.tools help
+```
+*Optional(onnx-mlir)*:  
+```text8
+. ./eda.sh
+```
+**Workflow - on every `git pull`:**  
+```text
 git checkout tmp/cluster
 git clean -ffdx
 git submodule update --init
-. ./eda.sh 
 . ./eth.sh 
 cd isolde/system/
 make bender-update
-make -f Makefile.cluster.nodbg  slang-clean slang
+make -f Makefile.cluster.nodbg  slang-clean slang-lint
 ```
-* install toolchain
 
-```sh
-make -f Makefile.tools
-make -f Makefile.eda eda oss-cad-suite 
-```
 otherwise:  
 ```sh
 . ./eth.sh 
