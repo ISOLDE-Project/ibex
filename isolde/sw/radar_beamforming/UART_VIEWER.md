@@ -11,15 +11,16 @@ graphics engine, no additional RISC-V arithmetic, and no firmware edits.
 
 ## Start the display
 
-From `isolde/sw/radar_beamforming` in your checkout:
+From `isolde/system` :
 
 ```bash
-source "$HOME/miniconda3/etc/profile.d/conda.sh"
-conda activate ibex
-python -m pip install -r requirements-uart.txt
-python -m serial.tools.list_ports
-python uart_viewer.py --port /dev/ttyUSB3 --baud 115200 \
-  --capture results/uart_capture.log --gif results/uart_sweep.gif
+. ./eth.sh
+```
+
+From `isolde/sw/radar_beamforming`:
+
+```bash
+make uart-plot
 ```
 
 Replace `/dev/ttyUSB3` with your adapter. Close minicom/screen or other readers
