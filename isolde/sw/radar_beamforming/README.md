@@ -14,7 +14,7 @@ and an ONNX version for the existing ISOLDE compiler flow.
 | [ISOLDE-Project/ibex](https://github.com/ISOLDE-Project/ibex/tree/bbab987bce607751e7d911a100183c48c244f325) | `tmp/cluster` | `bbab987bce607751e7d911a100183c48c244f325` |
 | [ISOLDE-Project/onnx-mlir](https://github.com/ISOLDE-Project/onnx-mlir/tree/fd4f8cec54bdf0406309a812eeb4c51e94cf064c) | `isolde/main` | `fd4f8cec54bdf0406309a812eeb4c51e94cf064c` |
 
-The configuration `isolde/config/jobs.yml` selects `demo_3`: three tiles,
+The configuration [isolde/config/jobs.yml](../../config/jobs.yml) selects `demo_3`: three tiles,
 32 KiB instruction RAM, 32 KiB data RAM, and a 16 KiB stack. The simulation
 top is `vendor/isolde-soc/fpga/tb/aida_tb.sv` with `REDMULE_CLUSTER` enabled.
 
