@@ -4,9 +4,14 @@ INSTALL_PREFIX             ?= eda
 INSTALL_DIR                ?= $(prj_path)/$(INSTALL_PREFIX)
 OSS_CAD_SUITE_INSTALL_DIR  ?= ${INSTALL_DIR}/oss-cad-suite
 OSS_CAD_SUITE_ARCHIVE      := oss-cad-suite-linux-x64.tgz
+VERIL_INSTALL_DIR          ?= ${INSTALL_DIR}/verilator
+VERIL_VERSION              ?= v5.050
 EDA_URL                    := https://github.com/ISOLDE-Project/task5.2/releases/download/v0.01/eda-ol-8.10-2026-08-05.tar.gz
 EDA_ARCHIVE := eda.tar.gz
 EDA_ARCHIVE_PATH := $(TOOLS_DIR)/$(EDA_ARCHIVE)
+
+VLT_CXX := clang++
+VLT_CC  := clang
 
 .PHONY: all eda clean
 
@@ -26,6 +31,42 @@ eda: $(INSTALL_DIR) $(EDA_ARCHIVE_PATH)
 
 clean:
 	rm -rf "$(INSTALL_DIR)" "$(EDA_ARCHIVE_PATH)"
+
+
+
+.PHONY: check_python3
+check_python3:
+	@command -v python3 >/dev/null 2>&1 || { \
+		echo "ERROR: python3 >= 3.8 is required, but python3 was not found."; \
+		exit 1; \
+	}
+	@python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,8) else 1)' || { \
+		echo "ERROR: python3 >= 3.8 is required."; \
+		echo "Found: $$(python3 --version)"; \
+		exit 1; \
+	}
+
+
+.PHONY: verilator-uninstall
+
+## Uninstall Verilator
+verilator-uninstall:
+	rm -fr  $(TOOLS_DIR)/verilator
+	rm -fr  ${VERIL_INSTALL_DIR}
+
+## Install Verilator
+verilator:  check_python3 ${TOOLS_DIR} ${INSTALL_DIR} ${VERIL_INSTALL_DIR}/bin/verilator
+
+
+${VERIL_INSTALL_DIR}/bin/verilator:
+	rm -fr $(TOOLS_DIR)/verilator
+	cd $(TOOLS_DIR) && git clone https://github.com/verilator/verilator.git
+	# Checkout the right version
+	cd $(TOOLS_DIR)/verilator  && git reset --hard && git fetch && git checkout ${VERIL_VERSION}
+	# Compile verilator
+	cd $(TOOLS_DIR)/verilator  && git clean -xfdf && autoconf && \
+	./configure --prefix=$(VERIL_INSTALL_DIR) CXX=$(VLT_CXX) CC=$(VLT_CC) && make -j$(num_cores_half)  && make install
+	touch ${VERIL_INSTALL_DIR}/bin/verilator
 
 $(TOOLS_DIR)/$(OSS_CAD_SUITE_ARCHIVE): vendor/oss-cad-suite.url
 	cd $(TOOLS_DIR) && \

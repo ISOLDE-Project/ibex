@@ -16,7 +16,11 @@ make -f Makefile.eda
 make -f Makefile.tools miniconda
 make -f Makefile.tools riscv32-llvm
 ```
-
+special treatment for verilator:   
+```sh
+ make -f Makefile.eda verilator-uninstall
+ make -f Makefile.eda verilator
+```
 for a list of available targets:  
 ```sh
 make -f Makefile.tools help
