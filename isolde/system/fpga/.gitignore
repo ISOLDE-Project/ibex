@@ -19,3 +19,4 @@ isolde_synth.slang*
 vivado_synth.tcl
 *_synth_deps.f
 paper_reports_*/
+synth-vivado/
