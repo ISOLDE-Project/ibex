@@ -9,7 +9,13 @@ This example forms 36 receive beams from a synthetic 16-antenna,
 an animated receive beam pattern, a three-RedMulE bare-metal application,
 and an ONNX version for the existing ISOLDE compiler flow.
 
-
+```text
+SCENE GEN → SPLIT-COMPLEX → [CORE FP16 COMPLEX GEMM] → ┬─ EXPORT (header/ONNX/NPZ)
+ A[36×16]     ar,ai,br,bi      Cr = ar·br − ai·bi        ├─ VALIDATION (log parse + ULP compare)
+ B[16×16]                      Ci = ar·bi + ai·br        └─ VISUALIZATION (radar plots / GIF)
+                              C[36×16], BLOCK_M=12                    │
+                                                                  REPORT (summary.json)
+```
 
 ## Source revisions inspected
 

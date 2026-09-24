@@ -5,11 +5,71 @@ encoder, and out comes one of `{static, approaching, receding, crossing}`.
 The beamformer front end is [`../radar_beamforming`](../radar_beamforming); the
 same three RedMulE tiles run both halves, and neither half uses scalar floating
 point on Ibex.
-
-**Status: running on Verilator.** Encoder mode passes on RTL with the logits
-one ULP from the exported golden — see "What RTL actually did" below. The
-chained mode has been run on the host mock only. The ONNX path is out of scope
-here.
+```text
+                     Input x  [B, L=12, N_FEATURES=32]
+                              │
+                              ▼
+        ┌─────────────────────────────────────────────┐
+        │  Input Projection    proj: Linear(32 → 16)  │   (no bias)
+        └─────────────────────────────────────────────┘
+                              │
+                              ▼
+                            ( + )  ◄──────── pos: Positional Embedding [12, 16]
+                              │
+                              ▼
+                     h  [B, 12, 16]   (d_model = 16)
+                              │
+   ╔════════════════════════════════════════════════════════════════════╗
+   ║               ENCODER LAYER  × 2   (i = 0, 1)                      ║
+   ║                                                                    ║
+   ║        h   ─────────────────────────────────────────┐              ║
+   ║        │                                            │ (residual)   ║
+   ║        ▼                                            │              ║
+   ║  ┌───────────── ReLU Self-Attention  ──────────────┐│              ║
+   ║  │  q = Linear(16→16)                              ││              ║
+   ║  │  k = Linear(16→16)                              ││              ║
+   ║  │  v = Linear(16→16)                              ││              ║
+   ║  │                                                 ││              ║
+   ║  │  scores = q · kᵀ / sqrt(d_model)                ││              ║
+   ║  │  weights = ReLU(scores) · (exp(gate[i]) / L)    ││ ← learned    ║
+   ║  │                                                 ││   gate scale ║
+   ║  │  ctx = weights · v                              ││              ║
+   ║  │  out = o = Linear(16→16)(ctx)                   ││              ║
+   ║  └─────────────────────────────────────────────────┘│              ║
+   ║        │                                            │              ║
+   ║        ▼                                            │              ║
+   ║      ( + )  ◄───────────────────────────────────────┘   residual   ║
+   ║        │                                                           ║
+   ║        h   ───────────────────────────────────────┐  (residual)    ║
+   ║        │                                          │                ║
+   ║        ▼                                          │                ║
+   ║  ┌──────────── Feed-Forward (MLP)  ─────────────┐ │                ║
+   ║  │  Linear(16 → d_ff=48)                        │ │                ║
+   ║  │  ReLU                                        │ │                ║
+   ║  │  Linear(48 → 16)                             │ │                ║
+   ║  └──────────────────────────────────────────────┘ │                ║
+   ║        │                                          │                ║
+   ║        ▼                                          │                ║
+   ║      ( + )  ◄─────────────────────────────────────┘  residual      ║
+   ║        │                                                           ║
+   ╚════════════════════════════════════════════════════════════════════╝
+                              │
+                              ▼
+                     h  [B, 12, 16]
+                              │
+                              ▼
+        ┌─────────────────────────────────────────────┐
+        │  Mean Pool over sequence   h.mean(dim=1)    │   → [B, 16]
+        └─────────────────────────────────────────────┘
+                              │
+                              ▼
+        ┌─────────────────────────────────────────────┐
+        │  Classification Head   head: Linear(16 → 4) │   (no bias)
+        └─────────────────────────────────────────────┘
+                              │
+                              ▼
+                     Logits  [B, N_CLASSES = 4]
+```
 
 ## Source revisions inspected
 
