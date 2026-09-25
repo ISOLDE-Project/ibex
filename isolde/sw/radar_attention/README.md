@@ -81,11 +81,11 @@ point on Ibex.
 dataram**, 16 KiB stack. That dataram number drives most of the decisions below.
 
 ## Quick start
-
+From the repository root:  
 ```bash
-make demo          # dataset, figures, both weight exports
-make host-test     # 35 tests: scene generator + firmware against the mock
-make budget        # what each configuration puts in dataram
+. ./torch.sh
+make -C isolde/sw/radar_attention demo          # dataset, figures, both weight exports
+make -C isolde/sw/radar_attention budget        # what each configuration puts in dataram
 ```
 
 ## The model, and why these shapes

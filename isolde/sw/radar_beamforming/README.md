@@ -1,14 +1,5 @@
 # Radar receive beamforming on ISOLDE / Ibex
 
-For an animated Linux display of FPGA results received over UART, see
-[UART_VIEWER.md](UART_VIEWER.md). The viewer consumes the existing `BF_DUMP=1`
-printf output and can export a GIF without firmware or RTL changes.
-
-This example forms 36 receive beams from a synthetic 16-antenna,
-16-range-bin input using complex GEMM. It provides a Python radar view,
-an animated receive beam pattern, a three-RedMulE bare-metal application,
-and an ONNX version for the existing ISOLDE compiler flow.
-
 ```text
 SCENE GEN → SPLIT-COMPLEX → [CORE FP16 COMPLEX GEMM] → ┬─ EXPORT (header/ONNX/NPZ)
  A[36×16]     ar,ai,br,bi      Cr = ar·br − ai·bi        ├─ VALIDATION (log parse + ULP compare)
@@ -17,12 +8,14 @@ SCENE GEN → SPLIT-COMPLEX → [CORE FP16 COMPLEX GEMM] → ┬─ EXPORT (head
                                                                   REPORT (summary.json)
 ```
 
-## Source revisions inspected
+For an animated Linux display of FPGA results received over UART, see
+[UART_VIEWER.md](UART_VIEWER.md). The viewer consumes the existing `BF_DUMP=1`
+printf output and can export a GIF without firmware or RTL changes.
 
-| Repository | Branch | Commit |
-|---|---|---|
-| [ISOLDE-Project/ibex](https://github.com/ISOLDE-Project/ibex/tree/bbab987bce607751e7d911a100183c48c244f325) | `tmp/cluster` | `bbab987bce607751e7d911a100183c48c244f325` |
-| [ISOLDE-Project/onnx-mlir](https://github.com/ISOLDE-Project/onnx-mlir/tree/fd4f8cec54bdf0406309a812eeb4c51e94cf064c) | `isolde/main` | `fd4f8cec54bdf0406309a812eeb4c51e94cf064c` |
+This example forms 36 receive beams from a synthetic 16-antenna,
+16-range-bin input using complex GEMM. It provides a Python radar view,
+an animated receive beam pattern, a three-RedMulE bare-metal application,
+and an ONNX version for the existing ISOLDE compiler flow.
 
 The configuration [isolde/config/jobs.yml](../../config/jobs.yml) selects `demo_3`: three tiles,
 32 KiB instruction RAM, 32 KiB data RAM, and a 16 KiB stack. The simulation
@@ -33,9 +26,8 @@ top is `vendor/isolde-soc/fpga/tb/aida_tb.sv` with `REDMULE_CLUSTER` enabled.
 From the repository root:
 
 ```bash
-. ./eth.sh
+. ./torch.sh
 make -C isolde/sw/radar_beamforming demo
-make -C isolde/sw/radar_beamforming host-test
 ```
 
 ```bash

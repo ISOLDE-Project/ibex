@@ -41,6 +41,10 @@ make -f Makefile.cluster.nodbg  slang-clean slang-lint
 ```sh
 . ./eth.sh 
 ```
+if miniconda environment gets out of sync(python errors):
+```sh
+make -f Makefile.tools miniconda-update
+```
 see also [isolde/system/doc/ISOLDE_Verilator_User_Guide.md](isolde/system/doc/ISOLDE_Verilator_User_Guide.md)
 # Directory structure
 ```

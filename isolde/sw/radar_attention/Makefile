@@ -3,7 +3,7 @@ APP_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 ROOT_DIR := $(abspath $(APP_DIR)/../../..)
 BEAMFORM_DIR := $(abspath $(APP_DIR)/../radar_beamforming)
 PYTHON ?= python3
-CC ?= cc
+CC ?= clang
 SEEDS ?= 5
 PORT ?= /dev/ttyUSB3
 BAUD ?= 921600
@@ -18,7 +18,7 @@ CHAIN_LAYERS ?= 1
 HOST_FLAGS := -std=c11 -O2 -Wall -Wextra -Werror -ffp-contract=off
 HOST_INCLUDES := -I$(APP_DIR)/tests/shim -I$(ROOT_DIR)/isolde/system -I$(APP_DIR)
 
-.PHONY: demo data plots model model-chain host-test budget plot uart-plot clean
+.PHONY: demo data plots model model-chain host-test budget plot uart-plot clean golden
 
 demo: data plots model model-chain
 
@@ -66,6 +66,7 @@ plot:
 uart-plot:
 	$(PYTHON) $(APP_DIR)/tformer_uart_viewer.py --port $(PORT) --baud $(BAUD)
 
+golden: data
 
 clean:
 	rm -rf $(APP_DIR)/results $(APP_DIR)/results_l1
