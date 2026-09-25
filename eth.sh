@@ -6,6 +6,8 @@ MINICONDA_ROOT=$HOME/hdd1
 MINICONDA_INSTALL_DIR=$MINICONDA_ROOT/miniconda3
 MINICONDA=$MINICONDA_INSTALL_DIR/etc/profile.d/conda.sh
 MINICONDA_ENV=ibex
+MINICONDA_PKGS=python-requirements.txt
+
 # To activate this environment, use
 #
 #     $ conda activate ibex
@@ -40,7 +42,9 @@ source $MINICONDA
 conda activate $MINICONDA_ENV
 $MINICONDA_INSTALL_DIR/bin/conda run \
     -n $MINICONDA_ENV \
-    python -m pip freeze > python-requirements.txt
+    python -m pip freeze  \
+        | grep -v ' @ file://' \
+        > $MINICONDA_PKGS
 
 # export PATH=$ROOT_DIR/eda/oss-cad-suite/bin:$PATH
 source ~/vivado.sh

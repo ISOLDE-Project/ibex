@@ -1,3 +1,12 @@
+
+num_cores := $(shell nproc)
+num_cores_half := $(shell expr $(num_cores) / 2)
+
+.PHONY: help cores
+## Show number of cores when make -j
+cores:
+	@echo "Number of cores: $(num_cores_half)"
+
 help: Makefile
 	@printf "Available targets:\n------------------\n"
 	@for mkfile in $(MAKEFILE_LIST); do \
@@ -12,4 +21,6 @@ help: Makefile
 		{ lastLine = $$0 }' $$mkfile; \
 	done
 
-.PHONY: help
+
+
+

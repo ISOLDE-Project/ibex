@@ -454,7 +454,7 @@ cd isolde/system
 . ./eth.sh
 
 make -f Makefile.nodbg WAVES=0 veri-clean verilate
-make -f Makefile.nodbg TEST=redmule128b_test golden test-clean test-build veri-run
+make -f Makefile.nodbg TEST=complex_gemm golden test-clean test-build veri-run
 ```
 
 ### No-debug run with waveform capture

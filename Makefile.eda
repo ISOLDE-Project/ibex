@@ -13,6 +13,7 @@ EDA_ARCHIVE_PATH := $(TOOLS_DIR)/$(EDA_ARCHIVE)
 VLT_CXX := clang++
 VLT_CC  := clang
 
+
 .PHONY: all eda clean
 
 all: oss-cad-suite eda

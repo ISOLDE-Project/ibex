@@ -1,9 +1,5 @@
 
 prj_path := $(shell git rev-parse --show-toplevel)
-num_cores := $(shell nproc)
-num_cores_half := $(shell echo "$$(($(num_cores) / 2)"))
-
-
 
 INSTALL_PREFIX            ?= install
 TOOLS_DIR                 ?= $(prj_path)/tools
@@ -17,6 +13,9 @@ OPENOCD_INSTALL_DIR       ?= ${INSTALL_DIR}/openocd
 OPENROAD_INSTALL_DIR      ?= ${INSTALL_DIR}/openroad
 OPENROAD_VERSION          ?= a008522d88b669ac4c985609533cf5a3d2649222
 BENDER_INSTALL_DIR        ?= ${INSTALL_DIR}/bender
+
+
+
 
 all: dev-dep verilator riscv32-gcc riscv32-llvm  openocd
 
@@ -43,13 +42,6 @@ verilator:
 	@echo "OBSOLETE, use make -f Makefile.eda"
 
 
-
-.PHONY: cores
-
-cores:
-	@num_cores=$$(nproc); \
-	num_cores=$$((num_cores / 2); \
-	echo "Number of cores available on this machine (divided by 2): $$num_cores"
 
 riscv32-gcc: $(GCC_INSTALL_DIR)
 
@@ -142,7 +134,7 @@ openroad: openroad-clone
 	cd $(TOOLS_DIR)/OpenROAD   && rm -fr build && mkdir -p build 
 	cd $(TOOLS_DIR)/OpenROAD/build && \
 	cmake .. && \
-	make -j2 && make DESTDIR=$(OPENROAD_INSTALL_DIR) install
+	make -j$(num_cores_half) && make DESTDIR=$(OPENROAD_INSTALL_DIR) install
 	
 
 .PHONY: miniconda miniconda-installer
@@ -174,8 +166,9 @@ miniconda: miniconda-installer
 
 ## update the  miniconda from local machine under $HOME/hdd1
 miniconda-update:
+	gawk '!/@ file:/' $(PYTHON_REQUIREMENTS) | \
 	$(MINICONDA_INSTALL_DIR)/bin/conda run \
 		-n $(MINICONDA_ENV) \
-		pip install --upgrade -r $(PYTHON_REQUIREMENTS)
+		pip install --upgrade -r /dev/stdin
 
 include common.mk
