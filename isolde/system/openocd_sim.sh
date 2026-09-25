@@ -2,4 +2,4 @@
 
 source ./eth.sh
 
-"$OPENOCD" -f isolde.cfg
+"$OPENOCD" -f isolde.cfg -f ./jtag_upload.tcl

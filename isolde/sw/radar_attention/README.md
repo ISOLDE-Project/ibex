@@ -71,21 +71,20 @@ point on Ibex.
                      Logits  [B, N_CLASSES = 4]
 ```
 
-## Source revisions inspected
 
-| Repository | Branch | Commit |
-|---|---|---|
-| [ISOLDE-Project/ibex](https://github.com/ISOLDE-Project/ibex/tree/tmp/cluster) | `tmp/cluster` | `bbab987` (`radar_beamforming`), `demo_3` platform |
 
 `isolde/config/platform.yml`'s `demo_3`: three tiles, 32 KiB IRAM, **32 KiB
 dataram**, 16 KiB stack. That dataram number drives most of the decisions below.
 
 ## Quick start
-From the repository root:  
+In the *isolde/system*:  
 ```bash
 . ./torch.sh
-make -C isolde/sw/radar_attention demo          # dataset, figures, both weight exports
-make -C isolde/sw/radar_attention budget        # what each configuration puts in dataram
+make TEST=radar_attention demo          # dataset, figures, both weight exports
+make TEST=radar_attention budget        # what each configuration puts in dataram
+make TEST=radar_attention test-clean test-build
+make -f Makefile.nodbg veri-clean verilate
+make -f Makefile.nodbg TEST=radar_attention veri-run
 ```
 
 ## The model, and why these shapes
@@ -209,27 +208,25 @@ overflowing quietly. The alternatives are a larger dataram or streaming the
 snapshots in.
 
 ## Build and run
-Host, no hardware:
+Host, no hardware(simulation):
 
+In the *isolde/system*:  
+### build the application
 ```bash
-make demo        # dataset, figures, both weight exports
-make host-test   # 42 tests
-make budget      # dataram per configuration
+. ./torch.sh
+make TEST=radar_attention golden test-clean test-build
 ```
 
-On the device, from `isolde/system`. **`Makefile.radar.nodbg` cannot build this
-application**: it fixes `TEST=radar_beamforming` on every line, so passing
-`TEST=radar_attention` to it is silently ignored and you get the beamforming
-firmware instead (`[RADAR]`/`[BF16]` markers rather than `[TFORMER]`). Use the
-wrapper added here:
+### build the simulation
+
+**Note:**  
+for **this step**,
+*./eth.sh* and *./torch.sh* are interchangeable
 
 ```bash
 source ./eth.sh
-cd isolde/system
-make -f Makefile.tformer.nodbg test-build          # TF_MODE=encoder, default
-make -f Makefile.tformer.nodbg verilate
-set -o pipefail
-make -f Makefile.tformer.nodbg veri-run 2>&1 | tee tformer.log
+make -f Makefile.nodbg veri-clean verilate
+make -f Makefile.nodbg TEST=radar_attention veri-run
 ```
 
 Chained mode, which also runs the beamformer over twelve snapshots:
@@ -256,53 +253,11 @@ Expected markers:
 The testbench ends both success and failure with `$finish`, so do not rely on
 the simulator's exit status — check the firmware markers.
 
-## Plotting what came back over UART
+## Plotting what came back over UART(FPGA)
 
 ```bash
-make plot LOG=/absolute/path/to/tformer.log
-make plot LOG=.../tformer-chain.log VIEWER_FLAGS="--weights-name tformer_weights_l1.h"
-make uart-plot PORT=/dev/ttyUSB3 BAUD=921600      # live, needs pyserial
+make TEST=radar_attention uart-plot
 ```
-
-`tformer_viewer.py` consumes the `[TFWIN]`, `[TFLOG]` and `[TFMAP]` lines the
-firmware already prints; no firmware or RTL change is needed. It writes
-`results/from_log/tformer_from_log.png` and a JSON summary, and prints a
-per-element comparison against the golden in `inc/`.
-
-It refuses a log that is incomplete, has a duplicate sample index, reports
-FAILED, carries a repeated header, or whose `case=`/`weights=` do not match
-the headers the firmware was built from. That last check matters: a stale
-`inc/` and a fresh binary otherwise compare cleanly against the wrong golden.
-
-**A log's origin cannot be inferred from its contents.** A clean parse of a
-host-mock log is not an RTL result.
-
-## What RTL actually did
-
-Encoder mode on Verilator, `case f8df0b55c571bacd`, `weights 562527e677b64019`:
-
-| class | golden | RTL | ULP | value |
-|---|---|---|---:|---:|
-| static | `ce05` | `ce05` | 0 | -24.0781 |
-| approaching | `4ccd` | `4ccd` | 0 | **19.2031** |
-| receding | `4a42` | `4a42` | 0 | 12.5156 |
-| crossing | `c67a` | `c67b` | 1 | -6.4805 |
-
-Three of four logits are bit-exact after **28 chained GEMMs**; the one that
-differs is the smallest logit, and the decision margin is 6.69, so nothing is
-close to flipping.
-
-This is expected rather than alarming. The host mock matches
-`tformer.forward_fp16` exactly because both round to FP16 after every
-reduction step — but RedMulE's array need not reduce in that order.
-`radar_beamforming` already allows 4 ULP against the same style of reference
-for exactly this reason. What is worth noting is that the error **did not
-compound** across 28 launches.
-
-The practical consequence: the exported vectors are a tight check, not a
-bit-exact one, and `MAX_TF_ULP` is load-bearing on RTL even though it is 0 on
-the host. If a future change pushes this above 1, that is a regression signal,
-which is why the viewer prints the per-element figure instead of a pass/fail.
 
 ## Files
 
@@ -318,21 +273,4 @@ tformer_viewer.py    UART/log validation and plotting
 tests/               host mock, schedule test, feature harness, budget tool
 ```
 
-## Not done
 
-- **Chained mode has not been run on RTL**, only on the host mock. Encoder
-  mode has.
-- The RTL logit difference is characterised (1 ULP, smallest logit) but not
-  explained: RedMulE's internal reduction order has not been compared against
-  the per-step-rounding model.
-- **No ONNX path.** Whether the ISOLDE compiler lowers plain 12x16x16 `MatMul`
-  and `Relu` has not been checked; the complex lowering hard-codes tiles 0/1
-  and mask `0x3`.
-- The host mock does not model RTL, DMA bank overlap, XIF, interrupts, the
-  soft-float ABI or cycle timing.
-- Every intermediate goes SPM -> DMEM -> SPM, because the runtime ABI has no
-  SPM-to-SPM copy. On the evidence of the radar package this transfer, not the
-  28 GEMMs, will dominate. Not measured.
-- One dataset seed, one exported case. No regression sweep.
-- The exported case is classified correctly; that is one sequence, not an
-  accuracy measurement. The 0.965 figure is the host float32/FP16 number.

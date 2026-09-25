@@ -93,6 +93,7 @@ include $(mkfile_path)/../mk/questa-build.mk
 include $(mkfile_path)/../mk/slang-build.mk
 include $(mkfile_path)/../mk/vivado.mk
 include $(mkfile_path)/../mk/bender-wrapper.mk
+include $(mkfile_path)/../mk/fpga-wrapper.mk
 include $(ROOT_DIR)/common.mk
 	
 ## apply slang patches	

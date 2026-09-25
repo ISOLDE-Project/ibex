@@ -21,20 +21,14 @@ The configuration [isolde/config/jobs.yml](../../config/jobs.yml) selects `demo_
 32 KiB instruction RAM, 32 KiB data RAM, and a 16 KiB stack. The simulation
 top is `vendor/isolde-soc/fpga/tb/aida_tb.sv` with `REDMULE_CLUSTER` enabled.
 
-## Python first
-
-From the repository root:
-
+## Quick start
+In the *isolde/system*:  
 ```bash
 . ./torch.sh
-make -C isolde/sw/radar_beamforming demo
+make TEST=radar_beamforming demo
 ```
 
-```bash
-python isolde/sw/radar_beamforming/beamforming.py --out-dir radar_results
-```
-In folder `isolde/sw/radar_beamforming`:  
-`make demo` creates:
+It creates. in folder `isolde/sw/radar_beamforming`:  
 
 - `results/beamforming.png`: radar view, recovered directions, beam patterns,
   and error against float64.
@@ -44,6 +38,13 @@ In folder `isolde/sw/radar_beamforming`:
 - `model/radar_block_f16.onnx`: `com.isolde::RedMulEComplexGemm` for ISOLDE.
 - `model/radar_block_portable_f32.onnx`: four ordinary MatMul operations and
   Add/Sub for a portable numerical cross-check. It is not the RedMulE graph.
+
+```bash
+. ./torch.sh
+make TEST=radar_beamforming golden test-clean test-build
+make -f Makefile.nodbg veri-clean verilate
+make -f Makefile.nodbg TEST=radar_beamforming veri-run
+```
 
 
 ## Signal model and matrix layout

@@ -177,20 +177,30 @@ clean-test-programs: clean-bsp
 	find  $(CORE_V_VERIF)/../sw -name "corev_*.S" -delete
 	find  $(CORE_V_VERIF)/../sw -name "*.itb" -delete	
 
-###ISOLDE specific
-ifneq ($(filter redmule% omp% gemm% %gemm radar_%,$(TEST)),)
+# Test category detection
+IS_REDMULE := $(filter redmule% omp% gemm% %gemm,$(TEST))
+IS_RADAR   := $(filter radar_%,$(TEST))
 
+# RedMule/OpenMP/GEMM targets (highest priority)
+ifneq ($(IS_REDMULE),)
 golden:
-	make -C $(REDMULE_ROOT_DIR) $@
-	make -C $(TEST_SRC_DIR) $@
-
+	@make -C $(REDMULE_ROOT_DIR) $@
+	@make -C $(TEST_SRC_DIR) $@
+demo:
+	@echo "Skipped, only for radar targets"
 else
-
+# Radar targets
+ifneq ($(IS_RADAR),)
+golden demo budget:
+	@make -C $(TEST_SRC_DIR) $@
+else
+# Default: skip both
 golden:
-	@echo "Skipped, redmule/openmp unrelated"
-
+	@echo "Skipped, redmule/openmp/radar unrelated"
+demo:
+	@echo "Skipped, only for radar targets"
 endif
-
+endif
 
 
 .PHONY: test-build $(test-program) clean $(TEST_BIN_DIR)
