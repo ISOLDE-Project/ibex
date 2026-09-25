@@ -42,10 +42,21 @@ It creates. in folder `isolde/sw/radar_beamforming`:
 ```bash
 . ./torch.sh
 make TEST=radar_beamforming golden test-clean test-build
+```
+**Note:**  
+for **the next step**,
+*./eth.sh* and *./torch.sh* are interchangeable
+```bash
+source ./eth.sh
 make -f Makefile.nodbg veri-clean verilate
 make -f Makefile.nodbg TEST=radar_beamforming veri-run
 ```
+## Plotting what came back over UART(FPGA)
 
+```bash
+source ./eth.sh
+make TEST=radar_beamforming uart-plot
+```
 
 ## Signal model and matrix layout
 

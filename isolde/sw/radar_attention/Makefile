@@ -18,7 +18,8 @@ CHAIN_LAYERS ?= 1
 HOST_FLAGS := -std=c11 -O2 -Wall -Wextra -Werror -ffp-contract=off
 HOST_INCLUDES := -I$(APP_DIR)/tests/shim -I$(ROOT_DIR)/isolde/system -I$(APP_DIR)
 
-.PHONY: demo data plots model model-chain host-test budget plot uart-plot clean golden
+.PHONY: demo data plots model model-chain host-test budget plot uart-plot clean golden \
+        cases
 
 demo: data plots model model-chain
 
@@ -67,6 +68,14 @@ uart-plot:
 	$(PYTHON) $(APP_DIR)/tformer_uart_viewer.py --port $(PORT) --baud $(BAUD)
 
 golden:  demo
+
+# Test cases for the FPGA, one ihex per class, loaded over JTAG with
+# `upload radar_attention <class>`. Needs a test-build first: the addresses
+# come from its readelf listing.
+CASES ?= static receding crossing
+cases:
+	$(PYTHON) $(APP_DIR)/tformer_case.py --classes $(CASES) \
+	  --bin $(ROOT_DIR)/isolde/system/sw/bin
 
 clean:
 	rm -rf $(APP_DIR)/results $(APP_DIR)/results_l1

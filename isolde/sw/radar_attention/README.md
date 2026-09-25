@@ -151,7 +151,7 @@ which is what this started as, would have required a real divide.
 
 ## What the host tests actually check
 
-`make host-test` runs 42 tests. The ones that would catch a real bug:
+`make host-test` runs 44 tests. The ones that would catch a real bug:
 
 - **The C runtime reproduces the Python FP16 reference exactly.** Not within a
   ULP tolerance — `worst_ulp=0`. The mock's GEMM and `tformer.gemm` use the
@@ -259,6 +259,33 @@ the simulator's exit status — check the firmware markers.
 make TEST=radar_attention uart-plot
 ```
 
+## Other test cases on the FPGA (JTAG)
+
+The firmware's built-in case is an approaching target. For the others, one
+test sequence per class goes into dataram with OpenOCD's `load_image`, over
+the built-in one, before the core starts. In *isolde/system*, after
+`test-build`:
+
+```bash
+make TEST=radar_attention cases                      # static receding crossing
+make TEST=radar_attention cases CASES="approaching"  # any subset
+```
+
+This writes `sw/bin/radar_attention-<class>.ihex`: the class's first test
+sequence at the address of `tf_features[384]`, plus its FP16 reference logits
+(`tf_logits_golden`), true class and case id, so `[TFORMER] PASSED` still
+means the logits matched. The addresses come from `radar_attention.readelf`:
+re-run `cases` after every rebuild. Then, in the OpenOCD telnet session:
+
+```text
+source jtag_upload.tcl
+upload radar_attention static
+```
+
+`upload <app> <case>` is `upload <app>` with one more `load_image` /
+`verify_image` before the core is started; watch it with `uart-plot`.
+Encoder build only: the chained build computes its window from snapshots.
+
 ## Files
 
 ```
@@ -270,6 +297,7 @@ tformer_runtime.c    the three-tile wave schedule
 tformer_features.c   beamformer output -> features, integer only
 main.c               encoder mode and chained mode
 tformer_viewer.py    UART/log validation and plotting
+tformer_case.py      test cases as ihex files for OpenOCD load_image
 tests/               host mock, schedule test, feature harness, budget tool
 ```
 

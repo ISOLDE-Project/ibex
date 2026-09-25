@@ -33,7 +33,9 @@ proc nxp_upload {app_name} {
 }
 # ################################3
 
-proc upload {app_name} {
+# upload <app_name> [case]: with a case, also load <app_name>-<case>.ihex
+# (radar_attention: `make TEST=radar_attention cases`) before starting.
+proc upload {app_name {case ""}} {
     set APP_PATH ./sw/bin
     set INSTR_IMG "${APP_PATH}/${app_name}-m.ihex"
     set DATA_IMG  "${APP_PATH}/${app_name}-d.ihex"
@@ -55,6 +57,13 @@ proc upload {app_name} {
     load_image   $DATA_IMG
     verify_image $DATA_IMG
     puts "\n✅ data mem loaded!"
+
+    if {$case ne ""} {
+        set CASE_IMG "${APP_PATH}/${app_name}-${case}.ihex"
+        load_image   $CASE_IMG
+        verify_image $CASE_IMG
+        puts "\n✅ test case loaded: $case"
+    }
 
 #   soft restart
     reg pc 0x00100080
@@ -127,6 +136,7 @@ proc welcome {} {
     puts "****   soft_reset              --> performs a soft reset"
     puts "****   list_apps               --> lists available applications"
     puts "****   upload <app_name>       --> uploads the application to the target"
+    puts "****   upload <app_name> <case> --> ... and loads <app_name>-<case>.ihex"
     puts "****   nxp_upload <app_name>   --> uploads the nxp application to the target"
 }
 

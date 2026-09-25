@@ -145,6 +145,41 @@ class Weights:
         return cls(half(model.proj.weight.T), half(model.pos), layers,
                    pool, head, model.d_ff)
 
+    @classmethod
+    def from_header(cls, path):
+        """Rebuild the folded weights from an exported tformer_weights*.h.
+
+        Lets a host tool compute the FP16 reference for a new window with the
+        exact weights a firmware image was built from, without retraining.
+        """
+        import re
+        text = Path(path).read_text()
+
+        def array(name, shape):
+            body = text.split(f'{name}[')[1].split('= {')[1].split('};')[0]
+            raw = np.array([int(v, 16) for v in
+                            re.findall(r'0x([0-9a-f]{4})', body)],
+                           dtype=np.uint16)
+            return raw.view(np.float16).reshape(shape)
+
+        def define(name):
+            return int(re.search(rf'#define {name} (\d+)u', text).group(1))
+
+        n_layers, d_ff = define('TF_LAYERS'), define('TF_DFF')
+        tiles = d_ff // TILE_N
+        layers = [dict(
+            wq=array(f'tf_l{i}_wq', (D_MODEL, D_MODEL)),
+            wk=array(f'tf_l{i}_wk', (D_MODEL, D_MODEL)),
+            wv=array(f'tf_l{i}_wv', (D_MODEL, D_MODEL)),
+            wo=array(f'tf_l{i}_wo', (D_MODEL, D_MODEL)),
+            w1=array(f'tf_l{i}_w1', (tiles, TILE_N, TILE_N)),
+            w2=array(f'tf_l{i}_w2', (tiles, TILE_N, D_MODEL)))
+            for i in range(n_layers)]
+        return cls(array('tf_proj', (rs.N_FEATURES, D_MODEL)),
+                   array('tf_pos', (TILE_M, D_MODEL)), layers,
+                   array('tf_pool', (TILE_M, TILE_N)),
+                   array('tf_head', (D_MODEL, TILE_N)), d_ff)
+
     @property
     def n_layers(self):
         return len(self.layers)

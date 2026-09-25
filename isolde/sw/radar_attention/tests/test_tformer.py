@@ -11,6 +11,8 @@ interrupts, the soft-float ABI or cycle timing.
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import os
 import re
 import shlex
@@ -412,3 +414,89 @@ class TestHeaderPairing(unittest.TestCase):
                 (APP / 'inc/tformer_vectors.h').read_text())
             with self.assertRaises(ValueError):
                 viewer.load_golden(staged)
+
+
+class TestCases(unittest.TestCase):
+    """`make cases`: an ihex written into the firmware's memory must make it
+    run that case. load_image is emulated by patching a non-PIE host build of
+    the firmware at the ihex addresses, then running it."""
+
+    def setUp(self):
+        import shutil
+        if shutil.which('readelf') is None:
+            self.skipTest('needs binutils readelf')
+
+    def firmware(self, folder):
+        import tformer_case as case
+        binary = Path(folder) / f'{case.APP}.elf'
+        result = build(binary, RUNTIME + [APP / 'main.c'], extra=['-no-pie'])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        (Path(folder) / f'{case.APP}.readelf').write_text(subprocess.run(
+            ['readelf', '-a', str(binary)], capture_output=True, text=True,
+            check=True).stdout)
+        return binary
+
+    @staticmethod
+    def load_image(binary, image, only=None):
+        """Write the ihex into the ELF's loadable segments, as into RAM."""
+        from intelhex import IntelHex
+        import struct
+        data = bytearray(binary.read_bytes())
+        phoff, = struct.unpack_from('<Q', data, 0x20)
+        size, count = struct.unpack_from('<HH', data, 0x36)
+        segments = []
+        for i in range(count):
+            kind, _, offset, vaddr, _, filesz = struct.unpack_from(
+                '<IIQQQQ', data, phoff + i * size)
+            if kind == 1:
+                segments.append((vaddr, filesz, offset))
+        hexfile = IntelHex(str(image))
+        for address in hexfile.addresses():
+            if only and not only[0] <= address < only[1]:
+                continue
+            vaddr, _, offset = next(s for s in segments
+                                    if s[0] <= address < s[0] + s[1])
+            data[offset + address - vaddr] = hexfile[address]
+        patched = binary.with_name(image.stem)
+        patched.write_bytes(data)
+        patched.chmod(0o755)
+        return patched
+
+    def test_each_case_runs_and_passes(self):
+        import tformer_case as case
+        blob = np.load(APP / 'results/radar_sequences.npz')
+        with tempfile.TemporaryDirectory() as folder:
+            binary = self.firmware(folder)
+            with contextlib.redirect_stdout(io.StringIO()):
+                case.main(['--bin', folder])
+            for name in ('static', 'receding', 'crossing'):
+                index = int(np.flatnonzero(
+                    blob['test_y'] == rs.CLASSES.index(name))[0])
+                run = subprocess.run([str(self.load_image(
+                    binary, Path(folder) / f'{case.APP}-{name}.ihex'))],
+                    capture_output=True, text=True)
+                out = run.stdout
+                self.assertIn('[TFORMER] PASSED', out, out[-600:])
+                self.assertIn('errors=0 worst_ulp=0', out)
+                self.assertIn(f'true={name}', out)
+                window = [int(v, 16) for v in
+                          re.findall(r'\[TFWIN\] \d+ ([0-9a-f]{4})', out)]
+                features = blob['test_x'][index].astype(np.float16)
+                expected = np.stack([features[:, :16], features[:, 16:]])
+                self.assertEqual(window,
+                                 expected.view(np.uint16).ravel().tolist())
+
+    def test_window_without_its_goldens_fails(self):
+        """The firmware reads the window from RAM: patching only tf_features
+        must change the result, and the built-in goldens must reject it."""
+        import tformer_case as case
+        with tempfile.TemporaryDirectory() as folder:
+            binary = self.firmware(folder)
+            with contextlib.redirect_stdout(io.StringIO()):
+                case.main(['--bin', folder, '--classes', 'crossing'])
+            start = case.symbols((Path(folder) / f'{case.APP}.readelf')
+                                 .read_text())['tf_features']
+            run = subprocess.run([str(self.load_image(
+                binary, Path(folder) / f'{case.APP}-crossing.ihex',
+                only=(start, start + 768)))], capture_output=True, text=True)
+            self.assertIn('[TFORMER] FAILED', run.stdout)

@@ -191,7 +191,7 @@ demo:
 else
 # Radar targets
 ifneq ($(IS_RADAR),)
-golden demo budget:
+golden demo budget cases:
 	@make -C $(TEST_SRC_DIR) $@
 else
 # Default: skip both

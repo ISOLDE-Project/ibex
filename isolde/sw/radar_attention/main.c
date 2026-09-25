@@ -38,6 +38,18 @@
 static uint16_t window[TF_WINDOW_ELEMENTS] __attribute__((aligned(16)));
 static uint16_t logits[TF_CLASSES];
 
+/* The input case: tf_features and tf_logits_golden from the generated headers,
+ * plus these two. `make cases` writes a replacement for all four as one ihex,
+ * which OpenOCD's load_image puts in dataram before the core starts
+ * (jtag_upload.tcl: upload radar_attention <class>). All four are read through
+ * volatile, so the firmware uses what is in RAM, not what the compiler saw. */
+/* Not static: clang merges a static copy with the identical string literal
+ * and the symbol disappears from the ELF, where tformer_case.py looks for it. */
+const volatile char tf_case_id[17] = TF_CASE_ID;
+const volatile uint32_t tf_true_class = TF_TRUE_CLASS;
+#define TF_CASE_FEATURES ((const volatile uint16_t *)tf_features)
+#define TF_CASE_GOLDEN ((const volatile uint16_t *)tf_logits_golden)
+
 #if TF_CHAIN
 static uint16_t cr[TF_BEAMS * TF_RANGE_BINS] __attribute__((aligned(16)));
 static uint16_t ci[TF_BEAMS * TF_RANGE_BINS] __attribute__((aligned(16)));
@@ -108,9 +120,17 @@ static void sense_window(void)
 
 int main(void)
 {
-  uint32_t errors = 0, worst = 0, predicted, i;
+  uint32_t errors = 0, worst = 0, predicted, expected, true_class, i;
+  uint16_t golden[TF_CLASSES];
+  char case_id[sizeof tf_case_id];
 
-  printf("[TFORMER] case=%s weights=%s mode=%s\n", TF_CASE_ID, TF_WEIGHTS_ID,
+  for (i = 0; i + 1u < sizeof case_id; ++i) case_id[i] = tf_case_id[i];
+  case_id[sizeof case_id - 1u] = '\0';
+  for (i = 0; i < TF_CLASSES; ++i) golden[i] = TF_CASE_GOLDEN[i];
+  expected = tf_argmax(golden, TF_CLASSES);
+  true_class = tf_true_class < TF_CLASSES ? tf_true_class : 0u;
+
+  printf("[TFORMER] case=%s weights=%s mode=%s\n", case_id, TF_WEIGHTS_ID,
          TF_CHAIN ? "chain" : "encoder");
   printf("[TFORMER] frames=%u features=%u d_model=%u d_ff=%u layers=%u\n",
          TF_FRAMES, TF_FEATURES, TF_DMODEL, TF_DFF, TF_LAYERS);
@@ -135,7 +155,7 @@ int main(void)
 #if TF_CHAIN
   sense_window();
 #else
-  for (i = 0; i < TF_WINDOW_ELEMENTS; ++i) window[i] = tf_features[i];
+  for (i = 0; i < TF_WINDOW_ELEMENTS; ++i) window[i] = TF_CASE_FEATURES[i];
 #endif
   STOP_PERFCNT(0x1)
 #if TF_CHAIN
@@ -156,7 +176,7 @@ int main(void)
   STOP_PERFCNT(0x2)
   printPerfCnt();
 
-  errors += compare(logits, tf_logits_golden, TF_CLASSES, "logit", &worst);
+  errors += compare(logits, golden, TF_CLASSES, "logit", &worst);
   predicted = tf_argmax(logits, TF_CLASSES);
 
 #if TF_DUMP
@@ -167,9 +187,9 @@ int main(void)
 #endif
 
   printf("[TFORMER] class=%s expected=%s true=%s\n",
-         tf_class_name[predicted], tf_class_name[TF_PREDICTED_CLASS],
-         tf_class_name[TF_TRUE_CLASS]);
-  if (predicted != TF_PREDICTED_CLASS) {
+         tf_class_name[predicted], tf_class_name[expected],
+         tf_class_name[true_class]);
+  if (predicted != expected) {
     printf("[TFORMER] FAILED class mismatch\n");
     ++errors;
   }
