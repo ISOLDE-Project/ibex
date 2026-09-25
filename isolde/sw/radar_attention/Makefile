@@ -66,7 +66,7 @@ plot:
 uart-plot:
 	$(PYTHON) $(APP_DIR)/tformer_uart_viewer.py --port $(PORT) --baud $(BAUD)
 
-golden: data
+golden:  demo
 
 clean:
 	rm -rf $(APP_DIR)/results $(APP_DIR)/results_l1

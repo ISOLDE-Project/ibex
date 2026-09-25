@@ -19,9 +19,7 @@ demo:
 	$(PYTHON) $(APP_DIR)/beamforming.py --out-dir $(APP_DIR)/results \
 	  --header $(APP_DIR)/inc/radar_vectors.h --onnx-dir $(APP_DIR)/model --animate
 
-golden: graph
-	$(PYTHON) $(APP_DIR)/beamforming.py --out-dir $(APP_DIR)/results \
-	  --header $(APP_DIR)/inc/radar_vectors.h
+golden: demo
 
 model:
 	$(PYTHON) $(APP_DIR)/beamforming.py --out-dir $(APP_DIR)/results \

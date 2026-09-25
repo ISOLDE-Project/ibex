@@ -99,3 +99,4 @@ bender:
 		sh -s -- --local
 	@echo "successfully installed $$($(BENDER_INSTALL_DIR)/bender --version)"
 
+include common.mk
