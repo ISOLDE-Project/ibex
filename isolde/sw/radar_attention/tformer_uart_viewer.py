@@ -138,6 +138,30 @@ def open_serial(port, baud):
     return device
 
 
+def require_pyserial():
+    """Fail before the window opens, and say which `serial` was found.
+
+    `import serial` succeeds for things that are not pyserial: the unrelated
+    PyPI package `serial`, or a leftover `serial/` directory, which Python
+    imports as an empty namespace package. Either gives only
+    "module 'serial' has no attribute 'Serial'" once the port is opened.
+    """
+    try:
+        import serial
+    except ImportError:
+        raise SystemExit('pyserial is not installed in this Python '
+                         f'({sys.executable}):\n  pip install pyserial==3.5')
+    if not hasattr(serial, 'Serial'):
+        where = (getattr(serial, '__file__', None)
+                 or ', '.join(getattr(serial, '__path__', [])) or '?')
+        raise SystemExit(f'the `serial` module this Python ({sys.executable}) '
+                         f'imports is not pyserial:\n  {where}\n'
+                         'Remove it, then install pyserial:\n'
+                         '  pip uninstall -y serial\n'
+                         '  (or delete that directory if pip does not own it)\n'
+                         '  pip install --force-reinstall pyserial==3.5')
+
+
 def reader(port, baud, chunks, stop, errors):
     try:
         with open_serial(port, baud) as link:
@@ -155,6 +179,7 @@ def main():
     parser.add_argument('--port', required=True, help='e.g. /dev/ttyUSB3')
     parser.add_argument('--baud', type=int, default=921600)
     args = parser.parse_args()
+    require_pyserial()
 
     import matplotlib.pyplot as plt
     from matplotlib.animation import FuncAnimation
