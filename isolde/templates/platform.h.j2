@@ -1,0 +1,26 @@
+/* THIS IS A GENERATED FILE - DO NOT EDIT.
+ * Source: isolde/config/platform.yml, template isolde/templates/platform.h.j2,
+ * platform '{{ platform }}'.
+ *
+ * Memory map and tile count for C code: the same values as link.ld,
+ * platform.mk and the RTL packages. Included by bsp/simple_system_regs.h.
+ */
+#ifndef ISOLDE_PLATFORM_H
+#define ISOLDE_PLATFORM_H
+
+#define PLATFORM_NAME             "{{ platform }}"
+#define PLATFORM_N_TILES          {{ n_tiles }}u
+
+{% for r, c in memory.items() %}
+#define {{ "%-26s"|format("PLATFORM_" ~ r|upper ~ "_ORIGIN") }}0x{{ "%08x"|format(c.origin) }}u
+#define {{ "%-26s"|format("PLATFORM_" ~ r|upper ~ "_LENGTH") }}0x{{ "%x"|format(c.length) }}u
+{% endfor %}
+
+/* Reset vector: instrram origin + boot_offset (aida_pkg's RV_BOOT_ADDR). */
+#define PLATFORM_BOOT_ADDR        0x{{ "%08x"|format(boot_offset) }}u
+
+/* Scratchpad window: one tile at a time, chosen with CSR_ISOLDE_TILESEL. */
+#define PLATFORM_SPM_NARROW_ADDR  0x{{ "%08x"|format(spm.narrow_addr_base) }}u
+#define PLATFORM_SPM_NARROW_SIZE  0x{{ "%x"|format(spm.narrow_size) }}u
+
+#endif /* ISOLDE_PLATFORM_H */

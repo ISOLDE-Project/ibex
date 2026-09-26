@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <bsp/omp_redmule.h>
+#include <bsp/platform.h>
 /* First: TF_DFF sizes the runtime's scratch budget. */
 /* Which export to build against. The device build's include path puts
  * TEST_SRC_DIR/inc first and cannot be reordered from the command line, so the
@@ -30,7 +31,8 @@
 #define TF_DMEM_RESERVE 1024u
 #endif
 #ifndef TF_DMEM_BYTES
-#define TF_DMEM_BYTES 32768u
+/* dataram size of the platform in isolde/config/jobs.yml */
+#define TF_DMEM_BYTES PLATFORM_DATARAM_LENGTH
 #endif
 
 #define TF_WINDOW_ELEMENTS (2u * TF_FRAMES * 16u)

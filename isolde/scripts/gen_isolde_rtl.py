@@ -3,7 +3,8 @@
 Render ISOLDE RTL packages, the XIF relay and the BSP linker script from one
 YAML platform description.
 
-    ./gen_isolde_rtl.py --batch jobs.yml
+    ./gen_isolde_rtl.py --batch jobs.yml                 # platform: from jobs.yml
+    ./gen_isolde_rtl.py --batch jobs.yml --platform demo # override it
     ./gen_isolde_rtl.py --platform fpga_large --template link.ld.j2 -o /tmp/link.ld
     ./gen_isolde_rtl.py --platform sim --check          # CI: regen and diff
 
@@ -20,6 +21,30 @@ import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 REQUIRED_REGIONS = ("instrram", "dataram", "stack")
+SCHEMA_VERSION = 1
+
+# Every key the generator understands. platform.yml is the only source of
+# values: nothing below has a default, and an unknown key (a typo) is an error
+# rather than silently ignored.
+TOP_KEYS = {"schema_version", "defaults", "platforms"}
+PLATFORM_KEYS = {"description", "n_tiles", "boot_offset", "spm", "memory"}
+PLATFORM_REQUIRED = {"n_tiles", "boot_offset", "spm", "memory"}
+SPM_KEYS = {"narrow_addr_base", "narrow_size"}
+REGION_KEYS = {"origin", "length"}
+JOBS_TOP_KEYS = {"platform", "jobs"}
+JOB_KEYS = {"template", "output", "n_tiles"}
+
+
+def check_keys(where: str, mapping, known: set, required: set = frozenset()):
+    if not isinstance(mapping, dict):
+        raise SystemExit(f"{where}: expected a mapping, got {type(mapping).__name__}")
+    unknown = sorted(set(mapping) - known)
+    if unknown:
+        raise SystemExit(f"{where}: unknown key(s) {', '.join(unknown)}; "
+                         f"known: {', '.join(sorted(known))}")
+    missing = sorted(set(required) - set(mapping))
+    if missing:
+        raise SystemExit(f"{where}: missing key(s) {', '.join(missing)}")
 
 
 # --------------------------------------------------------------------------
@@ -49,9 +74,26 @@ def load_platforms(path: Path) -> dict:
     if not path.is_file():
         raise SystemExit(f"platform config not found: {path}")
     data = yaml.safe_load(path.read_text()) or {}
-    platforms = data.get("platforms")
+    check_keys(str(path), data, TOP_KEYS, {"schema_version", "platforms"})
+    if data["schema_version"] != SCHEMA_VERSION:
+        raise SystemExit(f"{path}: schema_version {data['schema_version']!r} is "
+                         f"not supported; this generator reads {SCHEMA_VERSION}")
+    platforms = data["platforms"]
     if not platforms:
-        raise SystemExit(f"no 'platforms:' section in {path}")
+        raise SystemExit(f"no platforms in {path}")
+    for name, entry in platforms.items():
+        where = f"{path}: platform {name!r}"
+        check_keys(where, entry, PLATFORM_KEYS, PLATFORM_REQUIRED)
+        # `<<: *defaults` merges one level deep: a platform that sets spm:
+        # replaces the whole mapping, so it must write both keys.
+        check_keys(f"{where}: spm", entry["spm"], SPM_KEYS, SPM_KEYS)
+        memory = entry["memory"]
+        # Extra regions are allowed (they reach link.ld and platform.mk).
+        check_keys(f"{where}: memory", memory,
+                   set(memory) if isinstance(memory, dict) else set(),
+                   REQUIRED_REGIONS)
+        for region, cfg in memory.items():
+            check_keys(f"{where}: memory.{region}", cfg, REGION_KEYS, REGION_KEYS)
     return platforms
 
 
@@ -67,12 +109,7 @@ def build_context(platforms: dict, platform: str, n_tiles: int = None) -> dict:
     if ctx["n_tiles"] < 1:
         raise SystemExit(f"n_tiles must be >= 1 (got {ctx['n_tiles']})")
 
-    mem_in = entry.get("memory", {})
-    missing = [r for r in REQUIRED_REGIONS if r not in mem_in]
-    if missing:
-        raise SystemExit(
-            f"platform {platform!r}: missing memory region(s): {', '.join(missing)}"
-        )
+    mem_in = entry["memory"]
 
     # Preserve declaration order for link.ld; require the three known regions.
     memory = {}
@@ -103,16 +140,16 @@ def build_context(platforms: dict, platform: str, n_tiles: int = None) -> dict:
                 f"overlaps {bn} [0x{b['origin']:08x},0x{b['end']:08x})"
             )
 
-    boot_off = _as_int(entry.get("boot_offset", 0x80))
+    boot_off = _as_int(entry["boot_offset"])
     if boot_off >= memory["instrram"]["length"]:
         raise SystemExit(
             f"platform {platform!r}: boot_offset 0x{boot_off:x} lies outside instrram"
         )
     ctx["boot_offset"] = memory["instrram"]["origin"] + boot_off
 
-    spm = entry.get("spm", {})
-    base = _as_int(spm.get("narrow_addr_base", 0x80001000))
-    size = _as_int(spm.get("narrow_size", 0x8000))
+    spm = entry["spm"]
+    base = _as_int(spm["narrow_addr_base"])
+    size = _as_int(spm["narrow_size"])
     ctx["spm"] = {"narrow_addr_base": base, "narrow_size": size}
 
     # The aggregate SPM window must not collide with the core memory map.
@@ -187,14 +224,27 @@ def main() -> int:
     root = Path(args.root)
 
     if args.batch:
-        jobs = (yaml.safe_load(Path(args.batch).read_text()) or {}).get("jobs", [])
+        batch = yaml.safe_load(Path(args.batch).read_text()) or {}
+        for i, job in enumerate(batch.get("jobs") or []):
+            if isinstance(job, dict) and "platform" in job:
+                raise SystemExit(f"job #{i} ({job.get('output')}): per-job "
+                                 "'platform:' is not supported; set it once "
+                                 f"at the top of {args.batch}")
+        check_keys(args.batch, batch, JOBS_TOP_KEYS, {"jobs"})
+        jobs = batch["jobs"]
         if not jobs:
             raise SystemExit(f"no 'jobs:' in {args.batch}")
+        # One platform for every job: the RTL packages, the relay and the
+        # linker script must all describe the same system. --platform, if
+        # given, overrides the top-level `platform:` of the jobs file.
+        plat = args.platform or batch.get("platform")
+        if plat is None:
+            raise SystemExit(f"no top-level 'platform:' in {args.batch} "
+                             "and no --platform given")
         ok = True
         for i, job in enumerate(jobs):
-            plat = job.get("platform", args.platform)
-            if plat is None:
-                raise SystemExit(f"job #{i}: no platform and no --platform given")
+            check_keys(f"{args.batch}: job #{i}", job, JOB_KEYS,
+                       {"template", "output"})
             ctx = build_context(platforms, plat, job.get("n_tiles"))
             out = root / job["output"]
             good = emit(render(env, job["template"], ctx), out, args.check)

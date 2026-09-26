@@ -6,6 +6,7 @@
  */
 #include <stdint.h>
 #include <stdio.h>
+#include <bsp/platform.h>
 /* Which export to build against. The device build's include path puts
  * TEST_SRC_DIR/inc first and cannot be reordered from the command line, so the
  * configuration is chosen by file name rather than by -I ordering. */
@@ -18,7 +19,8 @@
 #include "tformer_vectors.h"
 
 #ifndef TF_DMEM_BYTES
-#define TF_DMEM_BYTES 32768u
+/* dataram size of the platform in isolde/config/jobs.yml */
+#define TF_DMEM_BYTES PLATFORM_DATARAM_LENGTH
 #endif
 #ifndef TF_DMEM_RESERVE
 #define TF_DMEM_RESERVE 1024u

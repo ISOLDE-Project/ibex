@@ -20,9 +20,11 @@ GEN_RELAY     := $(ROOT_DIR)/vendor/isolde-soc/rtl/cluster/isolde_xif_relay.sv
 # sw-build.mk consumes these two
 GEN_LINK_LD   := $(PROJECT_DIR)/system/bsp/link.ld
 GEN_PLATFORM_MK := $(PROJECT_DIR)/mk/platform.mk
+# C code consumes this one (bsp/simple_system_regs.h)
+GEN_PLATFORM_H  := $(PROJECT_DIR)/system/bsp/platform.h
 
 GENERATED_FILES := $(GEN_HWE_PKG) $(GEN_AIDA_PKG) $(GEN_RELAY) $(GEN_LINK_LD) \
-                   $(GEN_PLATFORM_MK)
+                   $(GEN_PLATFORM_MK) $(GEN_PLATFORM_H)
 
 .PHONY: generate check-generated clean-generated
 
@@ -54,6 +56,8 @@ generate-env:
 	@echo "GEN_AIDA_PKG=$(GEN_AIDA_PKG)"
 	@echo "GEN_RELAY=$(GEN_RELAY)"
 	@echo "GEN_LINK_LD=$(GEN_LINK_LD)"
+	@echo "GEN_PLATFORM_MK=$(GEN_PLATFORM_MK)"
+	@echo "GEN_PLATFORM_H=$(GEN_PLATFORM_H)"
 	
 # --- wire the generated files into the real entry points -------------------
 #

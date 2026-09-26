@@ -19,7 +19,7 @@ if [[ -z "${SCRIPTS_DIR:-}" ]]; then
 fi
 
 HEX_FRAGMENT="${SCRIPTS_DIR}/hex_fragment.py"
-PLATFORM_MK="$ROOT_DIR/isolde/config/platform.mk"
+PLATFORM_MK="$ROOT_DIR/isolde/mk/platform.mk"
 
 # Memory map comes from the generated config, same as sw-build.mk and link.ld.
 if [[ ! -f "$PLATFORM_MK" ]]; then

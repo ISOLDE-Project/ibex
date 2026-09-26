@@ -24,6 +24,9 @@ _stack_start   = ORIGIN(stack) + LENGTH(stack);
 __dmem_start   = ORIGIN(dataram);
 __dmem_end     = ORIGIN(dataram) + LENGTH(dataram);
 
+/* Reset vector: platform.yml boot_offset. aida_pkg's RV_BOOT_ADDR is
+ * instrram.origin + boot_offset from the same file. crt0.S places the reset
+ * jump with `.org 0x80` and is not generated: change it by hand to match. */
 _entry_point = _vectors_start + 0x80;
 ENTRY(_entry_point)
 
