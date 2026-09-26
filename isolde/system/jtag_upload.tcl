@@ -1,6 +1,8 @@
 
 # 
 source ./fpga/uart_test.tcl
+# global config
+set APP_PATH ./app-images
 
 proc nxp_upload {app_name} {
     set APP_PATH ./nxp-ro/${app_name}
@@ -36,7 +38,7 @@ proc nxp_upload {app_name} {
 # upload <app_name> [case]: with a case, also load <app_name>-<case>.ihex
 # (radar_attention: `make TEST=radar_attention cases`) before starting.
 proc upload {app_name {case ""}} {
-    set APP_PATH ./sw/bin
+    global APP_PATH 
     set INSTR_IMG "${APP_PATH}/${app_name}-m.ihex"
     set DATA_IMG  "${APP_PATH}/${app_name}-d.ihex"
 
@@ -103,17 +105,16 @@ proc _scan_apps {dir apps_var} {
 }
 
 proc list_apps {} {
-    set APP_ROOT "./sw/bin"
-
-    if {![file isdirectory $APP_ROOT]} {
-        error "Applications directory not found: $APP_ROOT"
+    global APP_PATH
+    if {![file isdirectory $APP_PATH]} {
+        error "Applications directory not found: $APP_PATH"
     }
 
     set apps {}
-    _scan_apps $APP_ROOT apps
+    _scan_apps $APP_PATH apps
 
     if {[llength $apps] == 0} {
-        puts "No application image pairs found under $APP_ROOT"
+        puts "No application image pairs found under $APP_PATH"
         return
     }
 

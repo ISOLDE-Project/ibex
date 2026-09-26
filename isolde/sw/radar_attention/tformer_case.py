@@ -86,6 +86,8 @@ def main(argv=None):
                         default=['static', 'receding', 'crossing'])
     parser.add_argument('--bin', type=Path, default=BIN,
                         help='where the radar_attention build put its files')
+    parser.add_argument('--out', type=Path, default=BIN,
+                            help='where to store the output files')
     parser.add_argument('--data', type=Path,
                         default=HERE / 'results/radar_sequences.npz')
     parser.add_argument('--weights', type=Path,
@@ -114,7 +116,7 @@ def main(argv=None):
         logits = tf.forward_fp16(weights, features)
         predicted = rs.CLASSES[int(np.argmax(logits.astype(np.float32)))]
         case_id, contents = case_bytes(features, logits, y[index])
-        path = args.bin / f'{APP}-{name}.ihex'
+        path = args.out / f'{APP}-{name}.ihex'
         write_ihex(path, addresses, contents)
         print(f'{path.name}: test[{index}] case {case_id}, true {name}, '
               f'expected {predicted}')

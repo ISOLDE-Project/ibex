@@ -75,7 +75,8 @@ golden:  demo
 CASES ?= static receding crossing
 cases:
 	$(PYTHON) $(APP_DIR)/tformer_case.py --classes $(CASES) \
-	  --bin $(ROOT_DIR)/isolde/system/sw/bin
+	  --bin $(ROOT_DIR)/isolde/system/sw/bin \
+	  --out $(ROOT_DIR)/isolde/system/app-images 
 
 clean:
 	rm -rf $(APP_DIR)/results $(APP_DIR)/results_l1

@@ -1,0 +1,15 @@
+# Run from isolde/system; this wrapper does not load hardware tools for apps-list.
+.DEFAULT_GOAL := apps-build
+APPS_SYSTEM_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+APP_PATH ?= $(APPS_SYSTEM_DIR)/app-images
+APPS ?=
+MAKE_BIN ?= $(MAKE)
+export APP_PATH APPS MAKE_BIN
+
+.PHONY: apps-build apps-list help
+apps-build:
+	+@bash "$(APPS_SYSTEM_DIR)/build_apps.sh"
+apps-list:
+	@bash "$(APPS_SYSTEM_DIR)/build_apps.sh" --list
+help:
+	@bash "$(APPS_SYSTEM_DIR)/build_apps.sh" --help

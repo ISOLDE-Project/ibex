@@ -28,3 +28,6 @@ model.json
 README.cluster-diagram.md
 Makefile.cluster
 .generated.stamp
+
+# Collected firmware images and per-app build logs
+app-images/
