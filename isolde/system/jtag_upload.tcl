@@ -4,10 +4,10 @@ source ./fpga/uart_test.tcl
 # global config
 set APP_PATH ./app-images
 
-proc nxp_upload {app_name} {
-    set APP_PATH ./nxp-ro/${app_name}
-    set INSTR_IMG "${APP_PATH}/omp_test-m.ihex"
-    set DATA_IMG  "${APP_PATH}/omp_test-d.ihex"
+proc nxp_upload {case {APP_NAME complex_gemm}} {
+    set APP_PATH ./nxp-ro/${case}
+    set INSTR_IMG "${APP_PATH}/${APP_NAME}-m.ihex"
+    set DATA_IMG  "${APP_PATH}/${APP_NAME}-d.ihex"
 
     reset halt
     halt
@@ -22,16 +22,14 @@ proc nxp_upload {app_name} {
     load_image   $INSTR_IMG
     verify_image $INSTR_IMG
     puts "\n✅ instr mem loaded!"
-# 
+
     load_image   $DATA_IMG
     verify_image $DATA_IMG
     puts "\n✅ data mem loaded!"
 
-#   soft restart
-    write_uart_info "Starting nxp application: $app_name"
+    write_uart_info "Starting nxp application: $case/$APP_NAME"
     reg pc 0x00100080
     resume
-
 }
 # ################################3
 
@@ -138,7 +136,7 @@ proc welcome {} {
     puts "****   list_apps               --> lists available applications"
     puts "****   upload <app_name>       --> uploads the application to the target"
     puts "****   upload <app_name> <case> --> ... and loads <app_name>-<case>.ihex"
-    puts "****   nxp_upload <app_name>   --> uploads the nxp application to the target"
+    puts "****   nxp_upload <case> <app_name>   --> uploads the nxp application to the target"
 }
 
 

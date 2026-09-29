@@ -134,6 +134,60 @@ uint32_t omrm_upload_f16(uint32_t tile, uint32_t spm_addr,
   return spm_addr + rows * OMRM_ROW_BYTES;
 }
 
+/* Staging for omrm_upload_tile_f16: word-aligned and in dataram, so the
+ * final omrm_upload_f16 takes the loader fast path. */
+static omrm_fp16_storage_t omrm_tile_stage[OMRM_TILE_MAX_ELEMENTS]
+    __attribute__((aligned(16)));
+
+uint32_t omrm_upload_tile_f16(uint32_t tile, uint32_t spm_addr,
+                              const void *source, uint32_t src_ld,
+                              uint32_t row_offset, uint32_t col_offset,
+                              uint32_t rows, uint32_t cols,
+                              uint32_t dst_rows, uint32_t dst_cols,
+                              uint32_t flags)
+{
+  const omrm_fp16_storage_t *src = (const omrm_fp16_storage_t *)source;
+  const uint32_t transpose = flags & OMRM_TILE_TRANSPOSE;
+  const uint32_t out_rows = transpose ? cols : rows;
+  const uint32_t out_cols = transpose ? rows : cols;
+  uint32_t i;
+  uint32_t j;
+
+  if (dst_cols != OMRM_FP16_PER_ROW ||
+      dst_rows * dst_cols > OMRM_TILE_MAX_ELEMENTS ||
+      out_rows > dst_rows || out_cols > dst_cols ||
+      col_offset + cols > src_ld) {
+    _Exit(0x0bad0011);
+  }
+
+  /* Plain whole-matrix copy: no staging needed. */
+  if (flags == 0u && row_offset == 0u && col_offset == 0u &&
+      src_ld == OMRM_FP16_PER_ROW && cols == OMRM_FP16_PER_ROW &&
+      rows == dst_rows) {
+    return omrm_upload_f16(tile, spm_addr, source, rows * dst_cols, 0u);
+  }
+
+  for (i = 0u; i < dst_rows; ++i) {
+    for (j = 0u; j < dst_cols; ++j) {
+      uint16_t bits = 0u;
+      if (i < out_rows && j < out_cols) {
+        const uint32_t r = transpose ? j : i;
+        const uint32_t c = transpose ? i : j;
+        bits = src[(row_offset + r) * src_ld + col_offset + c];
+        if ((flags & OMRM_TILE_RELU) != 0u && (bits & 0x8000u) != 0u) {
+          bits = 0u;
+        }
+        if ((flags & OMRM_TILE_NEGATE) != 0u) {
+          bits ^= 0x8000u;
+        }
+      }
+      omrm_tile_stage[i * dst_cols + j] = bits;
+    }
+  }
+  return omrm_upload_f16(tile, spm_addr, omrm_tile_stage,
+                         dst_rows * dst_cols, 0u);
+}
+
 void omrm_zero_f16(uint32_t tile, uint32_t spm_addr, uint32_t elements)
 {
   omrm_require_complete_rows(elements);

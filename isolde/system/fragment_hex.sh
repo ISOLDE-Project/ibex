@@ -72,9 +72,9 @@ done < <(
         -mindepth 2 \
         -maxdepth 2 \
         -type f \
-        -name 'omp_test.elf' \
+        -name '*.elf' \
         -print0
 )
 
 echo
-echo "Done. Processed $count omp_test.elf file(s)."
+echo "Done. Processed $count *.elf file(s)."
