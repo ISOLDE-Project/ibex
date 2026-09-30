@@ -11,8 +11,6 @@ chardet==7.6.0
 charset-normalizer==3.5.1
 cli_exit_tools==1.2.7
 click==8.5.0
-cmake==4.3.2
-coloredlogs==15.0.1
 contourpy==1.3.2
 cryptography==50.0.1
 cssselect==1.5.0
@@ -23,14 +21,12 @@ edalize @ git+https://github.com/lowRISC/edalize.git@5ae2c3e1ca306e27d81ce5fcc76
 encutils==1.0.0
 exceptiongroup==1.3.1
 flake8==7.3.0
-flatbuffers==25.12.19
 fonttools==4.65.0
 fusesoc @ git+https://github.com/lowRISC/fusesoc.git@14dfc825ced58fe1fb343662fa80fc4fbd0fdc50
 h11==0.16.0
 hjson==3.1.0
 httpcore2==2.13.0
 httpx2==2.13.0
-humanfriendly==10.0
 idna==3.20
 imagesize==2.0.1
 inflection==0.5.1
@@ -54,11 +50,9 @@ mdurl==0.1.2
 mistletoe==1.6.0
 ml_dtypes==0.6.0
 more-itertools==11.1.0
-mpmath==1.3.0
 numpy==2.2.6
 okonomiyaki==3.0.0
 onnx==1.23.0
-onnxruntime==1.23.2
 opentelemetry-api==1.44.0
 packaging==26.3
 Pallets-Sphinx-Themes==2.5.0
@@ -68,7 +62,6 @@ pillow==12.3.0
 portalocker==4.4.0
 premailer==3.8.0
 protobuf==7.36.2
-pybind11==3.0.4
 PyBoolector==3.2.4.19342042739
 pycodestyle==2.14.0
 pycparser==3.0
@@ -78,6 +71,7 @@ pyflakes==3.4.0
 Pygments==2.21.0
 PyJWT==2.14.0
 pyparsing==3.3.3
+pyserial==3.5
 python-dateutil==2.9.0.post0
 python-jsonschema-objects==0.5.7
 python-multipart==0.0.32
@@ -110,7 +104,6 @@ sphinxcontrib-serializinghtml==2.0.0
 sse-starlette==3.4.11
 starlette==1.6.0
 svg.py==1.10.0
-sympy==1.14.0
 tabulate==0.10.0
 tomli==2.4.1
 toposort==1.10

@@ -191,8 +191,9 @@ void           *_reserveMemory(int32_t id);        /* id 1: the 12x16 result */
       reads  [stack] = 346 
      ***
 [ONNX-TFMR] run 1 worst_ulp=1
-
+```
 ## 3 tiles
+```text
 [ONNX-TFMR] graph.ll bare-metal test, block layer
 [ONNX-TFMR] in[12,16] -> y[12,16], d_ff=48, FP16
 [ONNX-TFMR] schedule: 12 launches, 10 waits, 3 tile(s)
@@ -226,3 +227,4 @@ void           *_reserveMemory(int32_t id);        /* id 1: the 12x16 result */
       reads  [stack] = 129 
      ***
 [ONNX-TFMR] run 1 worst_ulp=1
+```
