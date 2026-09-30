@@ -32,9 +32,9 @@ by `main_graph_preload()` and resident in SPM (rows 0-31 of tile 0).
 ## Build the test data and graph.ll
 
 ```bash
-cd isolde/sw/onnx_tiling_gemm
-make golden                        # models/proj.onnx, inc/*.h, graph.ll
-make golden SOURCE=firmware        # the trained encoder instead of SEED
+. ./torch.sh
+cd isolde/system
+make TEST=onnx_tiling_gemm golden                    # models/proj.onnx, inc/*.h, graph.ll
 ```
 
 One `proj_onnx.py` run writes the model and, from the same weights, the
@@ -78,8 +78,8 @@ before an RTL run; it is not an RTL simulation.
 From `isolde/system` (`. ./eth.sh` first):
 
 ```bash
-make -f Makefile.onnx-tiling-gemm.nodbg verilate                  # once
-make -f Makefile.onnx-tiling-gemm.nodbg test-clean test-build veri-run
+make -f Makefile.nodbg veri-clean verilate                  # once
+make -f Makefile.nodbg TEST=onnx_tiling_gemm test-clean test-build veri-run
 ```
 
 or `make sim` from this directory for the second line.  `test-build`

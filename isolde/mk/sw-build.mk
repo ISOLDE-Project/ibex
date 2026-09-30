@@ -178,8 +178,8 @@ clean-test-programs: clean-bsp
 	find  $(CORE_V_VERIF)/../sw -name "*.itb" -delete	
 
 # Test category detection
-IS_REDMULE := $(filter redmule% omp% gemm% %gemm,$(TEST))
-IS_RADAR   := $(filter radar_%,$(TEST))
+IS_REDMULE         := $(filter redmule% omp% ,$(TEST))
+IS_RADAR_OR_ONNX   := $(filter radar_% onnx_%,$(TEST))
 
 # RedMule/OpenMP/GEMM targets (highest priority)
 ifneq ($(IS_REDMULE),)
@@ -187,11 +187,11 @@ golden:
 	@make -C $(REDMULE_ROOT_DIR) $@
 	@make -C $(TEST_SRC_DIR) $@
 demo:
-	@echo "Skipped, only for radar targets"
+	@echo "Skipped, only for radar/onnx targets"
 else
 # Radar targets
-ifneq ($(IS_RADAR),)
-golden demo budget cases:
+ifneq ($(IS_RADAR_OR_ONNX),)
+golden golden-clean demo budget cases sim:
 	@make -C $(TEST_SRC_DIR) $@
 else
 # Default: skip both

@@ -195,6 +195,185 @@ void omrm_zero_f16(uint32_t tile, uint32_t spm_addr, uint32_t elements)
   (void)spm_fill_zero(spm_addr, elements / 2u);
 }
 
+#ifndef OMRM_SPM_VIA_DMEM
+
+/* One SPM row in the narrow window: 8 payload words, then bank 8. */
+static inline volatile uint32_t *omrm_spm_row(uint32_t spm_addr, uint32_t row)
+{
+  return (volatile uint32_t *)(uintptr_t)(SPM_NARROW_ADDR + spm_addr +
+                                          row * OMRM_ROW_BYTES);
+}
+
+/* Write one row's payload and, for every row but the first, refresh bank 8
+ * of the previous row with this row's first word. */
+static void omrm_spm_put_row(uint32_t spm_addr, uint32_t row,
+                             const uint32_t words[OMRM_PAYLOAD_WORDS])
+{
+  volatile uint32_t *dst = omrm_spm_row(spm_addr, row);
+  uint32_t w;
+  for (w = 0u; w < OMRM_PAYLOAD_WORDS; ++w) {
+    dst[w] = words[w];
+  }
+  if (row > 0u) {
+    omrm_spm_row(spm_addr, row - 1u)[OMRM_PAYLOAD_WORDS] = words[0];
+  }
+}
+
+static inline uint32_t omrm_relu_pair(uint32_t bits)
+{
+  if ((bits & 0x00008000u) != 0u) {
+    bits &= 0xffff0000u;
+  }
+  if ((bits & 0x80000000u) != 0u) {
+    bits &= 0x0000ffffu;
+  }
+  return bits;
+}
+
+void omrm_spm_relu_f16(uint32_t tile, uint32_t spm_addr, uint32_t rows)
+{
+  uint32_t row;
+  uint32_t w;
+  uint32_t words[OMRM_PAYLOAD_WORDS];
+
+  isolde_set_tile(tile);
+  for (row = 0u; row < rows; ++row) {
+    volatile uint32_t *src = omrm_spm_row(spm_addr, row);
+    for (w = 0u; w < OMRM_PAYLOAD_WORDS; ++w) {
+      words[w] = omrm_relu_pair(src[w]);
+    }
+    omrm_spm_put_row(spm_addr, row, words);
+  }
+}
+
+void omrm_spm_transpose_f16(uint32_t tile, uint32_t src_addr,
+                            uint32_t dst_addr, uint32_t rows,
+                            uint32_t dst_rows)
+{
+  omrm_fp16_storage_t m[OMRM_FP16_PER_ROW * OMRM_FP16_PER_ROW];
+  uint32_t words[OMRM_PAYLOAD_WORDS];
+  uint32_t i;
+  uint32_t j;
+
+  if (rows > OMRM_FP16_PER_ROW || dst_rows > OMRM_FP16_PER_ROW) {
+    _Exit(0x0bad0012);
+  }
+  isolde_set_tile(tile);
+  for (i = 0u; i < rows; ++i) {
+    volatile uint32_t *src = omrm_spm_row(src_addr, i);
+    for (j = 0u; j < OMRM_PAYLOAD_WORDS; ++j) {
+      uint32_t bits = src[j];
+      m[i * OMRM_FP16_PER_ROW + 2u * j] = (omrm_fp16_storage_t)bits;
+      m[i * OMRM_FP16_PER_ROW + 2u * j + 1u] =
+          (omrm_fp16_storage_t)(bits >> 16);
+    }
+  }
+  for (i = 0u; i < dst_rows; ++i) {
+    for (j = 0u; j < OMRM_PAYLOAD_WORDS; ++j) {
+      const uint32_t c0 = 2u * j;
+      const uint32_t c1 = c0 + 1u;
+      const uint32_t lo = c0 < rows ? m[c0 * OMRM_FP16_PER_ROW + i] : 0u;
+      const uint32_t hi = c1 < rows ? m[c1 * OMRM_FP16_PER_ROW + i] : 0u;
+      words[j] = lo | (hi << 16);
+    }
+    omrm_spm_put_row(dst_addr, i, words);
+  }
+}
+
+void omrm_spm_copy_f16(uint32_t tile, uint32_t src_addr, uint32_t dst_addr,
+                       uint32_t rows)
+{
+  uint32_t words[OMRM_PAYLOAD_WORDS];
+  uint32_t row;
+  uint32_t w;
+
+  isolde_set_tile(tile);
+  for (row = 0u; row < rows; ++row) {
+    volatile uint32_t *src = omrm_spm_row(src_addr, row);
+    for (w = 0u; w < OMRM_PAYLOAD_WORDS; ++w) {
+      words[w] = src[w];
+    }
+    omrm_spm_put_row(dst_addr, row, words);
+  }
+}
+
+#else /* OMRM_SPM_VIA_DMEM */
+
+/*
+ * The same three transforms through data memory, built only from the
+ * loader paths that onnx_tiling_gemm / onnx_complex_gemm validated on RTL:
+ * omrm_download_f16 into a staging buffer, then omrm_upload_tile_f16 (ReLU
+ * and transpose are upload flags) or omrm_upload_f16.  Slower; meant to
+ * tell a problem of the narrow-window code above from one elsewhere.
+ * Build with TEST_CPPFLAGS=-DOMRM_SPM_VIA_DMEM.
+ */
+static omrm_fp16_storage_t omrm_xform_stage[OMRM_TILE_MAX_ELEMENTS]
+    __attribute__((aligned(16)));
+
+static void omrm_xform_download(uint32_t tile, uint32_t spm_addr,
+                                uint32_t rows)
+{
+  if (rows == 0u || rows * OMRM_FP16_PER_ROW > OMRM_TILE_MAX_ELEMENTS) {
+    _Exit(0x0bad0015);
+  }
+  omrm_download_f16(tile, spm_addr, omrm_xform_stage,
+                    rows * OMRM_FP16_PER_ROW);
+}
+
+void omrm_spm_relu_f16(uint32_t tile, uint32_t spm_addr, uint32_t rows)
+{
+  omrm_xform_download(tile, spm_addr, rows);
+  (void)omrm_upload_tile_f16(tile, spm_addr, omrm_xform_stage,
+                             OMRM_FP16_PER_ROW, 0u, 0u, rows,
+                             OMRM_FP16_PER_ROW, rows, OMRM_FP16_PER_ROW,
+                             OMRM_TILE_RELU);
+}
+
+void omrm_spm_transpose_f16(uint32_t tile, uint32_t src_addr,
+                            uint32_t dst_addr, uint32_t rows,
+                            uint32_t dst_rows)
+{
+  if (dst_rows > OMRM_FP16_PER_ROW) {
+    _Exit(0x0bad0012);
+  }
+  omrm_xform_download(tile, src_addr, rows);
+  /* The rows x dst_rows window, transposed: dst_rows x rows, zero padded. */
+  (void)omrm_upload_tile_f16(tile, dst_addr, omrm_xform_stage,
+                             OMRM_FP16_PER_ROW, 0u, 0u, rows, dst_rows,
+                             dst_rows, OMRM_FP16_PER_ROW,
+                             OMRM_TILE_TRANSPOSE);
+}
+
+void omrm_spm_copy_f16(uint32_t tile, uint32_t src_addr, uint32_t dst_addr,
+                       uint32_t rows)
+{
+  omrm_xform_download(tile, src_addr, rows);
+  (void)omrm_upload_f16(tile, dst_addr, omrm_xform_stage,
+                        rows * OMRM_FP16_PER_ROW, 0u);
+}
+
+#endif /* OMRM_SPM_VIA_DMEM */
+
+/* Staging for omrm_spm_move_f16: separate from omrm_tile_stage, which
+ * omrm_upload_tile_f16 fills from it. */
+static omrm_fp16_storage_t omrm_move_stage[OMRM_TILE_MAX_ELEMENTS]
+    __attribute__((aligned(16)));
+
+void omrm_spm_move_f16(uint32_t src_tile, uint32_t src_addr,
+                       uint32_t dst_tile, uint32_t dst_addr, uint32_t rows,
+                       uint32_t dst_rows, uint32_t flags)
+{
+  if (rows * OMRM_FP16_PER_ROW > OMRM_TILE_MAX_ELEMENTS) {
+    _Exit(0x0bad0013);
+  }
+  omrm_download_f16(src_tile, src_addr, omrm_move_stage,
+                    rows * OMRM_FP16_PER_ROW);
+  (void)omrm_upload_tile_f16(dst_tile, dst_addr, omrm_move_stage,
+                             OMRM_FP16_PER_ROW, 0u, 0u, rows,
+                             OMRM_FP16_PER_ROW, dst_rows, OMRM_FP16_PER_ROW,
+                             flags);
+}
+
 void omrm_gemm_f16_16_12_16(uint32_t tile, uint32_t x_spm_addr,
                             uint32_t w_spm_addr, uint32_t y_spm_addr)
 {
@@ -253,6 +432,38 @@ void omrm_download_f16(uint32_t tile, uint32_t spm_addr, void *destination,
       uint32_t i = fp16_base + 2u * word;
       dst[i] = (uint16_t)bits;
       dst[i + 1u] = (uint16_t)(bits >> 16);
+    }
+  }
+}
+
+/* Staging for omrm_download_tile_f16: whole SPM rows land here (loader fast
+ * path), then the requested corner is copied out with the caller's stride. */
+static omrm_fp16_storage_t omrm_download_stage[OMRM_TILE_MAX_ELEMENTS]
+    __attribute__((aligned(16)));
+
+void omrm_download_tile_f16(uint32_t tile, uint32_t spm_addr,
+                            void *destination, uint32_t dst_ld,
+                            uint32_t rows, uint32_t cols)
+{
+  omrm_fp16_storage_t *dst = (omrm_fp16_storage_t *)destination;
+  uint32_t r;
+  uint32_t c;
+
+  if (rows == 0u || cols == 0u) {
+    return;
+  }
+  if (cols > OMRM_FP16_PER_ROW ||
+      rows * OMRM_FP16_PER_ROW > OMRM_TILE_MAX_ELEMENTS ||
+      (rows > 1u && dst_ld < cols) ||
+      (((uintptr_t)destination) & 1u) != 0u) {
+    _Exit(0x0bad0014);
+  }
+
+  omrm_download_f16(tile, spm_addr, omrm_download_stage,
+                    rows * OMRM_FP16_PER_ROW);
+  for (r = 0u; r < rows; ++r) {
+    for (c = 0u; c < cols; ++c) {
+      dst[r * dst_ld + c] = omrm_download_stage[r * OMRM_FP16_PER_ROW + c];
     }
   }
 }
