@@ -25,7 +25,8 @@ cd isolde/system
 make -f Makefile.nodbg patch            # once, after the Bender checkout
 make -f Makefile.nodbg veri-clean verilate   # once per RTL configuration
 
-make  TEST=dhrystone21 test-clean test-build 
+make TEST=dhrystone21 TEST_CFLAGS=-DDHRY_RUNS=100 test-clean test-build # faster simulation
+# make  TEST=dhrystone21 test-clean test-build  #default 1000 runs
 make -f Makefile.nodbg TEST=dhrystone21 veri-run
 # equivalent: make -f Makefile.nodbg TEST=dhrystone21 test-clean test-build veri-run
 ```
@@ -47,7 +48,13 @@ Pass these with `TEST_CPPFLAGS` (rebuild with `test-clean test-build`):
 make -f Makefile.dhrystone.nodbg TEST_CPPFLAGS="-DDHRY_ICACHE=1 -DDHRY_RUNS=2000" \
      test-clean test-build veri-run
 ```
-
+#### FPGA:
+in folder `isolde/system`:  
+```sh
+. ./eth.sh 
+make -C ../sw/dhrystone21 uart-plot
+```
+![dhrystone](dhrystone21_live.png)
 ## Output
 
 ```
@@ -84,3 +91,28 @@ llvm-objdump -d sw/bin/dhrystone21.elf | awk '/<main>:/,/^$/' | grep -E 'jal.*<(
 `main` should call `Proc_1, Proc_2, Proc_4, Proc_5, Proc_6, Proc_7, Proc_8, Func_1, Func_2` once each.
 (`Proc_3` is called from `Proc_1`, and `Func_3` from `Proc_6`.)
 
+
+# References
+
+Arm Cortex-M figures are Dhrystone 2.1 "ground rules" results (no inlining, no multi-file compilation), the same rules `dhrystone21` follows.
+
+| Core | DMIPS/MHz | Source |
+|---|---:|---|
+| Cortex-M0 | 0.87 | [1], [5] |
+| Cortex-M0+ | 0.95 | [1] |
+| Cortex-M23 | 0.98 | [1] |
+| Cortex-M3 | 1.25 | [1], [3] |
+| Cortex-M4 | 1.25 | [1] |
+| Cortex-M33 | 1.50 | [1] |
+| Cortex-M55 | 1.60 | [1] |
+| Cortex-M7 | 2.14 | [1] |
+| Cortex-M85 | 3.13 | [4] |
+| **AIDA Ibex (measured)** | **0.570** | `dhrystone21`, aida_tb / ZCU104 |
+
+1. Arm, *Arm Cortex-M Processor Comparison Table v3* (2020). [PDF](https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/Cortex-A%20R%20M%20datasheets/Arm%20Cortex-M%20Comparison%20Table_v3.pdf)
+2. Arm, *Arm Cortex-M Processor Comparison Table* (2022). Slightly higher values; build conditions not stated (`--arm-table 2022`). [PDF](https://documentation-service.arm.com/static/61bb37962183326f2176f8cc)
+3. Arm, *Application Note 273: Dhrystone Benchmarking for ARM Cortex Processors*, ARM DAI 0273A (2011). Defines Arm's ground rules (`--no_inline --no_multifile`) and gives 1.25 DMIPS/MHz for Cortex-M3. [PDF](https://documentation-service.arm.com/static/6331d18bda191e7fe057c931)
+4. CNX Software, *Arm Cortex-M85 is faster than Cortex-M7, offers higher ML performance than Cortex-M55* (2022-04-27). Gives 3.13 / 4.52 / 8.76 DMIPS/MHz (ground rules / inlining / multi-file). [Link](https://www.cnx-software.com/2022/04/27/arm-cortex-m85-is-faster-than-cortex-m7-offers-higher-ml-performance-than-cortex-m55/)
+5. Arm, *Arm Cortex-M0 Processor Datasheet*. Gives 0.87 DMIPS/MHz. [PDF](https://www.arm.com/-/media/Arm%20Developer%20Community/PDF/Processor%20Datasheets/Arm_Cortex-M0_Processor_Datasheet.pdf)
+
+DMIPS/MHz = 10⁶ / (1757 × cycles per run), where 1757 Dhrystones/s is the VAX 11/780 = 1 DMIPS reference.
