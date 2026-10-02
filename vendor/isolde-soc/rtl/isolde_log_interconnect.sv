@@ -17,7 +17,6 @@
 //import isolde_soc_package::*;
 
 module isolde_log_interconnect
-  import tcdm_interconnect_pkg::topo_e;
 #(
     parameter int unsigned N_SLAVES  = 1,
     parameter int unsigned N_MASTERS = 9,
@@ -57,7 +56,7 @@ module isolde_log_interconnect
   //  logic [N_MASTERS-1:0][   IW-1:0] mems_ID;
   logic [N_MASTERS-1:0]              mems_gnt;
   logic [N_MASTERS-1:0][  UW+DW-1:0] mems_r_rdata;
-  logic [N_MASTERS-1:0]              mems_r_valid;
+  // logic [N_MASTERS-1:0]              mems_r_valid;
   //logic [N_MASTERS-1:0][   IW-1:0] mems_r_ID;
 
   // interface unrolling
@@ -98,7 +97,7 @@ module isolde_log_interconnect
       assign _s_mem_req.data                = mems_wdata[jj];
       //response
       assign mems_gnt[jj]                   = _s_mem_rsp.gnt;
-      assign mems_r_valid[jj]               = _s_mem_rsp.valid;
+      // assign mems_r_valid[jj]               = _s_mem_rsp.valid;
       assign mems_r_rdata[jj]               = _s_mem_rsp.data;
 
 

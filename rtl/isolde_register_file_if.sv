@@ -20,7 +20,7 @@ interface isolde_register_file_if ();
   // ------------------------
   // Error
   // ------------------------
-  logic isolde_rf_err;
+  // logic isolde_rf_err;
 
   // ==========================================================
   // Modports
@@ -33,8 +33,8 @@ interface isolde_register_file_if ();
       // Write port
       output wp,
       // Misc
-      input wp_echo,
-      input isolde_rf_err
+      input wp_echo
+      // input isolde_rf_err
   );
 
   modport rf(
@@ -44,8 +44,8 @@ interface isolde_register_file_if ();
       // Write port
       input wp,
       // Misc
-      output wp_echo,
-      output isolde_rf_err
+      output wp_echo
+      // output isolde_rf_err
   );
 
 endinterface

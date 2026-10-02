@@ -3,6 +3,8 @@ BEGIN {
     RED    = "\033[31m"
     YELLOW = "\033[33m"
     RESET  = "\033[0m"
+    n_err  = 0
+    n_warn = 0
 }
 
 function ts() {
@@ -13,30 +15,103 @@ function ts() {
     line = ts() " " $0
 }
 
+# ---------------------------------------------------------------------------
+# slang diagnostics:  path:line:col: error|warning: msg [-Wflag]
+# ---------------------------------------------------------------------------
+/^[^ ].*:[0-9]+:[0-9]+:[[:space:]]*error:/ {
+    n_err++
+    print line >> warnings_file
+    print RED line RESET
+    next
+}
+/^[^ ].*:[0-9]+:[0-9]+:[[:space:]]*warning:/ {
+    n_warn++
+    print line >> warnings_file
+    print YELLOW line RESET
+    next
+}
 
+# ---------------------------------------------------------------------------
+# Questa-style diagnostics
+# ---------------------------------------------------------------------------
 /^\*\*[[:space:]]Warning:/ {
+    n_warn++
     print line >> warnings_file
     print YELLOW line RESET
     next
 }
 /^\*\*[[:space:]]Error:/ {
+    n_err++
     print line >> warnings_file
     print RED line RESET
     next
 }
 
-/^%Error/{
+# ---------------------------------------------------------------------------
+# Verilator-style diagnostics
+# ---------------------------------------------------------------------------
+/^%Error/ {
+    n_err++
     print line >> warnings_file
     print RED line RESET
     next
 }
-
-/^%Warning-/{
+/^%Warning-/ {
+    n_warn++
     print line >> warnings_file
     print YELLOW line RESET
     next
 }
 
+# ---------------------------------------------------------------------------
+# g++ / compiler driver errors  (e.g. unrecognized command line option)
+# ---------------------------------------------------------------------------
+/^g\+\+:[[:space:]]*error:/ {
+    n_err++
+    print line >> warnings_file
+    print RED line RESET
+    next
+}
+/^g\+\+:[[:space:]]*warning:/ {
+    n_warn++
+    print line >> warnings_file
+    print YELLOW line RESET
+    next
+}
+
+/^make\[[0-9]+\]:[[:space:]]*\*\*\*[[:space:]]Waiting for unfinished/ {
+    print line
+    next
+}
+# ---------------------------------------------------------------------------
+# make recursive error lines:  make[N]: *** [...] Error N
+# ---------------------------------------------------------------------------
+/^make\[[0-9]+\]:[[:space:]]*\*\*\*/ {
+    n_err++
+    print line >> warnings_file
+    print RED line RESET
+    next
+}
+
+# ---------------------------------------------------------------------------
+# slang summary line: color to stdout only, do NOT write to warnings_file
+# ---------------------------------------------------------------------------
+/^Build (failed|succeeded)/ {
+    if ($0 ~ /failed/) print RED line RESET
+    else               print YELLOW line RESET
+    next
+}
+
+# ---------------------------------------------------------------------------
+# Everything else: pass through unchanged
+# ---------------------------------------------------------------------------
 {
     print
+}
+
+END {
+    # Summary to stdout only (never to warnings_file, so a clean run leaves
+    # warnings_file empty for Makefile gating).
+    printf("%s==== summary: %d error(s), %d warning(s) ====%s\n",
+           (n_err ? RED : YELLOW), n_err, n_warn, RESET)
 }

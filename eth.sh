@@ -2,8 +2,12 @@
 # Copyleft
 
 # Define environment variables
-MINICONDA=$HOME/hdd1/miniconda3/etc/profile.d/conda.sh
+MINICONDA_ROOT=$HOME/hdd1
+MINICONDA_INSTALL_DIR=$MINICONDA_ROOT/miniconda3
+MINICONDA=$MINICONDA_INSTALL_DIR/etc/profile.d/conda.sh
 MINICONDA_ENV=ibex
+MINICONDA_PKGS=python-requirements.txt
+
 # To activate this environment, use
 #
 #     $ conda activate ibex
@@ -15,12 +19,17 @@ MINICONDA_ENV=ibex
 # Get the root directory of the Git repository
 export ROOT_DIR=$(git rev-parse --show-toplevel)
 
-export BENDER=$ROOT_DIR/install/bender/bender
+export     BENDER=$ROOT_DIR/eda/bender/bin/bender
+export      SLANG=$ROOT_DIR/eda/oss-cad-suite/bin/slang
+export      YOSYS=$ROOT_DIR/eda/oss-cad-suite/bin/yosys
+export  VERILATOR=$ROOT_DIR/eda/verilator/bin/verilator
+export    OPENOCD=$ROOT_DIR/eda/oss-cad-suite/bin/openocd
+# export OPENROAD=$ROOT_DIR/install/openroad/usr/local/bin/openroad
 # export PULP_RISCV_GCC_TOOLCHAIN=$ROOT_DIR/install/riscv
-export GCC_TOOLCHAIN=$ROOT_DIR/install/riscv-gcc/bin
+# export GCC_TOOLCHAIN=$ROOT_DIR/install/riscv-gcc/bin
 # export LLVM_TOOLCHAIN=$ROOT_DIR/install/riscv-llvm/bin
-export CC=gcc-11
-export CXX=g++-11
+# export CC=clang
+# export CXX=clang++
 #
 # export CV_SIMULATOR=verilator
 # export CV_SW_TOOLCHAIN=$ROOT_DIR/install/riscv-gcc
@@ -31,11 +40,13 @@ export CXX=g++-11
 
 source $MINICONDA
 conda activate $MINICONDA_ENV
+$MINICONDA_INSTALL_DIR/bin/conda run \
+    -n $MINICONDA_ENV \
+    python -m pip freeze  \
+        | grep -v ' @ file://' \
+        > $MINICONDA_PKGS
 
-export    YOSYS=$ROOT_DIR/install/oss-cad-suite/bin/yosys
-export OPENROAD=$ROOT_DIR/install/openroad/usr/local/bin/openroad
-
-export PATH=$ROOT_DIR/install/bender:~/verible/bin:$ROOT_DIR/install/verilator/bin:$ROOT_DIR/install/openocd/bin:$GCC_TOOLCHAIN:$PATH
+# export PATH=$ROOT_DIR/eda/oss-cad-suite/bin:$PATH
 source ~/vivado.sh
 
-echo  `verilator --version`
+echo  `$VERILATOR --version`

@@ -1,0 +1,60 @@
+// Copyleft ISOLDE 2025
+// THIS IS A GENERATED FILE - DO NOT EDIT.
+// Source: config/platform.yml, template templates/aida_pkg.sv.j2, platform 'demo_3'.
+
+package aida_package;
+  import isolde_tcdm_pkg::*;
+  //
+  /* mirrors bsp/link.ld - both are generated from config/platform.yml
+MEMORY
+{
+    instrram    : ORIGIN = 0x00100000, LENGTH = 0x8000
+    dataram     : ORIGIN = 0x00110000, LENGTH = 0x8000
+    stack       : ORIGIN = 0x00140000, LENGTH = 0x4000
+}
+*/
+  // instructon memory size in 32-bit words
+  localparam int unsigned IMEM_SIZE_I32 = 32'h0000_2000;
+  // data memory size in 32-bit words
+  localparam int unsigned DMEM_SIZE_I32 = 32'h0000_2000;
+  // stack memory size in 32-bit words
+  localparam int unsigned SMEM_SIZE_I32 = 32'h1000;
+
+
+  localparam rule_addr_t ROM_BOOT_ADDR = 32'h0000_0080;
+  localparam int unsigned ROM_BOOT_SIZE = 32'h16;
+  localparam rule_addr_t IMEM_ADDR = 32'h0010_0000;
+  localparam int unsigned IMEM_SIZE = 32'h4 * IMEM_SIZE_I32;
+  localparam rule_addr_t DMEM_ADDR = 32'h0011_0000;
+  localparam int unsigned DMEM_SIZE = 32'h4 * DMEM_SIZE_I32;
+  localparam rule_addr_t SMEM_ADDR = 32'h0014_0000;
+  localparam int unsigned SMEM_SIZE = 32'h4 * SMEM_SIZE_I32;
+  //localparam int unsigned GMEM_SIZE = SMEM_ADDR + SMEM_SIZE - IMEM_ADDR;
+  //  see reset vector in bsp/crt0.S
+  localparam rule_addr_t RV_BOOT_ADDR = 32'h0010_0080;
+  localparam rule_addr_t PERIPH_ADDR = 32'h0000_1000;
+  //see bsp/simple_system_regs.h
+  localparam rule_addr_t MMIO_ADDR = 32'h8000_0000;
+  localparam rule_addr_t MMIO_ADDR_END = 32'h8000_000C;
+  localparam rule_addr_t PERFCNT_ADDR = MMIO_ADDR_END;
+  localparam rule_addr_t PERFCNT_ADDR_END = PERFCNT_ADDR + 32'h0000_001D;
+  // === SPM loader descriptor block, see bsp/spm_load.h ===
+  localparam rule_addr_t SPMLD_ADDR = 32'h8000_0100;
+  localparam rule_addr_t SPMLD_ADDR_END = SPMLD_ADDR + 32'h0000_0020;
+
+  // === debugger module parameters ===
+  localparam rule_addr_t DEBUG_ADDR = 32'h1A11_0000;
+  localparam int unsigned DEBUG_SIZE = 32'h0000_1000;
+  // === hardware accelerator parameters ===
+  localparam int unsigned NC = 1;
+`ifdef TARGET_COHEN_CVXIF
+  localparam int unsigned HCI_AW = cohen_pkg::ADDR_W;
+  localparam int unsigned HCI_DW = cohen_pkg::DATA_W;
+`elsif TARGET_REDMULE_COMPLEX
+  localparam int unsigned HCI_AW = redmule_pkg::ADDR_W;
+  localparam int unsigned HCI_DW = redmule_pkg::DATA_W;
+`endif
+  localparam int unsigned MP = HCI_DW / 32;
+  localparam int unsigned N_TCDM_BANKS = HCI_DW / 32;
+  localparam logic REDMULE_TEST_MODE = 1'b0;  // set to 1 to enable test mode
+endpackage  // aida_package

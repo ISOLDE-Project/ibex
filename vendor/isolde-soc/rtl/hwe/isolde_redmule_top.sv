@@ -17,12 +17,12 @@ module isolde_redmule_top
     parameter int unsigned ID_WIDTH = 8,
     parameter int unsigned N_CORES = 8,
     // TCDM port dimension (in bits)
-    parameter int unsigned DW = DATA_W,
-    parameter int unsigned AddrWidth = 32,
+    parameter int unsigned DW = DATA_W
+    // parameter int unsigned AddrWidth = 32
     // Number of PEs within a row
-    parameter int unsigned Height = ARRAY_HEIGHT,
+    // parameter int unsigned Height = ARRAY_HEIGHT,
     // Number of parallel rows
-    parameter int unsigned Width = ARRAY_WIDTH
+    // parameter int unsigned Width = ARRAY_WIDTH
     // Number of bits for the given format
 ) (
     input  logic                    clk_i,
@@ -31,6 +31,7 @@ module isolde_redmule_top
     input  logic                    fetch_enable_i,
     // evnets
     output logic [N_CORES-1:0][1:0] evt_o,
+    output logic busy_o,
 
     hci_core_intf.master             m_hci_core,
 `ifdef TARGET_REDMULE_COMPLEX
@@ -46,7 +47,7 @@ module isolde_redmule_top
   localparam int unsigned SysDataWidth = 32;
   localparam int unsigned SysInstWidth = 32;
 
-  logic busy;
+  // logic busy;
   logic s_clk, s_clk_en;
 
 `ifdef TARGET_REDMULE_HWPE
@@ -94,7 +95,7 @@ module isolde_redmule_top
       .rst_ni     (rst_ni),
       .test_mode_i(test_mode_i),
       .evt_o      (evt_o),
-      .busy_o     (busy),
+      .busy_o     (busy_o),
       .tcdm       (m_hci_core),
       .xif_issue_if_i,
       .xif_result_if_o,

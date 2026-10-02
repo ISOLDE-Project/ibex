@@ -1,7 +1,0 @@
-%:	@echo "EXPERIMENTAL MAKEFILE, DO NOT USE"
-	@exit 1
-	 @echo  $(MAKECMDGOALS)
-	 make DBG_MODULE=1 ENABLE_SPM=1 \
-	 	REDMULE_COMPLEX=1 \
-	    VLT_TOP_MODULE=tb_lca_system     \
-	 	TEST=redmule128b_test $@

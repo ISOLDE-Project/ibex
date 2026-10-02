@@ -122,7 +122,7 @@ module tcdm_mem_wrapper #(
     input [31:0] req_data,
     output gnt,
     output valid,
-    //output err,
+    output err,
     output [31:0] rsp_data
 );
 
@@ -138,7 +138,7 @@ module tcdm_mem_wrapper #(
 
   assign gnt                = tcdm_intf.rsp.gnt;
   assign valid              = tcdm_intf.rsp.valid;
-  //  assign err                = tcdm_intf.rsp.err;
+  assign err                = tcdm_intf.rsp.err;
   assign rsp_data           = tcdm_intf.rsp.data;
 
   // Instantiate the original SV DUT

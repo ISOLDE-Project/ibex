@@ -34,8 +34,6 @@ module isolde_tcdm_interconnect #(
       .ALIGNMENT(ALIGNMENT),
       .HCI_DW(HCI_DW)
   ) i_hci_interconnect (
-      .clk_i,
-      .rst_ni,
       .s_hci_core,
       .s_tcdm_core,
       .mem_req_o(cores_req),

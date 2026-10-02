@@ -16,6 +16,13 @@
 #pragma message("TOPLEVEL_NAME is set to: " TOSTRING(TOPLEVEL_NAME))
 #endif
 
+#ifndef VLT_BUILD_TAG
+#error "VLT_BUILD_TAG must be set."
+#else
+#pragma message("VLT_BUILD_TAG is set to: " TOSTRING(VLT_BUILD_TAG))
+#endif
+
+
 // Construct the include _Dpi.h file name
 #define TOP_LEVEL_DPI_HEADER_NAME CONCATENATE2(V, TOPLEVEL_NAME) __Dpi.h
 
@@ -39,7 +46,9 @@
 #include <iostream>
 
 #include "verilated.h"
+#ifdef VCD_TRACE
 #include "verilated_vcd_c.h"
+#endif
 
 int signal_caught = 0;
 
@@ -86,10 +95,12 @@ int main(int argc, char **argv, char **env) {
   Verilated::commandArgs(argc, argv);
   dut_ptr dut = std::make_unique<VTopModule>();
 
+#ifdef VCD_TRACE
   Verilated::traceEverOn(true);
   auto tfp = std::make_unique<VerilatedVcdC>();
   dut->trace(tfp.get(), 5);
   tfp->open("verilator_tb.vcd");
+#endif
   // https://github.com/verilator/verilator/blob/v5.028/include/verilated.h
   VerilatedContext *contextp = dut->contextp();
   while (!Verilated::gotFinish() && !signal_caught) {
@@ -101,11 +112,15 @@ int main(int argc, char **argv, char **env) {
     // Set fetch enable to core
     //dut_set_fetch_en(dut, contextp->time(), 1);
     dut->eval();
+#ifdef VCD_TRACE
     tfp->dump(contextp->time());
+#endif
     contextp->timeInc(1);
   }
 
   dut->final();
+#ifdef VCD_TRACE
   tfp->close();
+#endif
 
 }

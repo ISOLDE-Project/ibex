@@ -1,0 +1,158 @@
+/**
+********************************************
+******
+****** THIS IS GENERATED FILE, DO NOT EDIT !!
+******
+********************************************
+*/
+module isolde_xif_relay #(
+    parameter int unsigned N_TILES  = 2,
+    parameter int unsigned NC       = 1,
+    parameter int unsigned ID_WIDTH = (N_TILES > 1) ? $clog2(N_TILES) : 1
+) (
+    input logic clk_i,
+    input logic rst_ni,
+
+    // cpu interface
+    isolde_cv_x_if.coproc_issue  cpu_xif_issue,
+    isolde_cv_x_if.coproc_result cpu_xif_result,
+
+    // tile interfaces
+    isolde_cv_x_if.cpu_issue  tile_xif_issue [N_TILES],
+    isolde_cv_x_if.cpu_result tile_xif_result[N_TILES],
+
+    // Events
+    input logic [NC-1:0][1:0] tile_evt_i[N_TILES-1:0],
+    output logic [N_TILES-1:0] core_evt_o
+);
+
+  initial begin
+    assert (N_TILES >= 1)
+    else $fatal(1, "isolde_xif_relay: N_TILES must be >= 1 (got %0d)", N_TILES);
+  end
+
+  // Tile selector from XIF request
+  typedef logic [ID_WIDTH-1:0] idx_t;
+
+  logic fifo_full, fifo_empty;
+  logic push_id_fifo, pop_id_fifo;
+  idx_t req_idx, rsp_idx, rsp_idx_fifo;
+
+  assign req_idx = idx_t'(cpu_xif_issue.issue_req.hwe_id[ID_WIDTH-1:0]);
+
+  // Push a new outstanding-transaction entry only on an actually-accepted
+  // issue handshake; pop only on an actually-accepted result handshake.
+  // (NOT simply "any tile happens to be ready/valid" - that fires even when
+  // the CPU/tile did not actually complete the corresponding handshake.)
+  assign push_id_fifo = cpu_xif_issue.issue_valid;
+  assign pop_id_fifo = cpu_xif_result.result_ready;
+
+  
+
+  // Remember selected master for correct forwarding of read data/acknowledge.
+  // FALL_THROUGH=1 is required: when the FIFO is empty, a push must be
+  // visible on rsp_idx in the SAME cycle (not the next one), otherwise a
+  // tile that responds in the same cycle it accepts an issue (zero
+  // // latency) would be muxed against a stale/previous rsp_idx.
+
+//   logic [ID_WIDTH-1:0] rsp_idx_hold;
+
+//   always_ff @(posedge clk_i or negedge rst_ni) begin
+//     if (!rst_ni) begin
+//       rsp_idx_hold <= '0;
+//     end else if (pop_id_fifo && !fifo_empty) begin
+//       // Capture the value that is being popped
+//       rsp_idx_hold <= rsp_idx_fifo;
+//     end
+//     // else: keep previous value automatically
+//   end
+
+  fifo_v3 #(
+      .FALL_THROUGH(1'b1),
+      .DATA_WIDTH(ID_WIDTH),
+      .DEPTH(4)
+  ) i_id_fifo (
+      .clk_i,
+      .rst_ni,
+      .flush_i(1'b0),
+      .testmode_i(1'b0),
+      .full_o(fifo_full),
+      .empty_o(fifo_empty),
+      .usage_o(),
+      .data_i(req_idx),
+      .push_i(push_id_fifo),
+      .data_o(rsp_idx_fifo),  
+      .pop_i(pop_id_fifo)
+  );
+
+  //workaround for the fifo not working properly, just use a register to store the rsp_idx, this will work for the testbench, but it will not work for the real implementation
+  //assign rsp_idx = req_idx;
+  assign rsp_idx = rsp_idx_fifo;
+  // --------------------------------------------------
+  // Events
+  // --------------------------------------------------
+  //   always_comb begin
+  //     core_evt_o = '0;
+  //     unique case (rsp_idx_hold)
+  //       0: core_evt_o = tile_evt_i[0];
+  //       1: core_evt_o = tile_evt_i[1];
+  //       default: core_evt_o = '0;
+  //     endcase
+  //   end
+
+  // --------------------------------------------------
+  // CPU -> tile dispatch (issue channel, keyed by req_idx)
+  // --------------------------------------------------
+  generate
+    for (genvar i = 0; i < N_TILES; i++) begin : g_tile
+      assign tile_xif_issue[i].issue_valid   = (req_idx == i) ? cpu_xif_issue.issue_valid : 1'b0;
+      assign tile_xif_issue[i].issue_req     = (req_idx == i) ? cpu_xif_issue.issue_req : '0;
+      // result_ready must reach the tile whose response is currently
+      // owed (rsp_idx), NOT the tile currently being issued to
+      // (req_idx) - these differ whenever more than one transaction
+      // is outstanding.
+      assign tile_xif_result[i].result_ready = (rsp_idx == i) ? cpu_xif_result.result_ready : 1'b0;
+      assign core_evt_o[i:i]                 = tile_evt_i[i][0][0:0];
+    end
+  endgenerate
+
+  // issue_ready must come from the tile currently being issued to
+  // (req_idx), NOT from rsp_idx (an older, still-outstanding
+  // transaction to a different tile). Note: this is a case block with
+  // literal tile indices, NOT tile_xif_issue[req_idx].issue_ready -
+  // V erilator does not support indexing an interface array with a
+  // runtime signal, only with elaboration-time constants (genvars or
+  // literals), which is the whole reason this module is templated.
+  always_comb begin
+    cpu_xif_issue.issue_ready = 1'b0;
+    unique case (req_idx)
+      0: cpu_xif_issue.issue_ready = tile_xif_issue[0].issue_ready;
+      1: cpu_xif_issue.issue_ready = tile_xif_issue[1].issue_ready;
+      default: cpu_xif_issue.issue_ready = 1'b0;
+    endcase
+  end
+
+  // --------------------------------------------------
+  // Tile -> CPU mux (result channel, keyed by rsp_idx only)
+  // --------------------------------------------------
+  always_comb begin
+    cpu_xif_result.result_valid = 1'b0;
+    cpu_xif_result.result       = '0;
+
+    unique case (rsp_idx)
+      0: begin
+        cpu_xif_result.result_valid = tile_xif_result[0].result_valid;
+        cpu_xif_result.result       = tile_xif_result[0].result;
+      end
+      1: begin
+        cpu_xif_result.result_valid = tile_xif_result[1].result_valid;
+        cpu_xif_result.result       = tile_xif_result[1].result;
+      end
+      default: begin
+        cpu_xif_result.result_valid = 1'b0;
+        cpu_xif_result.result       = '0;
+      end
+    endcase
+  end
+
+endmodule

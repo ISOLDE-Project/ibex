@@ -18,3 +18,16 @@ vivado_synth.tcl
 *.wlf
 *.vstf
 *.do
+*.slang
+*_all_deps.f
+*.slang*
+regression-logs/
+nxp-ro/
+doc/
+model.json
+README.cluster-diagram.md
+Makefile.cluster
+.generated.stamp
+
+# Collected firmware images and per-app build logs
+app-images/

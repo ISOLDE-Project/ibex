@@ -587,7 +587,16 @@ package ibex_pkg;
     CSR_MHPMCOUNTER30H = 12'hB9E,
     CSR_MHPMCOUNTER31H = 12'hB9F,
     CSR_CPUCTRLSTS     = 12'h7C0,
-    CSR_SECURESEED     = 12'h7C1
+    CSR_SECURESEED     = 12'h7C1,
+    //ISOLDE
+    CSR_ISOLDE_TILESEL        = 12'h7C2,
+    CSR_ISOLDE_TILE_INTR_EN   = 12'h7C3,
+    CSR_ISOLDE_TILE_EVT       = 12'h7C4,
+    CSR_ISOLDE_TILE_CNT       = 12'h7C5,
+    CSR_ISOLDE_TILE_BASE_ADDR = 12'h7C6,
+    CSR_ISOLDE_TILE_ADDR_WND  = 12'h7C7, //Tile Address Window (TAW)
+    CSR_ISOLDE_TILE_STATUS    = 12'h7C8, //Tile status
+    CSR_ISOLDE_TILE_IP        = 12'h7C9 //interrupt pending
   } csr_num_e;
 
   // CSR pmp-related offsets

@@ -8,7 +8,7 @@ module aida_top
   import ibex_pkg::*;
   // import redmule_pkg::*;
   import isolde_tcdm_pkg::*;
-  import aida_lca_package::*;
+  import aida_package::*;
 #(
     //ibex parameter(s)
     parameter bit BootROMEnable = 1'b1
@@ -110,7 +110,6 @@ module aida_top
           .req_data(mem_req[i].data),
           .gnt(mem_rsp[i].gnt),
           .valid(mem_rsp[i].valid),
-          .err(mem_rsp[i].err),
           .rsp_data(mem_rsp[i].data)
       );
     end

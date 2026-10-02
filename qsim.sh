@@ -15,7 +15,8 @@ MINICONDA_ENV=ibex
 # Get the root directory of the Git repository
 export ROOT_DIR=$(git rev-parse --show-toplevel)
 
-export BENDER=$ROOT_DIR/install/bender/bender
+export BENDER=$ROOT_DIR/eda/bender/bin/bender
+export SLANG=$ROOT_DIR/eda/slang/bin/slang
 
 module load lic questasim qformal
 

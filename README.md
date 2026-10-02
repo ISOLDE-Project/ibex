@@ -4,27 +4,48 @@
 </a>
 
 # ISOLDE
-
-First time:   
-```sh
-. ./setup.sh 
-```sh
-git checkout tmp/exp
+* git workflow, i.e. on every `git pull`
+```text
+git checkout tmp/cluster
+git clean -ffdx
 git submodule update --init
-cd isolde/tca_system/
-. ./eth.sh 
-bender update
 ```
-* install toolchain
+First time, in the root folder:   
+```sh
+make -f Makefile.eda 
+make -f Makefile.tools miniconda
+make -f Makefile.tools riscv32-llvm
+```
+special treatment for verilator:   
+```sh
+ make -f Makefile.eda verilator-uninstall
+ make -f Makefile.eda verilator
+```
+for a list of available targets:  
+```sh
+make -f Makefile.tools help
+```
+*Optional(onnx-mlir)*:  
+```text
+. ./eda.sh
+```
 
-```sh
-make -f Makefile.tools
+```text
+. ./eth.sh 
+cd isolde/system/
+make bender-update
+make -f Makefile.cluster.nodbg  slang-clean slang-lint
 ```
-otherwise:  
+
+**Otherwise:**  
 ```sh
 . ./eth.sh 
 ```
-see also [isolde/simple_system/README.md](isolde/simple_system/README.md)
+if miniconda environment gets out of sync(python errors):
+```sh
+make -f Makefile.tools miniconda-update
+```
+see also [isolde/system/doc/ISOLDE_Verilator_User_Guide.md](isolde/system/doc/ISOLDE_Verilator_User_Guide.md)
 # Directory structure
 ```
 ├── ci
@@ -98,7 +119,40 @@ git add .
 # Step 6: Commit the changes with a custom message
 git commit -m "Squash merge tmp/exp into isolde/dev using theirs strategy"
 ```
-
+## recover the branch in a submodule
+The problem:
+```
+git status
+HEAD detached at 970dc75
+```
+The solution:  
+```sh
+git branch -a -vv
+```
+the output  
+```
+* (HEAD detached at 970dc75) 970dc75 cleaned up
+  main                       7bcfad6 [origin/main: behind 1] fixed cv_x_if.core
+  tmp/yosys                  7bcfad6 fixed cv_x_if.core
+  remotes/origin/HEAD        -> origin/main
+  remotes/origin/ibex/dev    2f08b24 new:beder file
+  remotes/origin/main        970dc75 cleaned up
+```
+it is observed that remotes/origin/main        **970dc75** corespond to the *(HEAD detached at 970dc75)*. Next step  
+```sh
+git checkout -b tmp/fix
+git add .
+git commit 
+git switch main
+git merge tmp/fix
+git push
+git branch -d tmp/fix
+```
+shortcut:   
+```sh
+git push origin HEAD:<name-of-remote-branch>
+```
+where *<name-of-remote-branch>* is identified as above
 # Open EDA
 ## Install tools
 for a lst of available targets:

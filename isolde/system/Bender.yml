@@ -7,9 +7,8 @@ package:
     - daro <daro@tsr>
 
 dependencies:
-  isolde-soc:         { path: ../../vendor/isolde-soc }  
   isolde-dm:          { path: ../../vendor/isolde-dm }
-  redmule:            { path: ../../vendor/redmule }
+  isolde-soc:         { path: ../../vendor/isolde-soc }  
   
 
 # *                matches any target
@@ -17,16 +16,8 @@ dependencies:
 # all(T1, ..., TN) matches if all of the targets T1 to TN match (boolean AND)
 # any(T1, ..., TN) matches if any of the targets T1 to TN match (boolean OR)
 # not(T)           matches if target T does not match (boolean NOT)
-sources: 
-   - target: all(all(not(spm),not(any(fpga_sim,yosys))), all(tb_dm ,redmule_hwpe ,rtl ,redmule_test_hwpe))
-     files:
-        - tb/tb_dm.sv
-   - target: all(vanilla_lca,redmule_test_hwpe, rtl, redmule_hwpe)
-     files:
-       - tb/tb_lca_system.sv 
-   - target: all (not(any(fpga_sim,yosys)),any(spm, redmule_hwpe,redmule_complex, redmule_test_hwpe))
-     files:
-       - tb/tb_spm.sv
+
+sources:
    - target: xilinx
      files:
      - fpga/rtl/xilinx_aida.sv

@@ -14,8 +14,6 @@ module isolde_hci_interconnect #(
     //
     parameter int unsigned N_TCDM_BANKS = HCI_DW / 32  // Number of Memory banks
 ) (
-    input logic clk_i,  // Clock input, positive edge triggered
-    input logic rst_ni,  // Asynchronous reset, active low
     hci_core_intf.slave s_hci_core,  // hwe slave interface
     isolde_tcdm_if.slave s_tcdm_core,  // core slave interface, higher prio
     output isolde_tcdm_pkg::req_t mem_req_o[N_TCDM_BANKS:0],

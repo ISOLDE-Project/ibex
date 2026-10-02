@@ -146,7 +146,7 @@ module isolde_router
 `ifndef SYNTHESIS
   initial begin
     assert (N_RULES > 0)
-    else $fatal("[isolde_demux_tcdm] ERROR: N_RULES parameter must be > 0 (got %0d)", N_RULES);
+    else $fatal(1,"[isolde_demux_tcdm] ERROR: N_RULES parameter must be > 0 (got %0d)", N_RULES);
   end
 `endif
 endmodule

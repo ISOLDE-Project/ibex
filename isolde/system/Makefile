@@ -1,6 +1,7 @@
 ROOT_DIR            :=  $(shell git rev-parse --show-toplevel)
-mkfile_path         := $(ROOT_DIR)/isolde/system
-SCRIPTS_DIR         := $(ROOT_DIR)/isolde/scripts
+PROJECT_DIR         :=  $(ROOT_DIR)/isolde
+mkfile_path         :=  $(PROJECT_DIR)/system
+SCRIPTS_DIR         :=  $(PROJECT_DIR)/scripts
 IBEX_CONFIG         ?=  isolde
 FUSESOC_CONFIG_OPTS ?= 
 FUSESOC_PARAMS      ?=
@@ -18,9 +19,9 @@ BENDER_SYNTH_TARGET ?=
 BENDER_EXTRA_TARGET ?= -t aida_mmio
 FUSESOC_PROJECT     := isolde
 FUSESOC_CORE        := ibex
-FUSESOC_SYSTEM      := lca_dm_system
-FUSESOC_PKG_NAME    := $(FUSESOC_PROJECT):$(FUSESOC_CORE):$(FUSESOC_SYSTEM)
-
+FUSESOC_SYSTEM      ?= dm_system
+FUSESOC_PKG_NAME    = $(FUSESOC_PROJECT):$(FUSESOC_CORE):$(FUSESOC_SYSTEM)
+ONNX_MLIR           := $(ROOT_DIR)/install/onnx-mlir/bin/onnx-mlir
 ##
 
 ifeq ($(COMPILER), gcc)
@@ -44,8 +45,18 @@ endif
 ###
 VLT_TOP_MODULE        ?= tb_lca_system
 IMEM_LATENCY          ?= 0
+WAVES                 ?= 0
 VLT_TOP_MODULE_PARAMS := -GIMEM_LATENCY=$(IMEM_LATENCY)
 
+ifneq ($(filter $(WAVES),0 1),$(WAVES))
+$(error WAVES must be 0 or 1)
+endif
+
+ifeq ($(WAVES),1)
+	FUSESOC_SYSTEM    := dm_system_trace
+	FUSESOC_PKG_NAME   = $(FUSESOC_PROJECT):$(FUSESOC_CORE):$(FUSESOC_SYSTEM)
+	tb_target         += -D IBEX_TRACE
+endif
 ###
 # Static configurations (can be overridden by command-line)
 ###
@@ -59,6 +70,7 @@ verilator_target := vanilla
 # Select testbench target 
 ifeq ($(DBG_MODULE),1)
     tb_target += -t tb_dm -t rv_debug
+	verilator_target := tb_dm
 endif
 ifeq ($(ENABLE_SPM),1)
     tb_target += -t spm
@@ -74,14 +86,17 @@ include $(mkfile_path)/../mk/yosys.mk
 
 
 include $(mkfile_path)/../mk/redmule.mk
+include $(mkfile_path)/../mk/generate.mk
 include $(mkfile_path)/../mk/sw-build.mk
 include $(mkfile_path)/../mk/verilator-build.mk
 include $(mkfile_path)/../mk/questa-build.mk
+include $(mkfile_path)/../mk/slang-build.mk
 include $(mkfile_path)/../mk/vivado.mk
-
-
-
+include $(mkfile_path)/../mk/bender-wrapper.mk
+include $(mkfile_path)/../mk/fpga-wrapper.mk
+include $(ROOT_DIR)/common.mk
 	
-
-
+## apply slang patches	
+patch:
+	make -C $(mkfile_path)/patches/fpnew
 		

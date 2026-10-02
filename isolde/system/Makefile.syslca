@@ -1,8 +1,0 @@
-%:
-	@echo "THERE IS A BUG HERE, PLEASE DON'T USE THIS MAKEFILE"
-	@exit 1
-	@echo  $(MAKECMDGOALS)
-	make DBG_MODULE=0 ENABLE_SPM=1 \
-	 	REDMULE_COMPLEX=0 \
-	    VLT_TOP_MODULE=tb_lca_system     \
-	 	TEST=hello_test $@

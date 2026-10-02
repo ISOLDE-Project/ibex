@@ -1,3 +1,5 @@
+/* THIS IS A GENERATED FILE - DO NOT EDIT. */
+/* Source: config/platform.yml, template templates/link.ld.j2, platform 'demo_3'. */
 /* Copyright 2023 ETH Zurich and University of Bologna. */
 /* Licensed under the Apache License, Version 2.0, see LICENSE for details. */
 /* SPDX-License-Identifier: Apache-2.0 */
@@ -9,15 +11,22 @@ __DYNAMIC  =  0;
 
 MEMORY
 {
-    instrram    : ORIGIN = 0x00100000, LENGTH = 0x2000
-    dataram     : ORIGIN = 0x00110000, LENGTH = 0x2000
-    stack       : ORIGIN = 0x00140000, LENGTH = 0x800
+    instrram    : ORIGIN = 0x00100000, LENGTH = 0x8000
+    dataram     : ORIGIN = 0x00110000, LENGTH = 0x8000
+    stack       : ORIGIN = 0x00140000, LENGTH = 0x4000
 }
 
 /* Stack information variables */
 _stack_len     = LENGTH(stack);
 _stack_start   = ORIGIN(stack) + LENGTH(stack);
 
+/* Loader-visible data-memory limits used by onnx_redmule_runtime.c. */
+__dmem_start   = ORIGIN(dataram);
+__dmem_end     = ORIGIN(dataram) + LENGTH(dataram);
+
+/* Reset vector: platform.yml boot_offset. aida_pkg's RV_BOOT_ADDR is
+ * instrram.origin + boot_offset from the same file. crt0.S places the reset
+ * jump with `.org 0x80` and is not generated: change it by hand to match. */
 _entry_point = _vectors_start + 0x80;
 ENTRY(_entry_point)
 
@@ -85,6 +94,8 @@ SECTIONS
         . = ALIGN(4);
         *(.rodata);
         *(.rodata.*)
+        *(.srodata)
+        *(.srodata.*)
     } > dataram
 
     .shbss :
@@ -99,6 +110,8 @@ SECTIONS
         _sdata  =  .;
         *(.data);
         *(.data.*)
+        *(.sdata)
+        *(.sdata.*)
         edata  =  .;
         _edata  =  .;
     } > dataram
@@ -125,4 +138,3 @@ SECTIONS
     } > stack
 
 }
-

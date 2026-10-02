@@ -58,4 +58,9 @@ module isolde_mux_tcdm (
   assign rsp_1_o.data  = tcdm_master_o.rsp.data;
   assign rsp_2_o.data  = tcdm_master_o.rsp.data;
 
+  // err was previously left undriven, which propagates X into every master
+  // fanned out through this mux
+  assign rsp_1_o.err   = (owner_q == 1'b0) ? tcdm_master_o.rsp.err : 1'b0;
+  assign rsp_2_o.err   = (owner_q == 1'b1) ? tcdm_master_o.rsp.err : 1'b0;
+
 endmodule

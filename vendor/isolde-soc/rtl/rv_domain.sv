@@ -2,7 +2,7 @@ module rv_domain
   import ibex_pkg::*;
 //   import redmule_pkg::*;
   import isolde_tcdm_pkg::*;
-  import aida_lca_package::*;
+  import aida_package::*;
 #(
     parameter bit          PMPEnable        = 1'b0,
     parameter int unsigned PMPGranularity   = 0,

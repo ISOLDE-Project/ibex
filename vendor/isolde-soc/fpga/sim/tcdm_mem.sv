@@ -66,7 +66,7 @@ module tcdm_mem_wrapper #(
   // Instantiate the original SV DUT
   tcdm_mem #(
       .BASE_ADDR(BASE_ADDR),
-      .MEMORY_SIZE(MEMORY_SIZE*4), // in bytes
+      .MEMORY_SIZE(MEMORY_SIZE), //  number of 32-bit words
       .DELAY_CYCLES(DELAY_CYCLES),
       .MEMORY_PRIMITIVE(MEMORY_PRIMITIVE)
   ) dut (

@@ -1,29 +1,49 @@
 # ISOLDE 
+# Data Memory map inference from RTL 
+```sh
+cd isolde/system/
+. ./eth.sh 
+python3 $SCRIPTS_DIR/vcd_memory_map.py verilator_tb.vcd
+```
+```
+[0] DMEM         0x00110000 .. 0x00114000
+[1] SMEM         0x00140000 .. 0x00140800
+[2] MMIO         0x80000000 .. 0x8000000c
+[3] PERFCNT      0x8000000c .. 0x80000029
+[4] SPMLD        0x80000100 .. 0x80000120
+[5] SPM_NARROW   0x80001000 .. 0x80011000
+```
 ## Generate test data
 ```sh
 cd isolde/system
 . ./eth.sh
-make -f Makefile.fpgasim.nodbg  golden
+make -f Makefile.cluster.nodbg  golden
 ```
 ## build test application
 
 ```sh
 cd isolde/system
 . ./eth.sh
-make -f Makefile.fpgasim.nodbg  test-clean test-build
+make -f Makefile.cluster.nodbg  test-clean test-build
 ```
 # verilator
 ```sh
 cd isolde/system
 . ./eth.sh
-make -f Makefile.fpgasim.nodbg  veri-clean verilate veri-run
+make -f Makefile.nodbg veri-clean verilate
+```
+## regression
+```sh
+cd isolde/system
+. ./eth.sh
+bash ./regression_nodbg.sh 
 ```
 
 # QUESTA
 ```sh
 cd isolde/system
 . ./eth.sh
-make -f Makefile.fpgasim.nodbg  questa-clean questa-run
+make -f Makefile.cluster.nodbg  questa-clean questa-run
 ```
 
 ## [REDMULE](https://github.com/ISOLDE-Project/redmule) hardware accelerator
@@ -69,19 +89,19 @@ make TEST=hello_test test-clean test-build
 ```
 ## compile
 ```sh
-make -f Makefile.fpgasim.nodbg  questa-compile
+make -f Makefile.cluster.nodbg  questa-compile
 ```
 ## lint
 ```sh
-make -f Makefile.fpgasim.nodbg  questa-clean questa-lint
+make -f Makefile.cluster.nodbg  questa-clean questa-lint
 ```
-## headless simulation
+## headless simulation(with debug info)
 ```sh
-make -f Makefile.fpgasim.nodbg  questa-run
+make -f Makefile.cluster.nodbg  questa-run
 ```
 ## GUI simulation
 ```sh
-make -f Makefile.fpgasim.nodbg  questa-qui
+make -f Makefile.cluster.nodbg  questa-qui
 ```
 # QUESTA FAQ
 ```
@@ -121,19 +141,20 @@ Assuming working directory *isolde/lca_system* and each command from bellow in a
 1. start simulation
 ```sh
 . ./eth.sh
-make DBG_MODULE=1 veri-clean verilate
-make DBG_MODULE=1 TEST=hello_test test-clean test-build  veri-run
+make -f Makefile.dbg veri-clean verilate
+make -f Makefile.dbg golden test-clean test-build veri-run
 ```
-or  
-```sh
-make DBG_MODULE=1 ENABLE_SPM=1 TEST=redmule_test veri-clean verilate  test-clean test-build veri-run
-```
-  
 
 2. start openocd
+
 ```sh
-. ./eth.sh
-openocd -f isolde.cfg 
+cd isolde/system
+. ./openocd_sim.sh
+```
+or, when connecting to FPGA:
+```sh
+cd isolde/system
+. ./openocd.sh
 ```
 3. start telnet connection
 ```sh
@@ -141,13 +162,13 @@ telnet localhost 4444
 ```
 In the telnet terminal type:   
 ```
-reset halt
-reg pc 0x100000
+halt
+reg pc 0x100080
 resume
 shutdown
 ```
 or 
-In the telnet terminal type( make sure that your working directory is **isolde/lca_system)**:   
+In the telnet terminal type:   
 ```
 source ./read_test.tcl
 ```
@@ -178,3 +199,70 @@ kill -9 27459
  ```sh
   make -f Makefile.wrapper  veri-clean verilate veri-run
  ```
+
+ # slang
+ 
+
+| Phase | Target | Purpose | Log | Success criterion |
+|---|---|---|---|---|
+| 1 | `slang-lint` | Broad `--Weverything` sweep; must elaborate cleanly enough to emit `_all_deps.f` | `*_lint_full.log` | "good enough to generate deps" |
+| 2 | `slang` | Curated re-run on the trimmed dep set | `*_lint.log` | "zero warnings" |
+
+So the last column just says how good each phase has to be: phase 1 only needs to elaborate far enough to produce the dependency list; phase 2 must be fully clean.
+
+Source input:
+```
+Bender.yml    ──▶ manifest.flist   ─┐
+fusesoc(ibex) ──▶ ibex_sim.flist   ─┤─▶ flist2slang.py ─▶ *.slang / *.slang_opts ─▶ slang ─▶ aida_tb_all_deps.f
+
+```
+###############
+
+
+## Key syntax differences
+
+| Thing | slang (`*_opts`) | Verilator | Questa (vlog) |
+|---|---|---|---|
+| Include dir | `+incdir+path` | `+incdir+path` ✅ same | `+incdir+path` ✅ same |
+| Define | `-D NAME=VAL` | `+define+NAME=VAL` or `-DNAME=VAL` | `+define+NAME=VAL` |
+| Param override | `-G NAME=VAL` | `-G NAME=VAL` (top only) | `-gNAME=VAL` (vsim/vopt) |
+| Source file | bare path | bare path ✅ | bare path ✅ |
+| `-f` command file | `-f file` | `-f file` ✅ | `-f file` ✅ |
+
+Good news: `+incdir+` and bare source paths are **identical** across all three, so `aida_tb_all_deps.f` is directly reusable. Only the **defines** (`-D` → `+define+`) and **params** need translating.
+
+## Recommendation: generate tool-specific option files, reuse the source list
+
+Since you already own `flist2slang.py`, the cleanest path is a small sibling converter (or an added mode) that emits the option file in Verilator/Questa syntax. But the source list (`aida_tb_all_deps.f`) needs **no translation** — feed it as-is.
+
+### Verilator
+```make
+verilator_build: aida_tb_all_deps.f ibex_sim.vlt_opts manifest.vlt_opts
+	verilator --binary --top-module aida_tb \
+		-f ibex_sim.vlt_opts \
+		-f manifest.vlt_opts \
+		-f aida_tb_all_deps.f
+```
+Where `*.vlt_opts` = the `*_opts` files with `-D NAME=VAL` rewritten to `+define+NAME=VAL`. `+incdir+` lines copy verbatim.
+
+⚠️ Verilator caveats:
+- Verilator **is order-sensitive** for packages — `aida_tb_all_deps.f` came from `--depfile-sort` (topological), which helps, but verify package files (`ibex_pkg`, `isolde_tcdm_pkg`) come first.
+- Include *fragments* (`.svh`) were excluded by `--Mmodule` — good, Verilator wants them via `+incdir+` too.
+- Verilator needs C++ testbench/harness for `aida_tb` unless you use `--binary`.
+
+### Questa (vlog + vopt/vsim)
+```make
+questa_build: aida_tb_all_deps.f ibex_sim.qsta_opts manifest.qsta_opts
+	vlib work
+	vlog -sv \
+		-f ibex_sim.qsta_opts \
+		-f manifest.qsta_opts \
+		-f aida_tb_all_deps.f
+	vopt aida_tb -o aida_tb_opt
+	vsim -c aida_tb_opt -do "run -all; quit"
+```
+Where `*.qsta_opts` = `+incdir+` verbatim + `-D` rewritten to `+define+`. Param overrides go to `vopt`/`vsim` as `-g`, not into `vlog`.
+
+
+###############
+

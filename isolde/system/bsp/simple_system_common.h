@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #ifndef SIMPLE_SYSTEM_COMMON_H__
+#define SIMPLE_SYSTEM_COMMON_H__
 
 #include <stdint.h>
 
@@ -123,19 +124,103 @@ static inline void icache_enable(int enable) {
   }
 }
 
-inline uint32_t getTicks(){
-  
-  volatile uint32_t* cycle_counter = (uint32_t*) MMADDR_CYCLE_COUNTER;
 
-   return  (*cycle_counter);
+
+static inline void isolde_set_tile(unsigned tile)
+{
+    asm volatile ("csrw %0, %1"
+                  :
+                  : "i"(CSR_ISOLDE_TILESEL), "r"(tile)
+                  : "memory");
 }
 
-// Define START_TIMING and END_TIMING macros
-#define START_TIMING(value) \
-    uint32_t initval_##value = getTicks()
+static inline unsigned isolde_get_tile(void)
+{
+    unsigned tile;
+    asm volatile ("csrr %0, %1"
+                  : "=r"(tile)
+                  : "i"(CSR_ISOLDE_TILESEL)
+                  : "memory");
+    return tile;
+}
 
-#define END_TIMING(value) \
-    printf("Timing for %s: %u cycles\n", #value, getTicks() - initval_##value)
+static inline void isolde_set_intr_en(unsigned tile)
+{
+    asm volatile ("csrw %0, %1"
+                  :
+                  : "i"(CSR_ISOLDE_TILE_INTR_EN), "r"(tile)
+                  : "memory");
+}
+
+static inline unsigned isolde_get_intr_en(void)
+{
+    unsigned tile;
+    asm volatile ("csrr %0, %1"
+                  : "=r"(tile)
+                  : "i"(CSR_ISOLDE_TILE_INTR_EN)
+                  : "memory");
+    return tile;
+}
+
+
+
+static inline unsigned isolde_get_tile_cnt(void)
+{
+    unsigned tile;
+    asm volatile ("csrr %0, %1"
+                  : "=r"(tile)
+                  : "i"(CSR_ISOLDE_TILE_CNT)
+                  : "memory");
+    return tile;
+}
+
+static inline unsigned isolde_get_base_addr(void)
+{
+    unsigned tile;
+    asm volatile ("csrr %0, %1"
+                  : "=r"(tile)
+                  : "i"(CSR_ISOLDE_TILE_BASE_ADDR)
+                  : "memory");
+    return tile;
+}
+
+static inline unsigned isolde_get_addr_wnd(void)
+{
+    unsigned tile;
+    asm volatile ("csrr %0, %1"
+                  : "=r"(tile)
+                  : "i"(CSR_ISOLDE_TILE_ADDR_WND)
+                  : "memory");
+    return tile;
+}
+
+static inline unsigned isolde_get_tile_ip(void)
+{
+    unsigned tile;
+    asm volatile ("csrr %0, %1"
+                  : "=r"(tile)
+                  : "i"(CSR_ISOLDE_TILE_IP)
+                  : "memory");
+    return tile;
+}
+
+static inline void isolde_clear_tile_ip(unsigned tile)
+{
+    asm volatile ("csrw %0, %1"
+                  :
+                  : "i"(CSR_ISOLDE_TILE_IP), "r"(tile)
+                  : "memory");
+}
+
+static inline unsigned isolde_get_tile_status(void)
+{
+    unsigned tile;
+    asm volatile ("csrr %0, %1"
+                  : "=r"(tile)
+                  : "i"(CSR_ISOLDE_TILE_STATUS)
+                  : "memory");
+    return tile;
+}
 
 #define START_PERFCNT(id) \
     (*(volatile int *) MMADDR_PERF_COUNTERS) =(int) id;

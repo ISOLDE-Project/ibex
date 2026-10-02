@@ -37,7 +37,7 @@ filesets:
       - rtl/ibex_dummy_instr.sv
       - rtl/ibex_core.sv
       - rtl/isolde_fetch2exec_if.sv
-      - rtl/isolde_fetch_vleninstr.sv
+ #     - rtl/isolde_fetch_vleninstr.sv
       - rtl/isolde_decoder.sv
       - rtl/isolde_exec_block.sv
       - rtl/isolde_decoder_top.sv

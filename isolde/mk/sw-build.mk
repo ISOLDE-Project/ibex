@@ -61,9 +61,9 @@ endif
 
 ## debuger module config
 ifeq ($(DBG_MODULE), 1)
-    RV_DM_C_FLAGS += -DRV_DM_TEST
+    RV_DM_CPPFLAGS += -DRV_DM_TEST
 else
-    RV_DM_C_FLAGS += 
+    RV_DM_CPPFLAGS +=
 endif
 
 
@@ -78,35 +78,44 @@ RISCV_EXE_PREFIX = $(CV_SW_TOOLCHAIN)/bin/$(RISCV_PREFIX)
 
 RISCV_MARCH      =  $(CV_SW_MARCH)
 RISCV_CC_SUFFIX  =  $(CV_SW_CC_SUFFIX)
-RISCV_CFLAGS     += $(RV_DM_C_FLAGS)
+RISCV_CPPFLAGS   += $(RV_DM_CPPFLAGS)
 
 
-TEST_FILES        ?= $(filter %.c %.S,$(wildcard  $(TEST_SRC_DIR)/*))
+# Test-local LLVM IR is compiled and linked like the C/assembly sources. This
+# allows generated graphs to participate in the normal `test-build` flow.
+TEST_FILES        ?= $(filter %.c %.S %.ll,$(wildcard  $(TEST_SRC_DIR)/*))
 # Optionally use linker script provided in test directory
 # this must be evaluated at access time, so ifeq/ifneq does
 # not get parsed correctly
+# Memory map and tile count, generated from isolde/config/platform.yml.
+# If it is missing, generate.mk's rule builds it and make restarts.
+include $(GEN_PLATFORM_MK)
+
 TEST_RESULTS_LD = $(addprefix $(SIM_TEST_PROGRAM_RESULTS)/, link.ld)
 TEST_LD         = $(addprefix $(TEST_SRC_DIR)/, link.ld)
 
 LD_LIBRARY 	= $(if $(wildcard $(TEST_RESULTS_LD)),-L $(SIM_TEST_PROGRAM_RESULTS),$(if $(wildcard $(TEST_LD)),-L $(TEST_SRC_DIR),))
-LD_FILE 	= $(if $(wildcard $(TEST_RESULTS_LD)),$(TEST_RESULTS_LD),$(if $(wildcard $(TEST_LD)),$(TEST_LD),$(BSP)/link.ld))
+LD_FILE 	= $(GEN_LINK_LD)
 
 
 
 BSP                                  = $(CORE_V_VERIF)/bsp
 SIM_BSP_RESULTS                      = $(CORE_V_VERIF)/sw/build/bsp
 
-RISCV_CFLAGS += -I $(CORE_V_VERIF)
-#RISCV_CFLAGS += -I $(BSP)
-RISCV_CFLAGS += -I $(TEST_SRC_DIR)
-RISCV_CFLAGS += -I $(TEST_SRC_DIR)/inc
-RISCV_CFLAGS += -I $(TEST_SRC_DIR)/utils
-RISCV_CFLAGS += -DUSE_BSP
-#RISCV_CFLAGS += -DCV32E40X 
-RISCV_CFLAGS += -DIBEX 
+RISCV_CPPFLAGS += -I $(CORE_V_VERIF)
+#RISCV_CPPFLAGS += -I $(BSP)
+RISCV_CPPFLAGS += -I $(TEST_SRC_DIR)
+RISCV_CPPFLAGS += -I $(TEST_SRC_DIR)/inc
+RISCV_CPPFLAGS += -I $(TEST_SRC_DIR)/utils
+RISCV_CPPFLAGS += -DUSE_BSP
+#RISCV_CPPFLAGS += -DCV32E40X
+RISCV_CPPFLAGS += -DIBEX
+RISCV_CPPFLAGS += $(TEST_CPPFLAGS)
 RISCV_CFLAGS += $(TEST_CFLAGS)
 
-%.elf:
+# link.ld is generated from platform.yml: a config edit must relink rather
+# than silently reuse an .elf built against the previous memory map.
+%.elf: $(GEN_LINK_LD)
 	@echo "**** sw-build.mk compiling:"
 	@echo "**** $@"
 	@echo "**** TEST_FILES = $(TEST_FILES) "
@@ -120,8 +129,9 @@ RISCV_CFLAGS += $(TEST_CFLAGS)
 		RISCV_PREFIX=$(RISCV_PREFIX) \
 		RISCV_CC_SUFFIX=$(RISCV_CC_SUFFIX) \
 		RISCV_MARCH=$(RISCV_MARCH) \
+		RISCV_CPPFLAGS="$(RISCV_CPPFLAGS)" \
 		RISCV_CFLAGS="$(RISCV_CFLAGS)" \
-		LD_FILE=$(BSP)/link.ld \
+		LD_FILE=$(LD_FILE) \
 		$@
 
 
@@ -132,19 +142,9 @@ RISCV_CFLAGS += $(TEST_CFLAGS)
 	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-objcopy -O verilog \
 		$< \
 		$@
-	python $(SCRIPTS_DIR)/hex_fragment.py   $@  0x00100000  0x0010FFFF $*-m 
-	python $(SCRIPTS_DIR)/hex_fragment.py   $@  0x00110000  0x00140000 $*-d  		
-# 	python $(SCRIPTS_DIR)/addr_offset.py   $@  $*-m.hex 0x00100000
-# 	python $(SCRIPTS_DIR)/addr_offset.py   $@  $*-d.hex 0x00100000
-#	python $(SCRIPTS_DIR)/hex2bin_split.py $@  $*-instr.bin $*-data.bin
-# 	python $(SCRIPTS_DIR)/hex2ihex_split.py  --input $@ \
-# 											--instr-base 0x00100000 --instr-size 0x40000 \
-# 											--data-base  0x00100000 --data-size  0x40000 \
-# 											--instr-out $*_ihex-i.hex \
-# 											--data-out  $*_ihex-m.hex \
-# 											--verbose
-# 	python $(SCRIPTS_DIR)/hex2ihex.py --input $*-m.hex --base 0x00100000 --region_size 0x1404 --output $*_ihex-i.hex 
-# 	python $(SCRIPTS_DIR)/hex2ihex.py --input $*-d.hex --base 0x00110000 --region_size 0x30000 --output $*_ihex-d.hex 
+	python $(SCRIPTS_DIR)/hex_fragment.py $@ $(IMAGE_INSTR_RANGE) $*-m
+	python $(SCRIPTS_DIR)/hex_fragment.py $@ $(IMAGE_DATA_RANGE)  $*-d
+
 	$(CV_SW_TOOLCHAIN)/bin/riscv32-unknown-elf-readelf -a $< > $*.readelf
 	$(CV_SW_TOOLCHAIN)/bin/llvm-objdump   \
 		-fhSD \
@@ -177,20 +177,30 @@ clean-test-programs: clean-bsp
 	find  $(CORE_V_VERIF)/../sw -name "corev_*.S" -delete
 	find  $(CORE_V_VERIF)/../sw -name "*.itb" -delete	
 
-###ISOLDE specific
-ifneq ($(filter redmule%,$(TEST)),)
+# Test category detection
+IS_REDMULE         := $(filter redmule% omp% ,$(TEST))
+IS_RADAR_OR_ONNX   := $(filter radar_% onnx_%,$(TEST))
 
+# RedMule/OpenMP/GEMM targets (highest priority)
+ifneq ($(IS_REDMULE),)
 golden:
-	make -C $(REDMULE_ROOT_DIR) $@
-	make -C $(TEST_SRC_DIR) $@
-
+	@make -C $(REDMULE_ROOT_DIR) $@
+	@make -C $(TEST_SRC_DIR) $@
+demo:
+	@echo "Skipped, only for radar/onnx targets"
 else
-
+# Radar targets
+ifneq ($(IS_RADAR_OR_ONNX),)
+golden golden-clean demo budget cases sim:
+	@make -C $(TEST_SRC_DIR) $@
+else
+# Default: skip both
 golden:
-	@echo "Skipped, redmule unrelated"
-
+	@echo "Skipped, redmule/openmp/radar unrelated"
+demo:
+	@echo "Skipped, only for radar targets"
 endif
-
+endif
 
 
 .PHONY: test-build $(test-program) clean $(TEST_BIN_DIR)
@@ -204,7 +214,7 @@ test-build: $(TEST_BIN_DIR) $(test-program).hex
 
 test-clean: clean-bsp
 	rm -f $(test-program)*
-	rm -fr $(TEST_BIN_DIR) 
+# 	rm -fr $(TEST_BIN_DIR) 
 	rm -fr $(SIM_BSP_RESULTS)
 	-find $(TEST_SRC_DIR) -name "*.o"       -delete
 

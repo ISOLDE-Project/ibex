@@ -1,10 +1,5 @@
 
 prj_path := $(shell git rev-parse --show-toplevel)
-num_cores := $(shell nproc)
-num_cores_half := $(shell echo "$$(($(num_cores) / 2)"))
-VLT_CXX := /usr/bin/clang++
-VLT_CC  := /usr/bin/clang
-
 
 INSTALL_PREFIX            ?= install
 TOOLS_DIR                 ?= $(prj_path)/tools
@@ -14,12 +9,13 @@ LLVM_INSTALL_DIR          ?= ${INSTALL_DIR}/riscv-llvm
 ISA_SIM_INSTALL_DIR       ?= ${INSTALL_DIR}/riscv-isa-sim
 ISA_SIM_MOD_INSTALL_DIR   ?= ${INSTALL_DIR}/riscv-isa-sim-mod
 OPENOCD_INSTALL_DIR       ?= ${INSTALL_DIR}/openocd
-OSS_CAD_SUITE_INSTALL_DIR ?= ${INSTALL_DIR}/oss-cad-suite
+
 OPENROAD_INSTALL_DIR      ?= ${INSTALL_DIR}/openroad
 OPENROAD_VERSION          ?= a008522d88b669ac4c985609533cf5a3d2649222
-VERIL_INSTALL_DIR         ?= ${INSTALL_DIR}/verilator
-VERIL_VERSION             ?= v5.048
 BENDER_INSTALL_DIR        ?= ${INSTALL_DIR}/bender
+
+
+
 
 all: dev-dep verilator riscv32-gcc riscv32-llvm  openocd
 
@@ -29,27 +25,23 @@ ${TOOLS_DIR}:
 ${INSTALL_DIR}:
 	mkdir -p $@
 
+.PHONY: check_python3
+check_python3:
+	@command -v python3 >/dev/null 2>&1 || { \
+		echo "ERROR: python3 >= 3.8 is required, but python3 was not found."; \
+		exit 1; \
+	}
+	@python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,8) else 1)' || { \
+		echo "ERROR: python3 >= 3.8 is required."; \
+		echo "Found: $$(python3 --version)"; \
+		exit 1; \
+	}
+
 ## Install Verilator
-verilator: ${TOOLS_DIR} ${INSTALL_DIR} ${VERIL_INSTALL_DIR}/bin/verilator
-
-${VERIL_INSTALL_DIR}/bin/verilator:
-	rm -fr $(TOOLS_DIR)/verilator
-	cd $(TOOLS_DIR) && git clone https://github.com/verilator/verilator.git
-	# Checkout the right version
-	cd $(TOOLS_DIR)/verilator  && git reset --hard && git fetch && git checkout ${VERIL_VERSION}
-	# Compile verilator
-	cd $(TOOLS_DIR)/verilator  && git clean -xfdf && autoconf && \
-	./configure --prefix=$(VERIL_INSTALL_DIR) CXX=$(VLT_CXX) CC=$(VLT_CC) && make -j$(num_cores_half)  && make install
-	touch ${VERIL_INSTALL_DIR}/bin/verilator
+verilator:  
+	@echo "OBSOLETE, use make -f Makefile.eda"
 
 
-
-.PHONY: cores
-
-cores:
-	@num_cores=$$(nproc); \
-	num_cores=$$((num_cores / 2); \
-	echo "Number of cores available on this machine (divided by 2): $$num_cores"
 
 riscv32-gcc: $(GCC_INSTALL_DIR)
 
@@ -99,10 +91,8 @@ $(HOME)/eth/$(BENDER_ARCH_FILE):
 .PHONY: bender
 ## Install Bender
 bender: 
-	@echo "Installing Bender..."
-	mkdir -p $(BENDER_INSTALL_DIR)
-	cd $(BENDER_INSTALL_DIR) &&  \
-	curl --proto '=https' --tlsv1.2 https://pulp-platform.github.io/bender/init -sSf | sh
+	@echo "OBSOLETE, use make -f Makefile.eda"
+
 	
 
 $(TOOLS_DIR)/xpack-openocd.tar.gz: ${TOOLS_DIR} vendor/xpack-openocd.url
@@ -118,18 +108,7 @@ openocd: $(TOOLS_DIR)/xpack-openocd.tar.gz
 	tar -xzvf xpack-openocd.tar.gz  --strip-components=1 -C $(OPENOCD_INSTALL_DIR)/ 
 	touch  $(OPENOCD_INSTALL_DIR)
 
-$(TOOLS_DIR)/oss-cad-suite-linux-x64-20260109.tgz: vendor/oss-cad-suite.url
-	cd $(TOOLS_DIR) && \
-	wget `cat $(CURDIR)/$<` -O oss-cad-suite-linux-x64-20260109.tgz 
-	touch $@
 
-.PHONY: oss-cad-suite
-## Install yosys from YosysHQ/oss-cad-suite
-oss-cad-suite: $(TOOLS_DIR) $(TOOLS_DIR)/oss-cad-suite-linux-x64-20260109.tgz
-	mkdir -p $(OSS_CAD_SUITE_INSTALL_DIR)
-	cd $(TOOLS_DIR) && \
-	tar -xzvf oss-cad-suite-linux-x64-20260109.tgz  --strip-components=1 -C $(OSS_CAD_SUITE_INSTALL_DIR)/ 
-	touch  $(OSS_CAD_SUITE_INSTALL_DIR)
 
 
 OPENROAD_REPO := $(TOOLS_DIR)/OpenROAD/.git
@@ -155,6 +134,41 @@ openroad: openroad-clone
 	cd $(TOOLS_DIR)/OpenROAD   && rm -fr build && mkdir -p build 
 	cd $(TOOLS_DIR)/OpenROAD/build && \
 	cmake .. && \
-	make -j2 && make DESTDIR=$(OPENROAD_INSTALL_DIR) install
+	make -j$(num_cores_half) && make DESTDIR=$(OPENROAD_INSTALL_DIR) install
 	
+
+.PHONY: miniconda miniconda-installer
+
+MINICONDA_ROOT         ?= $(HOME)/hdd1
+MINICONDA_INSTALL_DIR  ?= $(MINICONDA_ROOT)/miniconda3
+MINICONDA_INSTALLER    ?= $(MINICONDA_ROOT)/Miniconda3-latest-Linux-x86_64.sh
+MINICONDA_ENV          ?= ibex
+MINICONDA_PACKAGES     ?= packages.txt
+PYTHON_VERSION         ?= 3.10
+PYTHON_REQUIREMENTS    ?= python-requirements.txt
+
+$(MINICONDA_INSTALLER):
+	mkdir -p $(MINICONDA_ROOT)
+	wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $@
+	touch $@
+
+miniconda-installer: $(MINICONDA_INSTALLER)
+
+## install miniconda on local machine under $HOME/hdd1
+miniconda: miniconda-installer
+	bash $(MINICONDA_INSTALLER) -b -p $(MINICONDA_INSTALL_DIR)
+	$(MINICONDA_INSTALL_DIR)/bin/conda create -y \
+		--name $(MINICONDA_ENV) \
+		python=$(PYTHON_VERSION) pip
+	$(MINICONDA_INSTALL_DIR)/bin/conda run \
+		-n $(MINICONDA_ENV) \
+		pip install -r $(PYTHON_REQUIREMENTS)
+
+## update the  miniconda from local machine under $HOME/hdd1
+miniconda-update:
+	gawk '!/@ file:/' $(PYTHON_REQUIREMENTS) | \
+	$(MINICONDA_INSTALL_DIR)/bin/conda run \
+		-n $(MINICONDA_ENV) \
+		pip install --upgrade -r /dev/stdin
+
 include common.mk

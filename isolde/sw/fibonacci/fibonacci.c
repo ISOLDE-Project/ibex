@@ -26,26 +26,27 @@ static int fib(int i) {
     return (i>1) ? fib(i-1) + fib(i-2) : i;
 }
 
- char dummyData[]={1,2,3,4,5,6};
+char dummyData[]={1,2,3,4,5,6};
 int main(int argc, char *argv[]) {
 
     
-    START_PERFCNT(1);
+    
 
     int i;
     const int num =  sizeof(dummyData)/sizeof(dummyData[0]);
 
     printf("starting fib(%d)...\n", num);
-    START_TIMING(FIBONACCI);
+    START_PERFCNT(1);
     for(i=0; i<num; i++) {
         printf("fib(%d) = %d\n", i, fib(i));
 
     }
-    END_TIMING(FIBONACCI);
+    STOP_PERFCNT(1); 
+    printPerfCnt();
     printf("finishing...\n");
 
    
-   
+   START_PERFCNT(2);
     //force missaligend reads/writes
     for(i=0;i<num;++i)
         printf("[before ]dummyData[%d] = %d\n", i, dummyData[i]);
@@ -54,7 +55,7 @@ int main(int argc, char *argv[]) {
         dummyData[i]=fib(i);
         printf("[after  ]dummyData[%d] = %d\n", i, dummyData[i]);
     }
-   STOP_PERFCNT(1); 
-     printPerfCnt();
-    return 0xbadc0de;
+    STOP_PERFCNT(2); 
+    printPerfCnt();
+    return 0x123C0FFE;
 }

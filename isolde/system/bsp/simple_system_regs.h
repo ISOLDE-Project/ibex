@@ -9,12 +9,21 @@
 
 #define MMADDR_EXIT                0x80000000
 #define MMADDR_PRINT               0x80000004
-#define MMADDR_CYCLE_COUNTER       MMADDR_EXIT
 #define MMADDR_PERF_TTY            0x80000008
 #define MMADDR_PERF_COUNTERS       0x8000000C
-#define SPM_NARROW_ADDR            0x80001000
-#define SPM_NARROW_SIZE            0x00001000;  //64kB                                   
-
-
+// Scratchpad window, generated from isolde/config/platform.yml.
+#include "platform.h"
+#define SPM_NARROW_SIZE            PLATFORM_SPM_NARROW_SIZE
+#define SPM_NARROW_ADDR            PLATFORM_SPM_NARROW_ADDR
+// take it from rtl/ibex_pkg.sv
+enum{ 
+    CSR_ISOLDE_TILESEL         = 0x7C2
+    ,CSR_ISOLDE_TILE_INTR_EN   = 0x7C3
+    ,CSR_ISOLDE_TILE_CNT       = 0x7C5
+    ,CSR_ISOLDE_TILE_BASE_ADDR = 0x7C6
+    ,CSR_ISOLDE_TILE_ADDR_WND  = 0x7C7   //Tile Address Window (TAW)
+     ,CSR_ISOLDE_TILE_STATUS   = 0x7C8   //Tile status
+    ,CSR_ISOLDE_TILE_IP        = 0x7C9   //interrupt pending
+ };
 
 #endif  // SIMPLE_SYSTEM_REGS_H__

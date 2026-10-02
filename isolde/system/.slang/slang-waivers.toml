@@ -1,0 +1,51 @@
+####################################################################
+## template
+# # File-scoped rule
+# [[waivers]]
+# file = "<glob>"
+# diagnostic = "<name>"      # optional: specific diagnostic(s)
+# regex = '<pattern>'        # optional: match source line content
+####################################################################
+
+# .slang/slang-waivers.toml
+
+# pulp-platorm packages
+[[waivers]]
+file = "**/.bender/git/checkouts/**"
+#diagnostic = ["unused-wildcard-import", "unused-parameter", "finish-num"]
+
+
+# Redmule vendor RTL
+[[waivers]]
+file = "**/vendor/redmule/rtl/**"
+#diagnostic = ["unused-wildcard-import", "unused-parameter"]
+
+# LowRISC vendor IP
+[[waivers]]
+file = "**/vendor/lowrisc_ip/**"
+#diagnostic = "unused-parameter"
+
+# lowrisc ibex RTL package
+[[waivers]]
+file = "**/rtl/ibex_*.sv"
+
+
+
+# isolde ibex RTL package
+[[waivers]]
+file = "**/rtl/isolde_decoder_pkg.sv"
+diagnostic = "unused-parameter"
+
+
+# Isolde SoC vendor tree
+[[waivers]]
+file = "**/vendor/isolde-soc/fpga/tb/aida_tb.sv"
+diagnostic = "unused-parameter"
+
+[[waivers]]
+file = "**/vendor/isolde-soc/rtl/noc/isolde*.sv"
+diagnostic = ["sign-conversion" ,"width-trunc","empty-output-connection"]
+
+[[waivers]]
+file = "**/vendor/isolde-soc/fpga/sim/tcdm_mem.sv"
+diagnostic = "unused-parameter"

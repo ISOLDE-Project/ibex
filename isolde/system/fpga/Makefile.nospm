@@ -1,5 +1,8 @@
 
+# Non-cluster build: aida_top instead of cluster_top, no SPM, no accelerators.
+# CLUSTER=0 drops -D REDMULE_CLUSTER so xilinx_aida.sv selects aida_top, which
+# in turn selects rv_domain when TARGET_SPM is not defined.
 %:
 	 @echo  $(MAKECMDGOALS)
-	 make ENABLE_SPM=0 \
+	 $(MAKE) CLUSTER=0 ENABLE_SPM=0 \
 	 	 $@

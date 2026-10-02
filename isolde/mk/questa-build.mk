@@ -67,6 +67,7 @@ QUESTA_COMMON_ARGS     := $(QUESTA_COMMON_FFILES)            \
 # Clean all build directories and temporary files for QuestaSim simulation
 # ---------------------------------------------------------------------------
 questa-clean:
+	rm -f ibex_sim.flist manifest.flist
 	rm -f ibex_questa.flist manifest_questa.flist
 	rm -rf $(BIN_DIR)
 	rm -rf $(QUESTA_LOG_DIR)
@@ -78,22 +79,26 @@ questa-clean:
 # ---------------------------------------------------------------------------
 
 
-ibex_questa.flist: ibex_sim.flist
+ibex_questa.flist:  $(VLT_TOP_MODULE)_all_deps.f
+	cat ibex_sim.slang_veri_opts manifest.slang_veri_opts> ops.verilator.flist
 	python $(ROOT_DIR)/util/flist2questa.py \
-	        ibex_sim.flist \
+	        ops.verilator.flist \
 	        $@ 
 
 
 
-manifest_questa.flist: manifest.flist
-	cat manifest.flist	 > $@_tmp
+manifest_questa.flist:  $(VLT_TOP_MODULE)_all_deps.f
+	python $(ROOT_DIR)/util/transform_paths.py  \
+											$(mkfile_path)  \
+											$(VLT_TOP_MODULE)_all_deps.f \
+											$@
 	python $(ROOT_DIR)/util/verilator_manifest.py Verilator.yml \
 	        -t questa \
-	        -o $@_tmp
-	python $(ROOT_DIR)/util/flist2questa.py \
+	        -o $@
+# 	python $(ROOT_DIR)/util/flist2questa.py \
 	        $@_tmp \
 	        $@ 
-	rm -f $@_tmp
+# 	rm -f $@_tmp
 
 # ---------------------------------------------------------------------------
 # Analyze + elaborate all RTL sources into the work library
@@ -145,6 +150,47 @@ questa-run:  ibex_questa.flist  manifest_questa.flist
 
 	$(QRUN) $(QUESTA_COMMON_ARGS) \
 	        -batch \
+	        -O0 \
+	        -debug \
+	        -logfile $(QUESTA_LOG_DIR)/$(TEST).log \
+	        +STIM_INSTR=$(test-program)-m.hex \
+	        +STIM_DATA=$(test-program)-d.hex \
+	        -do "run -all; quit -f" 2>&1 | \
+			tee "$(QUESTA_RUN_LOG)" | \
+			gawk -v warnings_file="$(QUESTA_RUN_WARNINGS)" -f "$(SCRIPTS_DIR)/questa.awk"
+
+	@if [ ! -f "trace_core_00000000.log" ]; then \
+		echo "WARNING: Output file missing: trace_core_00000000.log"; \
+	else \
+		mv trace_core_00000000.log $(QUESTA_LOG_DIR); \
+	fi
+
+	@if [ -f "perfcnt.csv" ]; then \
+		mv perfcnt.csv $(QUESTA_LOG_DIR)/$(TEST).csv; \
+	fi
+
+questa-frun:  ibex_questa.flist  manifest_questa.flist
+	@echo "$(BANNER)"
+	@echo "* Running with QuestaSim:"
+	@echo "* logfile: $(QUESTA_LOG_DIR)/$(TEST).log"
+	@echo "* rtl debug trace: $(QUESTA_LOG_DIR)/trace_core_00000000.log"
+	@echo "* *.vcd: $(QUESTA_LOG_DIR)"
+	@echo "$(BANNER)"
+
+	mkdir -p $(QUESTA_LOG_DIR)
+	rm -f $(QUESTA_LOG_DIR)/*
+
+	@if [ ! -f "$(test-program)-m.hex" ]; then \
+		echo "ERROR: Missing file: $(test-program)-m.hex"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(test-program)-d.hex" ]; then \
+		echo "ERROR: Missing file: $(test-program)-d.hex"; \
+		exit 1; \
+	fi
+
+	$(QRUN) $(QUESTA_COMMON_ARGS) \
+	        -batch \
 	        -O5 \
 	        -nodebug \
 	        -logfile $(QUESTA_LOG_DIR)/$(TEST).log \
@@ -163,7 +209,6 @@ questa-run:  ibex_questa.flist  manifest_questa.flist
 	@if [ -f "perfcnt.csv" ]; then \
 		mv perfcnt.csv $(QUESTA_LOG_DIR)/$(TEST).csv; \
 	fi
-
 # ---------------------------------------------------------------------------
 # Simulate design with GUI
 # ---------------------------------------------------------------------------
