@@ -57,3 +57,5 @@ eda
 .isolde-flow/
 isolde/scripts/tests/
 isolde/scripts/cluster_diagram.py
+*.patch
+
