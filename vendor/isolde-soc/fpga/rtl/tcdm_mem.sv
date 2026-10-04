@@ -70,7 +70,7 @@ module tcdm_mem #(
       // -----------------------------
       .clka (clk_i),
       .ena  (1'b1),
-      .wea  (tcdm_slave_i.req.we ? tcdm_slave_i.req.be : 4'b0000),  // <--- WRITE ENABLES
+      .wea  ((tcdm_slave_i.req.req && tcdm_slave_i.req.we) ? tcdm_slave_i.req.be : 4'b0000),  // <--- WRITE ENABLES
       .addra(index[ADDR_WIDTH-1:0]),                                // <--- ADDRESS
       .dina (tcdm_slave_i.req.data),                                // <--- WRITE DATA
 
