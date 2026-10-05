@@ -11,6 +11,7 @@ onnx_radar_attention        \
 onnx_tiling_gemm            \
 radar_attention             \
 radar_beamforming           \
+radar_beamforming_scaling   \
 "
 make TEST=coremark TEST_CFLAGS="-DITERATIONS=2000" test-clean test-build
 cp -v sw/bin/coremark-*.*hex  app-images/
