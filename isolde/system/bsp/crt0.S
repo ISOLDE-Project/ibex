@@ -67,15 +67,22 @@ reset_handler:
 
   .global _start
 _start:
- 
-#ifdef CV32E40X
-  # Enabling CV32E40X mstatus.MIE
-  li      t0, 0x1
-  csrrs   zero, mstatus, t0
-  # Enabling CV32E40P SW interrupt (mie[3])
-  li      t0, 0x8
-  csrrs   zero, mie, t0
-#elif defined(IBEX)
+
+  # ===================================================================
+  # Trap vector: point mtvec at this file's .vectors table (vectored mode).
+  # ===================================================================
+  # Ibex resets mtvec to {boot_addr[31:8], 6'b0, 2'b01}. Booting from
+  # instruction memory (BootROMEnable=0, boot_addr 0x0010_0080) that is
+  # already _vectors_start | 1 and this write changes nothing. Booting
+  # from the debug boot ROM (BootROMEnable=1, boot_addr 0x0000_0080, the
+  # ZCU104 bitstream) it is 0x0000_0001: vector base 0x0, which nothing is
+  # mapped at, so any trap fetched from an address that is never granted
+  # and the core hung without being haltable. Ibex ignores mtvec[7:2]:
+  # .vectors must stay 256-byte aligned (it sits at ORIGIN(instrram)).
+  la      t0, _vectors_start
+  ori     t0, t0, 0x1             # MODE = vectored
+  csrw    mtvec, t0
+
   # ===================================================================
   # DESIGN DECISION: mstatus.MIE stays CLEAR. mie[3] stays SET.
   # ===================================================================
@@ -138,16 +145,15 @@ _start:
   # Enabling SW interrupt (mie[3]), see https://ibex-core.readthedocs.io/en/latest/03_reference/cs_registers.html#machine-interrupt-enable-register-mie
   li      t0, 0x8
   csrrs   zero, mie, t0
-#else
-  # Error: No supported core defined
-  .error "Unsupported core: Please define CV32E40X or IBEX."
-#endif
 
 
 
-  /* Stack initialization */
-  la   x2, _stack_start
-  andi sp, x2, ~0x7      //aligning the stack pointer (sp) to an 8-byte boundary 
+  /* Stack initialization: sp = top of the stack SRAM (full-descending,
+   * first push lands below _stack_start). The RISC-V ilp32 too
+   * requires a 16-byte aligned sp; _stack_start = ORIGIN(stack) +
+   * LENGTH(stack) already is, the mask keeps it so for odd sizes. */
+  la   sp, _stack_start
+  andi sp, sp, -16  //aligning the stack pointer (sp) to an 16-byte boundary 
 
   /* clear BSS */
   la x26, _bss_start
@@ -155,10 +161,11 @@ _start:
 
   bge x26, x27, zero_loop_end
 
+  /* Word stores from _bss_start (4-aligned) while below _bss_end. */
 zero_loop:
   sw x0, 0(x26)
   addi x26, x26, 4
-  ble x26, x27, zero_loop
+  blt x26, x27, zero_loop
 zero_loop_end:
 
 

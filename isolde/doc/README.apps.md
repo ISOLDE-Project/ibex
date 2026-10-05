@@ -1,3 +1,9 @@
+# Build and collect all demo apps
+
+From `isolde/system` run:
+```bash
+bash build_demo.sh 
+```
 # Build and collect all firmware apps
 
 From `isolde/system`, activate your usual ISOLDE tool environment, then run:
